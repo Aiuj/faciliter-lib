@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "faciliter-lib"
+version = "0.2.0"
+description = "Shared library for MCP agent tools (internal use only)"
+authors = [{ name = "Julien Nadaud", email = "jnadaud@faciliter.ai" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+keywords = ["cache", "redis", "mcp", "utilities"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers", 
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "fastmcp>=2.10.6",
+    "redis>=6.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Aiuj/faciliter-lib"
+Repository = "https://github.com/Aiuj/faciliter-lib"
+Issues = "https://github.com/Aiuj/faciliter-lib/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["faciliter_lib*"]
+
+[tool.setuptools.package-data]
+faciliter_lib = ["py.typed"]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

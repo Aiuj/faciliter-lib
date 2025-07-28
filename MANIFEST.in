@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+recursive-include faciliter_lib *.py
+recursive-include tests *.py
+exclude build/*
+exclude dist/*
+exclude *.egg-info/*

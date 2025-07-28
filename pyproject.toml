@@ -53,3 +53,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2.post1",
+    "setuptools>=80.9.0",
+    "wheel>=0.45.1",
+]

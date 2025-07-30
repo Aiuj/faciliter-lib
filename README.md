@@ -56,6 +56,12 @@ And add in the `.vscode/settings.json` the following:
 }
 ```
 
+### In pyproject.toml
+
+```txt
+"faciliter-lib @ git+https://github.com/Aiuj/faciliter-lib.git",
+```
+
 ### In requirements.txt
 
 ```txt

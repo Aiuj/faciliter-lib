@@ -25,5 +25,9 @@
         ".pytest_cache": true,
         "venv": false
     },
-    "python.envFile": "${workspaceFolder}/.env"
+    "python.envFile": "${workspaceFolder}/.env",
+    "terminal.integrated.shellArgs.windows": [
+    "/K",
+    "${workspaceFolder}/venv/Scripts/activate.bat"
+  ]
 }

@@ -18,11 +18,7 @@ class ConcreteTracingProvider(TracingProvider):
     """Concrete implementation for testing abstract base class."""
     
     def __init__(self):
-        self.update_trace_calls = []
         self.metadata_calls = []
-    
-    def update_current_trace(self, **kwargs) -> None:
-        self.update_trace_calls.append(kwargs)
     
     def add_metadata(self, metadata: Dict[str, Any]) -> None:
         self.metadata_calls.append(metadata)
@@ -40,11 +36,6 @@ class TestTracingProvider(unittest.TestCase):
     def test_concrete_implementation(self):
         """Test that concrete implementation works correctly."""
         provider = ConcreteTracingProvider()
-        
-        # Test update_current_trace
-        provider.update_current_trace(name="test", version="1.0")
-        self.assertEqual(len(provider.update_trace_calls), 1)
-        self.assertEqual(provider.update_trace_calls[0], {"name": "test", "version": "1.0"})
         
         # Test add_metadata
         metadata = {"user_id": "123", "session": "abc"}
@@ -65,30 +56,12 @@ class TestLangfuseTracingProvider(unittest.TestCase):
         """Test provider initialization."""
         self.assertEqual(self.provider._client, self.mock_langfuse_client)
     
-    def test_update_current_trace(self):
-        """Test update_current_trace method."""
-        kwargs = {"name": "test_trace", "tags": ["test"]}
-        self.provider.update_current_trace(**kwargs)
-        
-        self.mock_langfuse_client.update_current_trace.assert_called_once_with(**kwargs)
-    
-    def test_update_current_trace_multiple_calls(self):
-        """Test multiple calls to update_current_trace."""
-        self.provider.update_current_trace(name="trace1")
-        self.provider.update_current_trace(version="1.0", tags=["v1"])
-        
-        expected_calls = [
-            call(name="trace1"),
-            call(version="1.0", tags=["v1"])
-        ]
-        self.mock_langfuse_client.update_current_trace.assert_has_calls(expected_calls)
-    
     def test_add_metadata(self):
         """Test add_metadata method."""
         metadata = {"user_id": "user123", "environment": "test"}
         self.provider.add_metadata(metadata)
         
-        self.mock_langfuse_client.update_current_trace.assert_called_once_with(metadata=metadata)
+        self.mock_langfuse_client.update_current_span.assert_called_once_with(metadata=metadata)
     
     def test_add_metadata_multiple_calls(self):
         """Test multiple calls to add_metadata."""
@@ -102,7 +75,7 @@ class TestLangfuseTracingProvider(unittest.TestCase):
             call(metadata=metadata1),
             call(metadata=metadata2)
         ]
-        self.mock_langfuse_client.update_current_trace.assert_has_calls(expected_calls)
+        self.mock_langfuse_client.update_current_span.assert_has_calls(expected_calls)
 
 
 class TestTracingManager(unittest.TestCase):
@@ -277,39 +250,20 @@ class TestTracingManager(unittest.TestCase):
         
         self.assertEqual(manager.get_provider(), mock_provider)
     
-    def test_update_current_trace_with_provider(self):
-        """Test update_current_trace when provider exists."""
-        manager = TracingManager("test-service")
-        mock_provider = Mock()
-        manager._provider = mock_provider
-        
-        kwargs = {"name": "test", "version": "1.0"}
-        manager.update_current_trace(**kwargs)
-        
-        mock_provider.update_current_trace.assert_called_once_with(**kwargs)
-    
-    def test_update_current_trace_without_provider(self):
-        """Test update_current_trace when provider doesn't exist."""
-        manager = TracingManager("test-service")
-        # Should not raise exception
-        manager.update_current_trace(name="test")
-    
     def test_add_metadata_with_provider(self):
         """Test add_metadata when provider exists."""
         manager = TracingManager("test-service")
         mock_provider = Mock()
         manager._provider = mock_provider
-        
-        metadata = {"key": "value"}
+        metadata = {"name": "test", "version": "1.0"}
         manager.add_metadata(metadata)
-        
         mock_provider.add_metadata.assert_called_once_with(metadata)
-    
+
     def test_add_metadata_without_provider(self):
         """Test add_metadata when provider doesn't exist."""
         manager = TracingManager("test-service")
         # Should not raise exception
-        manager.add_metadata({"key": "value"})
+        manager.add_metadata({"name": "test"})
 
 
 class TestSetupTracing(unittest.TestCase):
@@ -385,38 +339,14 @@ class TestTracingIntegration(unittest.TestCase):
         provider = manager.setup()
         
         # Use the provider
-        provider.update_current_trace(name="test_trace", version="1.0")
         provider.add_metadata({"user": "test_user", "action": "test_action"})
         
         # Use manager methods
-        manager.update_current_trace(tags=["integration", "test"])
         manager.add_metadata({"component": "tracing"})
         
         # Verify interactions - all calls in order
         expected_all_calls = [
-            call(name="test_trace", version="1.0"),
             call(metadata={"user": "test_user", "action": "test_action"}),
-            call(tags=["integration", "test"]),
             call(metadata={"component": "tracing"})
         ]
-        mock_langfuse_client.update_current_trace.assert_has_calls(expected_all_calls)
-    
-    @patch('faciliter_lib.tracing.tracing.TracingManager')
-    def test_setup_tracing_integration(self, mock_manager_class):
-        """Test setup_tracing function integration."""
-        mock_manager = Mock()
-        mock_provider = Mock()
-        mock_manager.setup.return_value = mock_provider
-        mock_manager_class.return_value = mock_manager
-        
-        # Use setup_tracing function
-        provider = setup_tracing("integration-service")
-        
-        # Verify workflow
-        mock_manager_class.assert_called_once_with("integration-service")
-        mock_manager.setup.assert_called_once()
-        self.assertEqual(provider, mock_provider)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        mock_langfuse_client.update_current_span.assert_has_calls(expected_all_calls)

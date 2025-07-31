@@ -19,7 +19,6 @@ Tests the abstract base class `TracingProvider`:
 ### 2. TestLangfuseTracingProvider
 Tests the `LangfuseTracingProvider` implementation:
 - Initialization with Langfuse client
-- `update_current_trace()` method functionality
 - `add_metadata()` method functionality
 - Multiple call scenarios
 - **Coverage**: Complete Langfuse provider implementation

@@ -13,11 +13,12 @@ _logger_initialized = False
 _root_logger = None
 
 
-def setup_logging(name: Optional[str] = None, level: Optional[Union[str, int]] = logging.DEBUG) -> logging.Logger:
+def setup_logging(app_name: str, name: Optional[str] = None, level: Optional[Union[str, int]] = logging.DEBUG) -> logging.Logger:
     """
     Set up centralized logging configuration and return a logger instance.
     
     Args:
+        app_name (str): Name of the application.
         name (str, optional): Name for the logger. If None, uses the calling module's __name__.
         level (str or int, optional): Logging level, can be string name or integer constant.
         
@@ -46,7 +47,7 @@ def setup_logging(name: Optional[str] = None, level: Optional[Union[str, int]] =
             handlers=[logging.StreamHandler(sys.stdout)]
         )
         
-        _root_logger = logging.getLogger("mcp_news")
+        _root_logger = logging.getLogger(app_name)
         _root_logger.setLevel(numeric_level)
         _logger_initialized = True
         
@@ -66,7 +67,7 @@ def setup_logging(name: Optional[str] = None, level: Optional[Union[str, int]] =
         numeric_level = level
     
     # Create module-specific logger as child of root logger
-    logger = logging.getLogger(f"mcp_news.{name.split('.')[-1]}")
+    logger = logging.getLogger(f"{app_name}.{name.split('.')[-1]}")
     logger.setLevel(numeric_level)
     
     return logger

@@ -1,6 +1,10 @@
 # Production dependencies
+fast-langdetect>=0.3.2
 fastmcp>=2.10.6
 redis>=6.2.0
+langchain-google-genai>=2.1.8
+langchain-ollama>=0.3.6
+langfuse>=3.2.1
 
 # Development dependencies (uncomment for development)
 # pytest>=7.0.0

@@ -9,7 +9,11 @@ setup(
     url='https://github.com/Aiuj/faciliter-lib',
     packages=find_packages(),
     install_requires=[
+        'fast-langdetect>=0.3.2',
         'fastmcp>=2.10.6',
+        'langchain-google-genai>=2.1.8',
+        'langchain-ollama>=0.3.6',
+        'langfuse>=3.2.1',
         'redis>=6.2.0',
     ],
     python_requires='>=3.12',

@@ -156,9 +156,12 @@ export REDIS_TIMEOUT=4
 
 ## 🧪 Development
 
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
+```pwsh
+# Install development dependencies with uv
+uv pip install -e ".[dev]"
+
+# Activate uv virtual environment (Windows PowerShell)
+& .\.venv\Scripts\Activate.ps1
 
 # Run tests
 pytest

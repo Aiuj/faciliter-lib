@@ -1,18 +1,19 @@
-"""Main LLM client class for abstracting different LLM providers."""
+"""Main LLM client class for abstracting different LLM providers.
+
+This version removes LangChain and uses native provider SDKs via lightweight
+provider classes under ``faciliter_lib.llm.providers``.
+"""
 
 import json
 from typing import List, Dict, Any, Optional, Union, Type
-from abc import ABC, abstractmethod
 
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain_core.tools import tool
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from .llm_config import LLMConfig, GeminiConfig, OllamaConfig
+from faciliter_lib.tracing.tracing import setup_tracing
+from .providers.base import BaseProvider
+from .providers.google_genai_provider import GoogleGenAIProvider
+from .providers.ollama_provider import OllamaProvider
 
 
 class LLMClient:
@@ -25,40 +26,15 @@ class LLMClient:
             config: Configuration object for the LLM provider
         """
         self.config = config
-        self._llm = self._initialize_llm()
+        self._provider = self._initialize_provider()
     
-    def _initialize_llm(self):
-        """Initialize the appropriate LLM based on the configuration."""
+    def _initialize_provider(self) -> BaseProvider:
+        """Initialize the appropriate provider based on the configuration."""
         if isinstance(self.config, GeminiConfig):
-            return ChatGoogleGenerativeAI(
-                model=self.config.model,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                google_api_key=self.config.api_key,
-            )
-        elif isinstance(self.config, OllamaConfig):
-            kwargs = {
-                "model": self.config.model,
-                "temperature": self.config.temperature,
-                "base_url": self.config.base_url,
-                "timeout": self.config.timeout,
-            }
-            
-            # Add optional parameters if they are set
-            if self.config.num_ctx is not None:
-                kwargs["num_ctx"] = self.config.num_ctx
-            if self.config.num_predict is not None:
-                kwargs["num_predict"] = self.config.num_predict
-            if self.config.repeat_penalty is not None:
-                kwargs["repeat_penalty"] = self.config.repeat_penalty
-            if self.config.top_k is not None:
-                kwargs["top_k"] = self.config.top_k
-            if self.config.top_p is not None:
-                kwargs["top_p"] = self.config.top_p
-                
-            return ChatOllama(**kwargs)
-        else:
-            raise ValueError(f"Unsupported LLM provider: {self.config.provider}")
+            return GoogleGenAIProvider(self.config)
+        if isinstance(self.config, OllamaConfig):
+            return OllamaProvider(self.config)
+        raise ValueError(f"Unsupported LLM provider: {self.config.provider}")
     
     def chat(
         self,
@@ -79,174 +55,110 @@ class LLMClient:
         Returns:
             Dictionary containing the response, usage info, and any tool calls
         """
-        # Convert messages to LangChain format
-        formatted_messages = self._format_messages(messages, system_message)
+        # Normalize messages into a list[dict] with role/content for providers
+        formatted_messages = self._normalize_messages(messages, system_message)
         
-        # Configure the LLM chain
-        llm_chain = self._llm
-        
-        # Handle tools if provided
-        if tools:
-            # Convert OpenAI tool format to LangChain tools
-            langchain_tools = self._convert_tools(tools)
-            llm_chain = llm_chain.bind_tools(langchain_tools)
-        
-        # Handle structured output if requested
-        if structured_output:
-            parser = JsonOutputParser(pydantic_object=structured_output)
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", "You must respond with valid JSON that matches the required schema. {format_instructions}"),
-                *[(msg.type, msg.content) for msg in formatted_messages]
-            ])
-            
-            chain = prompt | llm_chain | parser
-            
-            try:
-                result = chain.invoke({
-                    "format_instructions": parser.get_format_instructions()
-                })
-                return {
-                    "content": result,
-                    "structured": True,
-                    "tool_calls": [],
-                    "usage": {}  # Usage info varies by provider
-                }
-            except Exception as e:
-                return {
-                    "error": f"Failed to parse structured output: {str(e)}",
-                    "content": None,
-                    "structured": True,
-                    "tool_calls": [],
-                    "usage": {}
-                }
-        
-        # Regular chat without structured output
+        # Initialize tracing and record pre-call metadata
+        tracing_provider = None
         try:
-            if self.config.thinking_enabled:
-                # Add thinking prompt for models that support it
-                thinking_message = SystemMessage(content="Think step by step before answering. Show your reasoning process.")
-                formatted_messages.insert(0, thinking_message)
-            
-            result = llm_chain.invoke(formatted_messages)
-            
-            # Extract tool calls if any
-            tool_calls = []
-            if hasattr(result, 'tool_calls') and result.tool_calls:
-                tool_calls = [
-                    {
-                        "id": tc.get("id", ""),
-                        "function": {
-                            "name": tc.get("name", ""),
-                            "arguments": json.dumps(tc.get("args", {}))
-                        },
-                        "type": "function"
-                    }
-                    for tc in result.tool_calls
-                ]
-            
-            return {
-                "content": result.content,
-                "structured": False,
-                "tool_calls": tool_calls,
-                "usage": getattr(result, 'usage_metadata', {})
+            tracing_provider = setup_tracing()
+            pre_metadata: Dict[str, Any] = {
+                "event": "llm.chat.start",
+                "llm": {
+                    "provider": self.config.provider,
+                    "model": self.config.model,
+                },
+                "config": {
+                    "temperature": self.config.temperature,
+                    "max_tokens": getattr(self.config, "max_tokens", None),
+                    "thinking_enabled": getattr(self.config, "thinking_enabled", False),
+                },
+                "input": {
+                    "system_message_present": system_message is not None,
+                    "message_count": len(formatted_messages),
+                    "message_roles": [m.get("role") for m in formatted_messages],
+                    # avoid recording full content by default; log lengths for privacy
+                    "message_content_lengths": [len(m.get("content", "") or "") for m in formatted_messages],
+                },
+                "tools": {
+                    "count": len(tools) if tools else 0,
+                    "names": [t.get("function", {}).get("name") for t in tools] if tools else [],
+                },
+                "structured_output": bool(structured_output),
             }
-            
+            tracing_provider.add_metadata(pre_metadata)
+        except Exception:
+            # Tracing should never break the chat flow
+            pass
+
+        # Delegate to the provider (handles structured output and tools natively)
+        try:
+            result = self._provider.chat(
+                messages=formatted_messages,
+                tools=tools,
+                structured_output=structured_output,
+                system_message=system_message,
+            )
+
+            # Post-call tracing metadata
+            try:
+                if tracing_provider:
+                    tracing_provider.add_metadata({
+                        "event": "llm.chat.end",
+                        "structured": result.get("structured", False),
+                        "output": {
+                            "content_length": len(json.dumps(result.get("content", ""))) if not isinstance(result.get("content"), str) else len(result.get("content") or ""),
+                        },
+                        "tools": {
+                            "tool_calls_count": len(result.get("tool_calls", []) or []),
+                            "names": [tc.get("function", {}).get("name") for tc in (result.get("tool_calls") or [])],
+                        },
+                        "usage": result.get("usage", {}),
+                    })
+            except Exception:
+                pass
+
+            return result
         except Exception as e:
+            # Trace error
+            try:
+                if tracing_provider:
+                    tracing_provider.add_metadata({
+                        "event": "llm.chat.error",
+                        "structured": bool(structured_output),
+                        "error": str(e),
+                    })
+            except Exception:
+                pass
             return {
                 "error": f"Chat request failed: {str(e)}",
                 "content": None,
-                "structured": False,
+                "structured": bool(structured_output),
                 "tool_calls": [],
-                "usage": {}
+                "usage": {},
             }
     
-    def _format_messages(
-        self, 
-        messages: Union[str, List[Dict[str, str]]], 
-        system_message: Optional[str] = None
-    ) -> List[Union[SystemMessage, HumanMessage, AIMessage]]:
-        """Convert messages to LangChain message format."""
-        formatted = []
-        
+    def _normalize_messages(
+        self,
+        messages: Union[str, List[Dict[str, str]]],
+        system_message: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """Normalize messages into a list of dicts with role/content.
+
+        Providers (Ollama) accept OpenAI-style dicts directly. For Google GenAI, the
+        provider will adapt these messages to its native format.
+        """
+        result: List[Dict[str, str]] = []
         if system_message:
-            formatted.append(SystemMessage(content=system_message))
-        
+            result.append({"role": "system", "content": system_message})
         if isinstance(messages, str):
-            formatted.append(HumanMessage(content=messages))
+            result.append({"role": "user", "content": messages})
         else:
             for msg in messages:
                 role = msg.get("role", "user")
                 content = msg.get("content", "")
-                
-                if role == "system":
-                    formatted.append(SystemMessage(content=content))
-                elif role == "assistant" or role == "ai":
-                    formatted.append(AIMessage(content=content))
-                else:  # user or human
-                    formatted.append(HumanMessage(content=content))
-        
-        return formatted
-    
-    def _convert_tools(self, tools: List[Dict[str, Any]]) -> List:
-        """Convert OpenAI tool format to LangChain tools."""
-        langchain_tools = []
-        
-        for tool_def in tools:
-            if tool_def.get("type") == "function":
-                func_def = tool_def.get("function", {})
-                name = func_def.get("name", "")
-                description = func_def.get("description", "")
-                parameters = func_def.get("parameters", {})
-                
-                # Create a dynamic tool using LangChain's tool decorator
-                @tool(name=name, description=description)
-                def dynamic_tool(**kwargs):
-                    """Dynamically created tool."""
-                    return f"Tool {name} called with arguments: {kwargs}"
-                
-                # Set the parameters schema
-                if parameters:
-                    dynamic_tool.args_schema = self._create_args_schema(name, parameters)
-                
-                langchain_tools.append(dynamic_tool)
-        
-        return langchain_tools
-    
-    def _create_args_schema(self, tool_name: str, parameters: Dict[str, Any]) -> Type[BaseModel]:
-        """Create a Pydantic model from OpenAI tool parameters."""
-        from pydantic import create_model
-        
-        fields = {}
-        properties = parameters.get("properties", {})
-        required = parameters.get("required", [])
-        
-        for prop_name, prop_def in properties.items():
-            prop_type = prop_def.get("type", "string")
-            prop_description = prop_def.get("description", "")
-            
-            # Map JSON Schema types to Python types
-            if prop_type == "string":
-                python_type = str
-            elif prop_type == "integer":
-                python_type = int
-            elif prop_type == "number":
-                python_type = float
-            elif prop_type == "boolean":
-                python_type = bool
-            elif prop_type == "array":
-                python_type = List[Any]
-            elif prop_type == "object":
-                python_type = Dict[str, Any]
-            else:
-                python_type = Any
-            
-            # Make field optional if not in required list
-            if prop_name not in required:
-                python_type = Optional[python_type]
-            
-            fields[prop_name] = (python_type, prop_description)
-        
-        return create_model(f"{tool_name}Args", **fields)
+                result.append({"role": role, "content": content})
+        return result
     
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about the current model."""

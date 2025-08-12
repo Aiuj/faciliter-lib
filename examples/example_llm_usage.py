@@ -1,6 +1,13 @@
 """Example usage of the LLM client functionality."""
 
 import os
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from pydantic import BaseModel
 from typing import List, Optional
 from faciliter_lib import create_ollama_client, create_gemini_client, create_client_from_env
@@ -20,7 +27,7 @@ def example_basic_chat():
     
     # Create an Ollama client
     client = create_ollama_client(
-        model="llama3.2",
+        model="qwen3:1.7b",
         temperature=0.7,
         thinking_enabled=True
     )
@@ -36,7 +43,7 @@ def example_chat_with_history():
     """Example of chat with message history."""
     print("=== Chat with History Example ===")
     
-    client = create_ollama_client(model="llama3.2")
+    client = create_ollama_client(model="qwen3:1.7b")
     
     # Chat with conversation history
     messages = [
@@ -53,9 +60,9 @@ def example_chat_with_history():
 def example_structured_output():
     """Example of getting structured JSON output."""
     print("=== Structured Output Example ===")
-    
-    client = create_ollama_client(model="llama3.2")
-    
+
+    # client = create_ollama_client(model="qwen3:1.7b")
+    client = create_client_from_env()  # "ollama" or "gemini"
     # Request structured output
     response = client.chat(
         "What's the weather like in Paris today?",
@@ -73,9 +80,9 @@ def example_structured_output():
 def example_tools():
     """Example of using tools with the LLM."""
     print("=== Tools Example ===")
-    
-    client = create_ollama_client(model="llama3.2")
-    
+
+    client = create_client_from_env()  # "ollama" or "gemini"
+
     # Define tools in OpenAI format
     tools = [
         {
@@ -134,7 +141,7 @@ def example_gemini_client():
     print("=== Gemini Client Example ===")
     
     # This would require a valid API key
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_GENAI_API_KEY")
     
     if api_key:
         client = create_gemini_client(
@@ -156,7 +163,7 @@ def example_from_env():
     
     # This will use environment variables for configuration
     try:
-        client = create_client_from_env("ollama")  # or "gemini"
+        client = create_client_from_env()  # "ollama" or "gemini"
         
         model_info = client.get_model_info()
         print("Model info:", model_info)
@@ -170,9 +177,9 @@ def example_from_env():
 
 if __name__ == "__main__":
     # Run examples (commented out ones that might not work without proper setup)
-    example_basic_chat()
-    example_chat_with_history() 
+    # example_basic_chat()
+    # example_chat_with_history() 
     # example_structured_output()  # Might not work with all models
     # example_tools()  # Might not work with all models
-    # example_gemini_client()  # Requires API key
-    example_from_env()
+    example_gemini_client()  # Requires API key
+    # example_from_env()

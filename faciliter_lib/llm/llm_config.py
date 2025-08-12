@@ -61,13 +61,28 @@ class GeminiConfig(LLMConfig):
     @classmethod
     def from_env(cls) -> "GeminiConfig":
         """Create Gemini configuration from environment variables."""
+        def get_env(*names, default=None):
+            for name in names:
+                val = os.getenv(name)
+                if val is not None:
+                    return val
+            return default
+
+        api_key = get_env("GEMINI_API_KEY", "GOOGLE_GENAI_API_KEY", default="")
+        model = get_env("GEMINI_MODEL", "GOOGLE_GENAI_MODEL", "GOOGLE_GENAI_MODEL_DEFAULT", default="gemini-1.5-flash")
+        temperature = float(get_env("GEMINI_TEMPERATURE", "GOOGLE_GENAI_TEMPERATURE", default="0.1"))
+        max_tokens_env = get_env("GEMINI_MAX_TOKENS", "GOOGLE_GENAI_MAX_TOKENS")
+        max_tokens = int(max_tokens_env) if max_tokens_env is not None else None
+        thinking_enabled = get_env("GEMINI_THINKING_ENABLED", "GOOGLE_GENAI_THINKING_ENABLED", default="false").lower() == "true"
+        base_url = get_env("GEMINI_BASE_URL", "GOOGLE_GENAI_BASE_URL", default="https://generativelanguage.googleapis.com")
+
         return cls(
-            api_key=os.getenv("GEMINI_API_KEY", ""),
-            model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
-            temperature=float(os.getenv("GEMINI_TEMPERATURE", "0.7")),
-            max_tokens=int(os.getenv("GEMINI_MAX_TOKENS")) if os.getenv("GEMINI_MAX_TOKENS") else None,
-            thinking_enabled=os.getenv("GEMINI_THINKING_ENABLED", "false").lower() == "true",
-            base_url=os.getenv("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com"),
+            api_key=api_key,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            thinking_enabled=thinking_enabled,
+            base_url=base_url,
         )
 
 
@@ -85,7 +100,7 @@ class OllamaConfig(LLMConfig):
     
     def __init__(
         self,
-        model: str = "llama3.2",
+        model: str = "qwen3:1.7b",
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         thinking_enabled: bool = False,
@@ -110,8 +125,8 @@ class OllamaConfig(LLMConfig):
     def from_env(cls) -> "OllamaConfig":
         """Create Ollama configuration from environment variables."""
         return cls(
-            model=os.getenv("OLLAMA_MODEL", "llama3.2"),
-            temperature=float(os.getenv("OLLAMA_TEMPERATURE", "0.7")),
+            model=os.getenv("OLLAMA_MODEL", "qwen3:1.7b"),
+            temperature=float(os.getenv("OLLAMA_TEMPERATURE", "0.1")),
             max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS")) if os.getenv("OLLAMA_MAX_TOKENS") else None,
             thinking_enabled=os.getenv("OLLAMA_THINKING_ENABLED", "false").lower() == "true",
             base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),

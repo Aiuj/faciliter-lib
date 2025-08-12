@@ -1,6 +1,7 @@
 """Utility functions for creating LLM clients."""
 
 from typing import Optional, Dict, Any
+import os
 from .llm_config import LLMConfig, GeminiConfig, OllamaConfig
 from .llm_client import LLMClient
 
@@ -79,23 +80,63 @@ def create_ollama_client(
     return LLMClient(config)
 
 
-def create_client_from_env(provider: str = "ollama") -> LLMClient:
-    """Create an LLM client from environment variables.
-    
+def create_client_from_env(
+    provider: Optional[str] = None,
+    *,
+    model: Optional[str] = None,
+    base_url: Optional[str] = None,
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+    thinking_enabled: Optional[bool] = None,
+    **kwargs: Any,
+) -> LLMClient:
+    """Create an LLM client from environment variables with optional overrides.
+
     Args:
-        provider: Provider name ("gemini" or "ollama")
-        
+        provider: Provider name ("gemini" or "ollama"). If None, uses LLM_PROVIDER or defaults to "ollama".
+        model: Optional model name override.
+        base_url: Optional base URL override.
+        temperature: Optional temperature override.
+        max_tokens: Optional max tokens override.
+        thinking_enabled: Optional thinking flag override.
+        **kwargs: Additional configuration overrides applied when supported by the provider
+            (e.g., Ollama: timeout, num_ctx, num_predict, repeat_penalty, top_k, top_p;
+                   Gemini: safety_settings).
+
     Returns:
-        Configured LLMClient instance
-        
+        Configured LLMClient instance.
+
     Raises:
-        ValueError: If provider is not supported
+        ValueError: If provider is not supported.
     """
-    if provider.lower() == "gemini":
+    # Determine provider
+    if provider is None:
+        provider = os.environ.get("LLM_PROVIDER", "ollama")
+    provider_lc = provider.lower()
+
+    # Build base config from env
+    if provider_lc in ("gemini", "google"):
         config = GeminiConfig.from_env()
-    elif provider.lower() == "ollama":
+    elif provider_lc == "ollama":
         config = OllamaConfig.from_env()
     else:
         raise ValueError(f"Unsupported provider: {provider}")
-    
+
+    # Apply common overrides when provided
+    if model is not None:
+        config.model = model
+    if temperature is not None:
+        config.temperature = temperature
+    if max_tokens is not None:
+        config.max_tokens = max_tokens
+    if thinking_enabled is not None:
+        config.thinking_enabled = thinking_enabled
+    if base_url is not None and hasattr(config, "base_url"):
+        config.base_url = base_url
+
+    # Apply provider-specific overrides from kwargs if attribute exists
+    for key, value in kwargs.items():
+        if hasattr(config, key):
+            setattr(config, key, value)
+
     return LLMClient(config)

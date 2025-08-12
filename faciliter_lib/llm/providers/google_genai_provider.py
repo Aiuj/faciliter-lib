@@ -14,6 +14,10 @@ from pydantic import BaseModel
 from .base import BaseProvider
 from ..llm_config import GeminiConfig
 from faciliter_lib import get_module_logger
+from faciliter_lib.tracing.tracing import (
+    add_trace_metadata,
+    get_instrumented_gemini_client,
+)
 
 logger = get_module_logger()
 
@@ -23,12 +27,10 @@ class GoogleGenAIProvider(BaseProvider):
 
     def __init__(self, config: GeminiConfig) -> None:  # type: ignore[override]
         super().__init__(config)
-        # Lazy import to avoid hard dependency if unused
-        from google import genai  # type: ignore
-
-        # Build client; supports API key from env or passed explicitly
-        # Gemini Developer API (default). Vertex AI could be added later.
-        self._client = genai.Client(api_key=config.api_key)
+        # Build client via tracing helper to leverage Langfuse's standard
+        # Gemini instrumentation when available. Falls back to google.genai.
+        # This keeps Langfuse-specific code isolated in the tracing module.
+        self._client = get_instrumented_gemini_client(api_key=config.api_key)
 
     def _to_genai_messages(self, messages: List[Dict[str, str]]) -> str:
         """Flatten OpenAI-style messages to a single prompt string.
@@ -56,6 +58,7 @@ class GoogleGenAIProvider(BaseProvider):
         structured_output: Optional[Type[BaseModel]],
         tools: Optional[List[Dict[str, Any]]] = None,
         system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
     ) -> Dict[str, Any]:
         from google.genai import types  # type: ignore
 
@@ -87,6 +90,23 @@ class GoogleGenAIProvider(BaseProvider):
         if tools:
             cfg["tools"] = tools
 
+        # Grounding via Google Search (per official docs)
+        # https://ai.google.dev/gemini-api/docs/google-search
+        # This uses safety-reviewed search augmentation when supported by the model.
+        if use_search_grounding:
+            try:
+                # Enable Google Search tool and config per official docs
+                gs = types.GoogleSearch()
+                gs_tool = types.Tool(google_search=gs)
+                if cfg.get("tools"):
+                    cfg["tools"] = [*cfg["tools"], gs_tool]
+                else:
+                    cfg["tools"] = [gs_tool]
+                cfg["tool_config"] = types.ToolConfig(google_search=gs)
+            except Exception:
+                # Fail-soft: if SDK/version doesn't support it, ignore silently
+                pass
+
         if structured_output is not None:
             # Use official structured output support
             cfg = {
@@ -110,9 +130,8 @@ class GoogleGenAIProvider(BaseProvider):
         tools: Optional[List[Dict[str, Any]]] = None,
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
     ) -> Dict[str, Any]:
-        from google.genai import types  # type: ignore
-
         try:
             # Minimal debug without leaking content
             logger.debug(
@@ -136,6 +155,7 @@ class GoogleGenAIProvider(BaseProvider):
                     structured_output=structured_output,
                     tools=tools,
                     system_message=system_message,
+                    use_search_grounding=use_search_grounding,
                 )
                 resp = self._client.models.generate_content(
                     model=self.config.model,
@@ -148,6 +168,7 @@ class GoogleGenAIProvider(BaseProvider):
                     structured_output=structured_output,
                     tools=tools,
                     system_message=system_message,
+                    use_search_grounding=use_search_grounding,
                 )
                 # Preserve multi-turn via chats API
                 chat = self._client.chats.create(model=self.config.model)
@@ -169,10 +190,27 @@ class GoogleGenAIProvider(BaseProvider):
                         }
                     )
 
+            # Attach minimal metadata to current trace (provider-agnostic)
+            try:
+                add_trace_metadata(
+                    {
+                        "llm_provider": "google-gemini",
+                        "model": self.config.model,
+                        "structured": bool(structured_output),
+                        "has_tools": bool(tools),
+                        "single_turn": is_single_turn,
+                        "usage": getattr(resp, "usage_metadata", {}) or {},
+                    }
+                )
+            except Exception:
+                # Tracing metadata should never break the call
+                pass
+
             if structured_output is not None:
                 # Prefer SDK-native parsed output, but ensure the return value is JSON-serializable
                 # to avoid recursion/serialization issues in callers.
                 content: Any
+                raw_text: str = getattr(resp, "text", "")
                 parsed = getattr(resp, "parsed", None)
                 if parsed is not None:
                     if isinstance(parsed, BaseModel):
@@ -181,7 +219,7 @@ class GoogleGenAIProvider(BaseProvider):
                         content = parsed
                 else:
                     # Fallback for older SDKs: validate from JSON text to a BaseModel, then dump to dict
-                    text = getattr(resp, "text", "")
+                    text = raw_text
                     try:
                         data = structured_output.model_validate_json(text)  # type: ignore[attr-defined]
                         content = data.model_dump()
@@ -189,11 +227,15 @@ class GoogleGenAIProvider(BaseProvider):
                         import json as _json
 
                         content = _json.loads(text) if text else {}
+                # Also return text and content_json for convenience
+                import json as _json
                 return {
                     "content": content,
                     "structured": True,
                     "tool_calls": tool_calls,
                     "usage": usage,
+                    "text": raw_text,
+                    "content_json": _json.dumps(content, ensure_ascii=False),
                 }
 
             # Plain text chat

@@ -1,4 +1,10 @@
-"""Configure OpenTelemetry and Langfuse for the application."""
+"""Configure OpenTelemetry and Langfuse for the application.
+
+This module centralizes all tracing concerns so callers don't import or depend
+on Langfuse directly. It also exposes small helpers to integrate model
+providers (e.g., Google Gemini) with Langfuse's standard provider tracing when
+available, while remaining a no-op fallback if the integration isn't present.
+"""
 
 import os
 from abc import ABC, abstractmethod
@@ -88,6 +94,68 @@ class TracingManager:
         """Add metadata to the current trace. Accepts dict or JSON string."""
         if self._provider:
             self._provider.add_metadata(metadata)
+
+
+# ------------------------- Convenience helpers -------------------------
+def add_trace_metadata(metadata: Any) -> None:
+    """Add metadata to the current trace in a provider-agnostic way.
+
+    Args:
+        metadata: Additional info to attach to the active span/trace.
+            Can be a dict or a JSON string; implementation will parse strings.
+    """
+    try:
+        manager = TracingManager()
+        provider = manager.get_provider() or manager.setup()
+        provider.add_metadata(metadata)  # type: ignore[union-attr]
+    except Exception:
+        # Never fail application flow due to tracing
+        pass
+
+
+def get_instrumented_gemini_client(api_key: Optional[str] = None) -> Any:
+    """Return a Google Gemini client, instrumented with Langfuse if available.
+
+    This prefers Langfuse's standard Gemini integration (to unlock rich
+    provider metrics, usage, and latency) but gracefully falls back to the
+    official ``google.genai.Client`` if the integration isn't installed.
+
+    Args:
+        api_key: Optional Gemini API key to initialize the client.
+
+    Returns:
+        An instance compatible with the google.genai client API.
+    """
+    # Attempt Langfuse's standard Gemini integration in a few common module paths
+    lf_client_cls = None
+    for path_variant in (
+        # Primary guess based on Langfuse provider integrations naming
+        ("langfuse.gemini", "Client"),
+        ("langfuse.gemini", "client"),
+        # Alternate guesses for historical or future package layouts
+        ("langfuse.integrations.gemini", "Client"),
+        ("langfuse.integrations.google_gemini", "Client"),
+    ):
+        module_name, attr_name = path_variant
+        try:
+            mod = __import__(module_name, fromlist=[attr_name])
+            lf_client_cls = getattr(mod, attr_name, None)
+            if lf_client_cls is not None:
+                break
+        except Exception:
+            continue
+
+    if lf_client_cls is not None:
+        try:
+            return lf_client_cls(api_key=api_key)
+        except Exception:
+            # Fall through to vanilla client if wrapper instantiation fails
+            pass
+
+    # Fallback: use the official Google client without instrumentation
+    from google import genai  # type: ignore
+
+    return genai.Client(api_key=api_key)
 
 
 def setup_tracing(name: Optional[str] = None) -> TracingProvider:

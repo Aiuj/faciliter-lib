@@ -41,7 +41,8 @@ class LLMClient:
         messages: Union[str, List[Dict[str, str]]],
         tools: Optional[List[Dict[str, Any]]] = None,
         structured_output: Optional[Type[BaseModel]] = None,
-        system_message: Optional[str] = None
+    system_message: Optional[str] = None,
+    use_search_grounding: bool = False,
     ) -> Dict[str, Any]:
         """Send a chat message to the LLM.
         
@@ -85,6 +86,7 @@ class LLMClient:
                     "names": [t.get("function", {}).get("name") for t in tools] if tools else [],
                 },
                 "structured_output": bool(structured_output),
+                "search_grounding": use_search_grounding,
             }
             tracing_provider.add_metadata(pre_metadata)
         except Exception:
@@ -98,6 +100,7 @@ class LLMClient:
                 tools=tools,
                 structured_output=structured_output,
                 system_message=system_message,
+                use_search_grounding=use_search_grounding,
             )
 
             # Post-call tracing metadata

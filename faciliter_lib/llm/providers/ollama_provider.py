@@ -52,6 +52,7 @@ class OllamaProvider(BaseProvider):
         tools: Optional[List[Dict[str, Any]]] = None,
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
     ) -> Dict[str, Any]:
         try:
             logger.debug(
@@ -62,6 +63,7 @@ class OllamaProvider(BaseProvider):
                     "msg_count": len(messages),
                     "has_tools": bool(tools),
                     "structured": bool(structured_output),
+                    "search_grounding": use_search_grounding,
                 },
             )
             payload: Dict[str, Any] = {
@@ -100,11 +102,14 @@ class OllamaProvider(BaseProvider):
                     import json as _json
 
                     content = _json.loads(content_text) if content_text else {}
+                import json as _json
                 return {
                     "content": content,
                     "structured": True,
                     "tool_calls": tool_calls,
                     "usage": usage,
+                    "text": content_text,
+                    "content_json": _json.dumps(content, ensure_ascii=False),
                 }
 
             return {

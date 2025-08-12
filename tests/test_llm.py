@@ -112,6 +112,22 @@ class TestLLMClient:
             assert info["temperature"] == 0.7
             assert info["thinking_enabled"] is True
 
+    def test_chat_passes_search_grounding_flag_to_provider(self):
+        # Verify that LLMClient forwards use_search_grounding to provider.chat
+        config = GeminiConfig(api_key="k", model="gemini-1.5-flash")
+        with patch("faciliter_lib.llm.llm_client.GoogleGenAIProvider") as mock_provider_cls:
+            mock_provider = mock_provider_cls.return_value
+            mock_provider.chat.return_value = {
+                "content": "ok",
+                "structured": False,
+                "tool_calls": [],
+                "usage": {},
+            }
+            client = LLMClient(config)
+            client.chat("hi", use_search_grounding=True)
+            kwargs = mock_provider.chat.call_args.kwargs
+            assert kwargs.get("use_search_grounding") is True
+
 
 class TestUtilityFunctions:
     @patch("faciliter_lib.llm.utils.LLMClient")
@@ -156,6 +172,29 @@ class TestIntegration:
         assert "content" in response
         assert response["content"] is not None
         assert response["structured"] is False
+
+    def test_structured_output_includes_python_and_json_fields(self):
+        class M(BaseModel):
+            a: int
+        # Simulate provider response via monkeypatching provider in client
+        from faciliter_lib.llm.llm_client import LLMClient
+        from faciliter_lib.llm.llm_config import OllamaConfig
+        with patch("faciliter_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
+            mock_provider = mock_provider_cls.return_value
+            mock_provider.chat.return_value = {
+                "content": {"a": 1},
+                "structured": True,
+                "tool_calls": [],
+                "usage": {},
+                "text": "{\"a\": 1}",
+                "content_json": "{\"a\": 1}",
+            }
+            client = LLMClient(OllamaConfig(model="llama3.2"))
+            res = client.chat("hi", structured_output=M)
+            assert res["structured"] is True
+            assert isinstance(res.get("content"), dict) and res["content"].get("a") == 1
+            assert isinstance(res.get("text"), str)
+            assert isinstance(res.get("content_json"), str)
 
 
 if __name__ == "__main__":

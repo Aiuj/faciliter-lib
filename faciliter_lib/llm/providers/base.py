@@ -27,6 +27,7 @@ class BaseProvider(ABC):
         tools: Optional[List[Dict[str, Any]]] = None,
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
     ) -> Dict[str, Any]:
         """Send a chat to the provider and return a unified response dict.
 
@@ -36,5 +37,8 @@ class BaseProvider(ABC):
         - tool_calls: list[dict]
         - usage: dict
         - error: optional string on failure
+    Optional additional fields when structured is True:
+    - text: str  (raw text from provider, typically JSON string)
+    - content_json: str  (JSON-serialized content for transport/logging)
         """
         raise NotImplementedError

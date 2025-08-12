@@ -10,6 +10,7 @@ The LLM module provides a unified interface for working with different Large Lan
 - **Structured Output**: Get structured JSON responses using Pydantic models
 - **Thinking Mode**: Enable step-by-step reasoning for supported models
 - **Conversation History**: Support for multi-turn conversations
+- **Grounding with Search (Gemini)**: Optional Google Search grounding for fresher, corroborated answers on supported models
 
 ## Quick Start
 
@@ -174,6 +175,23 @@ if response["tool_calls"]:
         print(f"Args: {tool_call['function']['arguments']}")
 ```
 
+### Grounding with Search (Gemini)
+
+Enable Google Search grounding for supported Gemini models to augment responses with up-to-date web information.
+
+```python
+client = create_gemini_client(api_key="your-api-key", model="gemini-1.5-flash")
+
+resp = client.chat(
+    "Summarize the latest news about Mars exploration.",
+    use_search_grounding=True,
+)
+print(resp["content"])  # text response augmented by Google Search
+```
+
+Notes:
+- The `use_search_grounding` flag is provider-agnostic and is forwarded to providers; only Gemini implements it currently. Other providers will ignore it unless they support a similar capability in the future.
+
 ## Response Format
 
 All chat methods return a dictionary with the following structure:
@@ -197,7 +215,7 @@ All chat methods return a dictionary with the following structure:
 Main client class for interacting with LLMs.
 
 **Methods:**
-- `chat(messages, tools=None, structured_output=None, system_message=None)`: Send chat message
+- `chat(messages, tools=None, structured_output=None, system_message=None, use_search_grounding=False)`: Send chat message
 - `get_model_info()`: Get information about the current model
 
 #### `GeminiConfig` / `OllamaConfig`
@@ -230,6 +248,6 @@ else:
 
 1. **Use Environment Variables**: Store API keys and configuration in environment variables
 2. **Handle Errors**: Always check for errors in responses
-3. **Model Compatibility**: Not all models support tools or structured output
+3. **Model Compatibility**: Not all models support tools, structured output, or search grounding
 4. **Rate Limiting**: Be mindful of API rate limits, especially with cloud providers
 5. **Context Management**: Keep track of conversation history for multi-turn chats

@@ -53,6 +53,7 @@ class OllamaProvider(BaseProvider):
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
         use_search_grounding: bool = False,
+        thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
         try:
             logger.debug(
@@ -78,7 +79,26 @@ class OllamaProvider(BaseProvider):
             if structured_output is not None:
                 # Ollama supports format='json'. We'll validate with Pydantic if provided.
                 resp_format = "json"
-                payload["format"] = structured_output.model_json_schema()
+                # Some Ollama models accept a JSON schema directly; others use format='json'.
+                try:
+                    payload["format"] = structured_output.model_json_schema()
+                except Exception:
+                    payload["format"] = "json"
+
+            # Thinking support per https://ollama.com/blog/thinking
+            # Two mechanisms:
+            # 1) If the selected model is a "think" model (e.g., llama3.1:8b-instruct-fp16-think), thoughts may be produced automatically.
+            # 2) When supported, pass options.thinking: { type: "enabled" } to enable chain-of-thought style output.
+            if thinking_enabled is True:
+                try:
+                    opts = payload.get("options", {}) or {}
+                    # Newer API supports a nested thinking config
+                    if isinstance(opts, dict):
+                        # Conservative defaults: we only signal that thinking is enabled; providers decide budget
+                        opts["thinking"] = opts.get("thinking", {"type": "enabled"})
+                        payload["options"] = opts
+                except Exception:
+                    pass
 
             # Configure host via custom client if base_url differs
             if getattr(self.config, "base_url", None):

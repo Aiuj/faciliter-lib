@@ -9,11 +9,12 @@ from typing import List, Dict, Any, Optional, Union, Type
 
 from pydantic import BaseModel
 
-from .llm_config import LLMConfig, GeminiConfig, OllamaConfig
+from .llm_config import LLMConfig, GeminiConfig, OllamaConfig, OpenAIConfig
 from faciliter_lib.tracing.tracing import setup_tracing
 from .providers.base import BaseProvider
 from .providers.google_genai_provider import GoogleGenAIProvider
 from .providers.ollama_provider import OllamaProvider
+from .providers.openai_provider import OpenAIProvider
 
 
 class LLMClient:
@@ -34,6 +35,8 @@ class LLMClient:
             return GoogleGenAIProvider(self.config)
         if isinstance(self.config, OllamaConfig):
             return OllamaProvider(self.config)
+        if isinstance(self.config, OpenAIConfig):
+            return OpenAIProvider(self.config)
         raise ValueError(f"Unsupported LLM provider: {self.config.provider}")
     
     def chat(
@@ -41,8 +44,9 @@ class LLMClient:
         messages: Union[str, List[Dict[str, str]]],
         tools: Optional[List[Dict[str, Any]]] = None,
         structured_output: Optional[Type[BaseModel]] = None,
-    system_message: Optional[str] = None,
-    use_search_grounding: bool = False,
+        system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
+        thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Send a chat message to the LLM.
         
@@ -74,6 +78,9 @@ class LLMClient:
                     "max_tokens": getattr(self.config, "max_tokens", None),
                     "thinking_enabled": getattr(self.config, "thinking_enabled", False),
                 },
+                "overrides": {
+                    "thinking_enabled": thinking_enabled,
+                },
                 "input": {
                     "system_message_present": system_message is not None,
                     "message_count": len(formatted_messages),
@@ -101,6 +108,7 @@ class LLMClient:
                 structured_output=structured_output,
                 system_message=system_message,
                 use_search_grounding=use_search_grounding,
+                thinking_enabled=thinking_enabled,
             )
 
             # Post-call tracing metadata

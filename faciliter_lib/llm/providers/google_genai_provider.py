@@ -61,6 +61,7 @@ class GoogleGenAIProvider(BaseProvider):
         tools: Optional[List[Dict[str, Any]]] = None,
         system_message: Optional[str] = None,
         use_search_grounding: bool = False,
+        thinking_enabled_override: Optional[bool] = None,
     ) -> Dict[str, Any]:
         from google.genai import types  # type: ignore
 
@@ -74,8 +75,12 @@ class GoogleGenAIProvider(BaseProvider):
         try:
             model_lc = (self.config.model or "").lower()
             supports_thinking = "2.5" in model_lc
+            # precedence: chat override > config
+            enabled = thinking_enabled_override
+            if enabled is None:
+                enabled = getattr(self.config, "thinking_enabled", False)
             if supports_thinking:
-                if getattr(self.config, "thinking_enabled", False):
+                if enabled:
                     # Include thoughts in output
                     cfg["thinking_config"] = types.ThinkingConfig(include_thoughts=True)
                 else:
@@ -133,6 +138,7 @@ class GoogleGenAIProvider(BaseProvider):
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
         use_search_grounding: bool = False,
+        thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
         try:
             # Minimal debug without leaking content
@@ -158,6 +164,7 @@ class GoogleGenAIProvider(BaseProvider):
                     tools=tools,
                     system_message=system_message,
                     use_search_grounding=use_search_grounding,
+                    thinking_enabled_override=thinking_enabled,
                 )
                 resp = self._client.models.generate_content(
                     model=self.config.model,
@@ -171,6 +178,7 @@ class GoogleGenAIProvider(BaseProvider):
                     tools=tools,
                     system_message=system_message,
                     use_search_grounding=use_search_grounding,
+                    thinking_enabled_override=thinking_enabled,
                 )
                 # Preserve multi-turn via chats API
                 chat = self._client.chats.create(model=self.config.model)

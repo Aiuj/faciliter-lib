@@ -87,6 +87,89 @@ class GeminiConfig(LLMConfig):
 
 
 @dataclass
+class OpenAIConfig(LLMConfig):
+        """Configuration for OpenAI-compatible APIs (OpenAI, Azure OpenAI, proxies).
+
+        Supports three common modes:
+        - OpenAI: Provide ``api_key`` (and optional ``organization``/``project``).
+        - Azure OpenAI: Provide ``azure_endpoint`` and ``azure_api_version`` with
+            ``api_key``; the Azure-specific client will be used.
+        - OpenAI-compatible (e.g., Ollama/LiteLLM/vLLM): Provide ``base_url`` and
+            ``api_key`` (often any non-empty string for local gateways).
+        """
+
+        api_key: str
+        base_url: Optional[str] = None
+        organization: Optional[str] = None
+        project: Optional[str] = None
+        # Azure-specific
+        azure_endpoint: Optional[str] = None
+        azure_api_version: Optional[str] = None
+
+        def __init__(
+                self,
+                api_key: str,
+                model: str = "gpt-4o-mini",
+                temperature: float = 0.7,
+                max_tokens: Optional[int] = None,
+                thinking_enabled: bool = False,
+                base_url: Optional[str] = None,
+                organization: Optional[str] = None,
+                project: Optional[str] = None,
+                azure_endpoint: Optional[str] = None,
+                azure_api_version: Optional[str] = None,
+        ):
+                super().__init__("openai", model, temperature, max_tokens, thinking_enabled)
+                self.api_key = api_key
+                self.base_url = base_url
+                self.organization = organization
+                self.project = project
+                self.azure_endpoint = azure_endpoint
+                self.azure_api_version = azure_api_version
+
+        @classmethod
+        def from_env(cls) -> "OpenAIConfig":
+                """Create OpenAI configuration from environment variables.
+
+                Environment variables supported:
+                - OPENAI_API_KEY, OPENAI_MODEL, OPENAI_TEMPERATURE, OPENAI_MAX_TOKENS,
+                    OPENAI_BASE_URL, OPENAI_ORG, OPENAI_ORGANIZATION, OPENAI_PROJECT
+                - Azure: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_VERSION,
+                    AZURE_OPENAI_DEPLOYMENT (maps to ``model`` if provided)
+                """
+
+                def getenv(*names: str, default: Optional[str] = None) -> Optional[str]:
+                        for n in names:
+                                v = os.getenv(n)
+                                if v is not None:
+                                        return v
+                        return default
+
+                # Prefer Azure when endpoint is present
+                azure_endpoint = getenv("AZURE_OPENAI_ENDPOINT")
+                api_key = getenv("AZURE_OPENAI_API_KEY", "OPENAI_API_KEY", default="") or ""
+                model = getenv("AZURE_OPENAI_DEPLOYMENT", "OPENAI_MODEL", default="gpt-4o-mini") or "gpt-4o-mini"
+                temperature = float(getenv("OPENAI_TEMPERATURE", default="0.7") or 0.7)
+                max_tokens_env = getenv("OPENAI_MAX_TOKENS")
+                max_tokens = int(max_tokens_env) if max_tokens_env else None
+                base_url = getenv("OPENAI_BASE_URL")
+                organization = getenv("OPENAI_ORG", "OPENAI_ORGANIZATION")
+                project = getenv("OPENAI_PROJECT")
+                azure_api_version = getenv("AZURE_OPENAI_API_VERSION", default="2024-08-01-preview")
+
+                return cls(
+                        api_key=api_key,
+                        model=model,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        base_url=base_url,
+                        organization=organization,
+                        project=project,
+                        azure_endpoint=azure_endpoint,
+                        azure_api_version=azure_api_version,
+                )
+
+@dataclass
 class OllamaConfig(LLMConfig):
     """Configuration for local Ollama API."""
     

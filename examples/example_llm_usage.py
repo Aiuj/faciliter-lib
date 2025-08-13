@@ -10,8 +10,10 @@ except ImportError:
 
 from pydantic import BaseModel
 from typing import List, Optional
-from faciliter_lib import create_ollama_client, create_gemini_client, create_client_from_env
+from faciliter_lib import create_ollama_client, create_gemini_client, create_client_from_env, setup_tracing
 
+# Initialize tracing
+tracing_client = setup_tracing()
 
 # Example structured output model
 class WeatherResponse(BaseModel):
@@ -146,7 +148,7 @@ def example_gemini_client():
     if api_key:
         client = create_gemini_client(
             api_key=api_key,
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             temperature=0.3
         )
         
@@ -154,6 +156,19 @@ def example_gemini_client():
         print("Gemini Response:", response["content"])
     else:
         print("GEMINI_API_KEY not set - skipping Gemini example")
+    print()
+
+def example_ollama_client():
+    """Example using Ollama client (requires local Ollama running)."""
+    print("=== Ollama Client Example ===")
+
+    client = create_ollama_client(
+        model="qwen3",
+        temperature=0.3
+    )
+    
+    response = client.chat("Explain quantum computing in simple terms.")
+    print("Ollama Response:", response["content"])
     print()
 
 
@@ -181,5 +196,6 @@ if __name__ == "__main__":
     # example_chat_with_history() 
     # example_structured_output()  # Might not work with all models
     # example_tools()  # Might not work with all models
-    example_gemini_client()  # Requires API key
+    # example_gemini_client()  # Requires API key
+    example_ollama_client()  # Requires local Ollama running
     # example_from_env()

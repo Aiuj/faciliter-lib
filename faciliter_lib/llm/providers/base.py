@@ -28,6 +28,7 @@ class BaseProvider(ABC):
         structured_output: Optional[Type[BaseModel]] = None,
         system_message: Optional[str] = None,
         use_search_grounding: bool = False,
+    thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Send a chat to the provider and return a unified response dict.
 

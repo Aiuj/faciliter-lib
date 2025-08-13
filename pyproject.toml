@@ -25,7 +25,9 @@ dependencies = [
     "google-genai>=0.6.0",
     "ollama>=0.3.1",
     "langfuse>=3.2.1",
+    "openinference-instrumentation-google-genai>=0.1.5",
     "redis>=6.2.0",
+    "openai>=1.41.0",
 ]
 
 [project.optional-dependencies]
@@ -64,3 +66,6 @@ dev = [
     "setuptools>=80.9.0",
     "wheel>=0.45.1",
 ]
+
+[tool.uv.sources]
+faciliter-lib = { path = "../faciliter-lib", editable = true }

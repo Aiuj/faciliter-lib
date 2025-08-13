@@ -14,23 +14,25 @@ from pydantic import BaseModel
 from .base import BaseProvider
 from ..llm_config import GeminiConfig
 from faciliter_lib import get_module_logger
-from faciliter_lib.tracing.tracing import (
-    add_trace_metadata,
-    get_instrumented_gemini_client,
-)
+from faciliter_lib.tracing.tracing import add_trace_metadata
 
 logger = get_module_logger()
-
 
 class GoogleGenAIProvider(BaseProvider):
     """Provider implementation for Google GenAI (Gemini)."""
 
     def __init__(self, config: GeminiConfig) -> None:  # type: ignore[override]
         super().__init__(config)
-        # Build client via tracing helper to leverage Langfuse's standard
-        # Gemini instrumentation when available. Falls back to google.genai.
-        # This keeps Langfuse-specific code isolated in the tracing module.
-        self._client = get_instrumented_gemini_client(api_key=config.api_key)
+
+        # Lazy import to avoid hard dependency if unused
+        from google import genai  # type: ignore
+
+        # Build client; supports API key from env or passed explicitly
+        # Gemini Developer API (default). Vertex AI could be added later.
+        self._client = genai.Client(api_key=config.api_key)
+
+        from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
+        GoogleGenAIInstrumentor().instrument()
 
     def _to_genai_messages(self, messages: List[Dict[str, str]]) -> str:
         """Flatten OpenAI-style messages to a single prompt string.

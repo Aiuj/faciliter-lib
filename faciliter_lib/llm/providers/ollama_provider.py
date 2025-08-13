@@ -74,11 +74,11 @@ class OllamaProvider(BaseProvider):
             if tools:
                 payload["tools"] = tools
 
-            fmt: Optional[str] = None
+            resp_format: Optional[str] = None
             if structured_output is not None:
                 # Ollama supports format='json'. We'll validate with Pydantic if provided.
-                fmt = "json"
-                payload["format"] = fmt
+                resp_format = "json"
+                payload["format"] = structured_output.model_json_schema()
 
             # Configure host via custom client if base_url differs
             if getattr(self.config, "base_url", None):
@@ -94,19 +94,23 @@ class OllamaProvider(BaseProvider):
             tool_calls = message.get("tool_calls", []) or []
             usage = resp.get("usage", {}) or {}
 
-            if fmt == "json":
+            # If structured_output requested, attempt to validate
+            if resp_format is not None and structured_output is not None:
                 try:
                     data = structured_output.model_validate_json(content_text)  # type: ignore[attr-defined]
                     content: Any = data.model_dump()
                 except Exception:
                     import json as _json
 
-                    content = _json.loads(content_text) if content_text else {}
+                    try:
+                        content = _json.loads(content_text) if content_text else {}
+                    except Exception:
+                        content = {"_raw": content_text}
                 import json as _json
                 return {
                     "content": content,
                     "structured": True,
-                    "tool_calls": tool_calls,
+                    "tool_calls": tool_calls or [],
                     "usage": usage,
                     "text": content_text,
                     "content_json": _json.dumps(content, ensure_ascii=False),

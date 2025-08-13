@@ -2,9 +2,16 @@
 fast-langdetect>=0.3.2
 fastmcp>=2.10.6
 redis>=6.2.0
-langchain-google-genai>=2.1.8
-langchain-ollama>=0.3.6
 langfuse>=3.2.1
+tenacity>=8.2.3
+jsonschema>=4.23.0
+aiolimiter>=1.1.0
+
+# Optional provider SDKs (install as needed)
+google-genai>=0.6.0
+openai>=1.40.0
+mistralai>=0.4.0
+ollama>=0.3.0
 
 # Development dependencies (uncomment for development)
 # pytest>=7.0.0

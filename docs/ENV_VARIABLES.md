@@ -37,6 +37,29 @@ export GEMINI_THINKING_ENABLED=false            # Enable step-by-step thinking m
 export GEMINI_BASE_URL=https://generativelanguage.googleapis.com  # API base URL
 ```
 
+## OpenAI / Azure OpenAI Configuration
+
+```bash
+# Standard OpenAI
+export OPENAI_API_KEY=your-openai-key           # Required for OpenAI
+export OPENAI_MODEL=gpt-4o-mini                 # Default model
+export OPENAI_TEMPERATURE=0.7                   # Optional
+export OPENAI_MAX_TOKENS=                       # Optional
+
+# Azure OpenAI (use OpenAI client with custom base URL)
+export OPENAI_BASE_URL=https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=<version>
+# Use your deployment name as the model
+```
+
+## Mistral Configuration
+
+```bash
+export MISTRAL_API_KEY=your-mistral-key         # Required
+export MISTRAL_MODEL=mistral-small              # Default model
+export MISTRAL_TEMPERATURE=0.7                  # Optional
+export MISTRAL_MAX_TOKENS=                      # Optional
+```
+
 ## Example .env file
 
 ```bash
@@ -51,6 +74,19 @@ OLLAMA_THINKING_ENABLED=true
 # GEMINI_API_KEY=your-actual-api-key-here
 # GEMINI_MODEL=gemini-1.5-flash
 # GEMINI_TEMPERATURE=0.3
+
+# For OpenAI
+# OPENAI_API_KEY=sk-...
+# OPENAI_MODEL=gpt-4o-mini
+
+# For Azure OpenAI
+# OPENAI_API_KEY=...
+# OPENAI_BASE_URL=https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-02-01
+# OPENAI_MODEL=<deployment>
+
+# For Mistral
+# MISTRAL_API_KEY=...
+# MISTRAL_MODEL=mistral-small
 ```
 
 ## Usage in Code

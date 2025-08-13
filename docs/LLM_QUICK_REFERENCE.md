@@ -1,73 +1,88 @@
 # LLM Quick Reference
 
+This guide shows how to use the unified LLM client across providers: Gemini, OpenAI (and Azure OpenAI), Mistral, and Ollama.
+
 ## Installation
 
-The LLM module is included in `faciliter-lib` and requires Python 3.12+.
+The LLM module ships with faciliter-lib (Python 3.12+). Provider SDKs are optional per provider:
 
-Dependencies:
-- `langchain-google-genai` (for Gemini support)
-- `langchain-ollama` (for Ollama support)
-- `pydantic` (for structured outputs)
+- Gemini: google-genai
+- OpenAI/Azure: openai>=1.0
+- Mistral: mistralai
+- Ollama (local): ollama
+- Optional: pydantic (for structured outputs)
+
+Install only what you need for your provider.
 
 ## Quick Start
 
 ```python
-from faciliter_lib import create_ollama_client, create_gemini_client
+from faciliter_lib import create_ollama_client, create_gemini_client, create_client_from_env
 
 # Local Ollama
-client = create_ollama_client(model="llama3.2", temperature=0.7)
-response = client.chat("Hello, how are you?")
-print(response["content"])
+ollama = create_ollama_client(model="llama3.2", temperature=0.7)
+print(ollama.chat("Hello!")["content"])
 
-# Google Gemini  
-client = create_gemini_client(api_key="your-key", model="gemini-1.5-flash")
-response = client.chat("Explain quantum computing")
-print(response["content"])
+# Google Gemini
+gemini = create_gemini_client(api_key="your-key", model="gemini-1.5-flash")
+print(gemini.chat("Explain quantum computing briefly")["content"])
+
+# OpenAI (or Azure OpenAI) via environment
+# Set OPENAI_API_KEY (and OPENAI_BASE_URL for Azure) then:
+openai_client = create_client_from_env("openai")
+print(openai_client.chat("One-line haiku about clouds")["content"])
+
+# Mistral via environment (set MISTRAL_API_KEY)
+mistral = create_client_from_env("mistral")
+print(mistral.chat("Summarize this in 10 words: LLMs are great.")["content"])
 ```
 
-## Key Features
+## What You Get
 
-✅ **Unified Interface**: Same API for all providers  
-✅ **Environment Configuration**: Auto-configure from env vars  
-✅ **Tool Support**: OpenAI-compatible function calling  
-✅ **Structured Output**: Get JSON responses with Pydantic models  
-✅ **Conversation History**: Multi-turn conversations  
-✅ **Thinking Mode**: Step-by-step reasoning  
-✅ **Error Handling**: Graceful error responses  
+- Unified chat API across providers
+- Env-based configuration helpers
+- OpenAI-style tools (function calling) where supported
+- Structured JSON output via Pydantic JSON Schema (provider support varies)
+- Conversation history support
+- Robust orchestrator under the hood (retries, rate limits, circuit breaker, tracing)
 
-## Response Format
+## Response Shape
+
+client.chat(...) returns a dict:
 
 ```python
 {
-    "content": "The LLM's response text",
-    "structured": False,           # True if structured output requested
-    "tool_calls": [],             # List of function calls made
-    "usage": {},                  # Token usage statistics  
-    "error": None                 # Error message if failed
+    "content": "text or structured data",  # If structured_output is used and supported, content is parsed JSON (dict/list)
+    "structured": bool,                     # True when structured_output is active and provider returned JSON
+    "tool_calls": [                         # OpenAI-style tool calls when supported
+        {"type": "function", "function": {"name": "...", "arguments": "{...}"}}
+    ],
+    "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "cost_usd": 0.0}
 }
 ```
 
-## Configuration Methods
+Note: tool_calls[].function.arguments is a JSON string—parse it before use.
 
-1. **Direct instantiation**:
-   ```python
-   client = create_ollama_client(model="llama3.2", temperature=0.8)
-   ```
+## Configure Clients
 
-2. **Environment variables**:
-   ```python
-   client = create_client_from_env("ollama")
-   ```
+1) Helper constructors
 
-3. **Configuration objects**:
-   ```python
-   config = OllamaConfig(model="llama3.2", temperature=0.8)
-   client = LLMClient(config)
-   ```
+- Ollama: create_ollama_client(model="llama3.2", temperature=0.7, ...)
+- Gemini: create_gemini_client(api_key="...", model="gemini-1.5-flash", ...)
+
+2) From environment
+
+```python
+from faciliter_lib import create_client_from_env
+client = create_client_from_env("ollama")  # "gemini" | "openai" | "mistral"
+```
+
+See docs/ENV_VARIABLES.md for full lists.
 
 ## Common Patterns
 
-### Structured Output
+### Structured Output (JSON)
+
 ```python
 from pydantic import BaseModel
 
@@ -75,10 +90,15 @@ class Weather(BaseModel):
     location: str
     temperature: float
 
-response = client.chat("Weather in Paris?", structured_output=Weather)
+res = gemini.chat("Weather in Paris?", structured_output=Weather)
+if res["structured"]:
+    data = res["content"]  # Parsed JSON (dict/list), not a Pydantic instance
 ```
 
-### Tool Calling
+Provider support: Gemini ✅, OpenAI ✅, Mistral ❌ (no JSON schema), Ollama ❌.
+
+### Tool Calling (OpenAI style)
+
 ```python
 tools = [{
     "type": "function",
@@ -87,43 +107,49 @@ tools = [{
         "description": "Get weather for a location",
         "parameters": {
             "type": "object",
-            "properties": {
-                "location": {"type": "string"}
-            },
+            "properties": {"location": {"type": "string"}},
             "required": ["location"]
         }
     }
 }]
 
-response = client.chat("What's the weather in Tokyo?", tools=tools)
+out = openai_client.chat("What's the weather in Tokyo?", tools=tools)
+for tc in out["tool_calls"]:
+    args = json.loads(tc["function"]["arguments"])  # parse string
 ```
 
+Provider support: OpenAI ✅, Mistral ✅, Gemini (limited/tooling differs) ⚠️, Ollama ⚠️ (model dependent).
+
 ### Conversation History
+
 ```python
 messages = [
     {"role": "user", "content": "Hello"},
-    {"role": "assistant", "content": "Hi! How can I help?"},
+    {"role": "assistant", "content": "Hi!"},
     {"role": "user", "content": "Tell me about Python"}
 ]
-
-response = client.chat(messages)
+resp = client.chat(messages)
 ```
 
-## Provider Comparison
+### System Instruction
 
-| Feature | Ollama | Gemini |
-|---------|--------|--------|
-| **Cost** | Free (local) | Paid API |
-| **Privacy** | Full privacy | Cloud-based |
-| **Setup** | Requires Ollama server | Requires API key |
-| **Models** | Open source models | Google's models |
-| **Performance** | Depends on hardware | Consistent cloud performance |
-| **Tool Calling** | Model dependent | Native support |
+```python
+resp = openai_client.chat("Be terse.", system_message="You are a concise assistant")
+```
+
+Note: System messages are honored on OpenAI/Azure; other providers may ignore.
+
+## Provider Notes (TL;DR)
+
+- Ollama: local inference, no token usage numbers, tool/structured support limited.
+- Gemini: strong JSON schema output; use GEMINI_API_KEY.
+- OpenAI/Azure: tools + JSON schema; set OPENAI_API_KEY and optionally OPENAI_BASE_URL.
+- Mistral: tools supported; set MISTRAL_API_KEY.
 
 ## Best Practices
 
-1. **Use environment variables** for configuration in production
-2. **Handle errors** by checking the `error` field in responses  
-3. **Test model compatibility** - not all models support all features
-4. **Monitor usage** with cloud providers to avoid unexpected costs
-5. **Keep conversations short** to stay within context limits
+- Use env vars for keys/config in production
+- Check res["structured"] before assuming JSON
+- Parse tool_calls arguments with json.loads
+- Keep histories compact to fit context windows
+- Not all models support all features—verify per model

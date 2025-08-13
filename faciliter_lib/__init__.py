@@ -6,7 +6,17 @@ from .cache.cache_manager import RedisCache, set_cache, get_cache, cache_get, ca
 from .mcp_utils import parse_from, get_transport_from_args
 from .tracing import setup_tracing, setup_logging, get_logger, get_module_logger
 
-from .llm import LLMClient, GeminiConfig, OllamaConfig, create_gemini_client, create_ollama_client, create_client_from_env, clean_and_parse_json_response
+from .llm import (
+    LLMClient,
+    GeminiConfig,
+    OllamaConfig,
+    create_gemini_client,
+    create_ollama_client,
+    create_client_from_env,
+    clean_and_parse_json_response,
+)
+from .llm.llm_config import OpenAIConfig, MistralConfig, LLMPolicy, ProviderPolicy
+from .llm.adapters import LangChainChatAdapter, LlamaIndexCustomLLM
 from .utils.language_utils import LanguageUtils
 
 __all__ = [
@@ -24,10 +34,16 @@ __all__ = [
     "LLMClient",
     "GeminiConfig", 
     "OllamaConfig",
+    "OpenAIConfig",
+    "MistralConfig",
+    "LLMPolicy",
+    "ProviderPolicy",
     "create_gemini_client",
     "create_ollama_client",
     "create_client_from_env",
     "clean_and_parse_json_response",
+    "LangChainChatAdapter",
+    "LlamaIndexCustomLLM",
     "LanguageUtils",
     "__version__",
 ]

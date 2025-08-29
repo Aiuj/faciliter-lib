@@ -9,6 +9,7 @@ from .tracing import setup_tracing, setup_logging, get_logger, get_module_logger
 from .llm import LLMClient, GeminiConfig, OllamaConfig, create_gemini_client, create_ollama_client, create_client_from_env, clean_and_parse_json_response
 from .utils.language_utils import LanguageUtils
 from .utils.app_settings import AppSettings
+from .config import DOC_CATEGORIES
 
 __all__ = [
     "RedisCache",
@@ -31,5 +32,6 @@ __all__ = [
     "clean_and_parse_json_response",
     "LanguageUtils",
     "AppSettings",
+    "DOC_CATEGORIES",
     "__version__",
 ]

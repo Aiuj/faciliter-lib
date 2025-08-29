@@ -4,7 +4,7 @@ import re
 
 logger = get_module_logger()
 
-def clean_and_parse_json_response(response_str):
+def clean_and_parse_json_response(response_str, force_list=False):
     """
     Extracts and parses a JSON array from the response string.
     Handles corrupted or incomplete responses by finding the valid JSON portion.
@@ -24,22 +24,6 @@ def clean_and_parse_json_response(response_str):
     response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
     logger.debug(f"Parsing JSON response: {response_preview}")
 
-    # Try direct parsing first
-    try:
-        parsed = json.loads(response_str)
-        # Ensure it's a list
-        if isinstance(parsed, list):
-            logger.info(f"Successfully parsed JSON array with {len(parsed)} items")
-            return parsed
-        elif isinstance(parsed, dict):
-            logger.info("Parsed single JSON object, converting to list")
-            return [parsed]
-        else:
-            logger.warning(f"Parsed JSON is not array or object, got: {type(parsed)}")
-            return None
-    except json.JSONDecodeError as e:
-        logger.debug(f"Direct JSON parsing failed: {e}")
-
     # Remove common text wrappers that models might add
     clean_response = response_str.strip()
     
@@ -49,20 +33,26 @@ def clean_and_parse_json_response(response_str):
     elif clean_response.startswith("```") and clean_response.endswith("```"):
         clean_response = clean_response[3:-3].strip()
     
-    # Try parsing cleaned response
+
+    # Try direct parsing first on clean string
     try:
         parsed = json.loads(clean_response)
+        # Ensure it's a list
         if isinstance(parsed, list):
-            logger.info(f"Successfully parsed cleaned JSON array with {len(parsed)} items")
+            logger.info(f"Successfully parsed JSON array with {len(parsed)} items")
             return parsed
         elif isinstance(parsed, dict):
-            logger.info("Parsed single cleaned JSON object, converting to list")
-            return [parsed]
+            if force_list:
+                logger.info("Parsed single JSON object, converting to list")
+                return [parsed]
+            else:
+                logger.info("Parsed single JSON object")
+                return parsed
         else:
-            logger.warning(f"Cleaned JSON is not array or object, got: {type(parsed)}")
+            logger.warning(f"Parsed JSON is not array or object, got: {type(parsed)}")
             return None
-    except json.JSONDecodeError:
-        logger.debug("Cleaned JSON parsing also failed, trying substring extraction")
+    except json.JSONDecodeError as e:
+        logger.debug(f"Direct JSON parsing failed: {e}")
 
     # Try to extract as many valid JSON objects/arrays as possible from a possibly truncated response
     # This will extract items from a top-level array, even if the last item is incomplete

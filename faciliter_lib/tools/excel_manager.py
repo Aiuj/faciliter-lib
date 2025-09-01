@@ -170,13 +170,19 @@ class ExcelManager:
 
     def to_markdown(self, max_rows=None, add_col_headers=True, add_row_headers=True, detect_language=True):
         """
-        Converts all sheets in the loaded workbook to markdown tables using only lists and dicts.
+        Converts all sheets in the loaded workbook to a list of markdown tables.
 
         Args:
             max_rows (int, optional): Maximum number of rows to render per sheet. Renders all rows if None.
+            add_col_headers (bool): If True, adds Excel-style column headers (A, B, ...).
+            add_row_headers (bool): If True, adds Excel-style row headers (1, 2, ...).
+            detect_language (bool): If True, detects language of the content.
 
         Returns:
-            str: Markdown-formatted string representing all sheets.
+            list: List of dictionaries with keys:
+                - 'sheet_name': Name of the sheet/tab
+                - 'markdown': Markdown-formatted table for the sheet
+                - 'language': Detected language (if detect_language=True)
         
         Raises:
             ValueError: If the workbook is not loaded.
@@ -188,7 +194,7 @@ class ExcelManager:
             raise ValueError("Workbook not loaded. Call load() first.")
             
         logger.info(f"Converting workbook to markdown - max_rows: {max_rows}")
-        all_md = ''
+        results = []
         
         for sheet_name in self.wb.sheetnames:
             logger.debug(f"Converting sheet to markdown: {sheet_name}")
@@ -197,12 +203,65 @@ class ExcelManager:
             # Prepare headers
             headers = data[0] if data else []
             rows = data[1:] if len(data) > 1 else []
-            all_md += f'## {sheet_name}\n'
             md_table = tabulate(rows, headers=headers, tablefmt='github')
-            all_md += md_table + '\n\n'
+            
+            # Detect language if requested
+            language = None
+            if detect_language:
+                try:
+                    language = LanguageUtils.detect_language(sheet_name + ":\n" + md_table)
+                    logger.debug(f"Language detected for sheet '{sheet_name}': {language}")
+                except Exception as e:
+                    logger.warning(f"Language detection failed for sheet '{sheet_name}': {e}")
+                    language = None
+            
+            results.append({
+                "sheet_name": sheet_name,
+                "markdown": md_table,
+                "language": language,
+                "row_count": len(rows)
+            })
             
         logger.info(f"Markdown conversion completed for {len(self.wb.sheetnames)} sheets")
-        return all_md
+        return results
+
+    def to_combined_markdown(self, max_rows=None, add_col_headers=True, add_row_headers=True, detect_language=True):
+        """
+        Converts all sheets in the loaded workbook to a single combined markdown string with titles per tab.
+
+        Args:
+            max_rows (int, optional): Maximum number of rows to render per sheet. Renders all rows if None.
+            add_col_headers (bool): If True, adds Excel-style column headers (A, B, ...).
+            add_row_headers (bool): If True, adds Excel-style row headers (1, 2, ...).
+            detect_language (bool): If True, detects language of the content.
+
+        Returns:
+            str: Combined markdown-formatted string with all sheets, each with its own title.
+        
+        Raises:
+            ValueError: If the workbook is not loaded.
+        """
+        logger.info("Converting workbook to combined markdown")
+        
+        # Get individual sheet markdowns
+        sheet_markdowns = self.to_markdown(
+            max_rows=max_rows,
+            add_col_headers=add_col_headers,
+            add_row_headers=add_row_headers,
+            detect_language=detect_language
+        )
+        
+        # Combine them with titles
+        combined_md = ''
+        for sheet_data in sheet_markdowns:
+            sheet_name = sheet_data['sheet_name']
+            markdown = sheet_data['markdown']
+            
+            combined_md += f'## {sheet_name}\n\n'
+            combined_md += markdown + '\n\n'
+        
+        logger.info(f"Combined markdown created for {len(sheet_markdowns)} sheets")
+        return combined_md
 
     def to_json_ir(self, filename: str = None, max_rows: int = None) -> dict:
         """

@@ -208,6 +208,19 @@ class TestExcelManager:
         
     @patch('faciliter_lib.tools.excel_manager.tabulate')
     @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    def test_to_combined_markdown_not_loaded(self, mock_load_workbook, mock_tabulate):
+        """Test to_combined_markdown when workbook is not loaded."""
+        from faciliter_lib.tools import ExcelManager
+        
+        manager = ExcelManager(self.test_excel_path)
+        
+        with pytest.raises(ValueError) as exc_info:
+            manager.to_combined_markdown()
+        
+        assert "Workbook not loaded" in str(exc_info.value)
+        
+    @patch('faciliter_lib.tools.excel_manager.tabulate')
+    @patch('faciliter_lib.tools.excel_manager.load_workbook')
     def test_to_markdown_success(self, mock_load_workbook, mock_tabulate):
         """Test successful markdown conversion."""
         from faciliter_lib.tools import ExcelManager
@@ -239,7 +252,58 @@ class TestExcelManager:
         
         result = manager.to_markdown()
         
-        # Should contain both sheet headers
+        # Should return a list of dictionaries
+        assert isinstance(result, list)
+        assert len(result) == 2
+        
+        # Check first sheet
+        assert result[0]['sheet_name'] == 'Sheet1'
+        assert 'markdown' in result[0]
+        assert 'language' in result[0]  # Language detection is enabled by default
+        
+        # Check second sheet
+        assert result[1]['sheet_name'] == 'Sheet2'
+        assert 'markdown' in result[1]
+        assert 'language' in result[1]
+        
+        # Should call tabulate for each sheet
+        assert mock_tabulate.call_count == 2
+        
+    @patch('faciliter_lib.tools.excel_manager.tabulate')
+    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    def test_to_combined_markdown_success(self, mock_load_workbook, mock_tabulate):
+        """Test successful combined markdown conversion."""
+        from faciliter_lib.tools import ExcelManager
+        
+        # Mock workbook with multiple sheets
+        mock_wb = MagicMock()
+        mock_wb.sheetnames = ['Sheet1', 'Sheet2']
+        
+        # Mock worksheets
+        mock_ws1 = Mock()
+        mock_ws1.values = [['Name', 'Age'], ['Alice', 25]]
+        mock_ws2 = Mock()
+        mock_ws2.values = [['Product', 'Price'], ['Apple', 1.50]]
+        
+        def mock_getitem(key):
+            if key == 'Sheet1':
+                return mock_ws1
+            elif key == 'Sheet2':
+                return mock_ws2
+            
+        mock_wb.__getitem__.side_effect = mock_getitem
+        mock_load_workbook.return_value = mock_wb
+        
+        # Mock tabulate
+        mock_tabulate.return_value = "| Header | Value |\n|--------|-------|\n| Data | 123 |"
+        
+        manager = ExcelManager(self.test_excel_path)
+        manager.load()
+        
+        result = manager.to_combined_markdown()
+        
+        # Should return a single string with sheet headers
+        assert isinstance(result, str)
         assert '## Sheet1' in result
         assert '## Sheet2' in result
         # Should call tabulate for each sheet

@@ -13,4 +13,5 @@
 - Add Tracing observability
 - Add OpenAI model API
 - Implement LangChain and LlamaIndex abstraction wrappers
+- Add a circuit Breaker to the LLM interface (https://python.plainenglish.io/architecture-of-ai-driven-systems-what-every-technical-architect-should-know-767f5a1fdcd0)
 - Manage rate limits with retries

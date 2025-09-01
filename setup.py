@@ -15,6 +15,8 @@ setup(
         'langchain-ollama>=0.3.6',
         'langfuse>=3.2.1',
         'redis>=6.2.0',
+        'openpyxl>=3.1.5',
+        'tabulate>=0.9.0',
     ],
     python_requires='>=3.12',
     classifiers=[

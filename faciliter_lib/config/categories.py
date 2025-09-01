@@ -96,8 +96,8 @@ DOC_CATEGORIES = [
 ]
 
 # Fast lookup by key
-CATEGORIES_BY_KEY = {c["key"]: c for c in DOC_CATEGORIES}
+DOC_CATEGORIES_BY_KEY = {c["key"]: c for c in DOC_CATEGORIES}
 
 # Choices helpers for forms/admin
-CATEGORY_CHOICES = [(c["key"], c["label"]) for c in DOC_CATEGORIES]
+DOC_CATEGORY_CHOICES = [(c["key"], c["label"]) for c in DOC_CATEGORIES]
 

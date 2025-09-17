@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='faciliter-lib',
-    version='0.2.0',
+    version='0.2.4',
     description='Shared library for MCP agent tools (internal use only)',
     author='Julien Nadaud',
     author_email='jnadaud@faciliter.ai',
@@ -11,12 +11,17 @@ setup(
     install_requires=[
         'fast-langdetect>=0.3.2',
         'fastmcp>=2.10.6',
-        'langchain-google-genai>=2.1.8',
-        'langchain-ollama>=0.3.6',
+        'google-genai>=0.6.0',
+        'ollama>=0.3.1',
         'langfuse>=3.2.1',
+        'openinference-instrumentation-google-genai>=0.1.5',
         'redis>=6.2.0',
+        'openai>=1.41.0',
         'openpyxl>=3.1.5',
+        'markdown>=3.8.2',
         'tabulate>=0.9.0',
+        'numpy>=2.3.3',
+
     ],
     python_requires='>=3.12',
     classifiers=[

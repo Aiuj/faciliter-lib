@@ -130,7 +130,7 @@ class TestLLMClient:
 
 
 class TestUtilityFunctions:
-    @patch("faciliter_lib.llm.utils.LLMClient")
+    @patch("faciliter_lib.llm.factory.LLMClient")
     def test_create_ollama_client(self, mock_client_class):
         client = create_ollama_client(model="llama3.2", temperature=0.8, thinking_enabled=True)
         mock_client_class.assert_called_once()
@@ -140,7 +140,7 @@ class TestUtilityFunctions:
         assert call_args.thinking_enabled is True
         assert call_args.provider == "ollama"
 
-    @patch("faciliter_lib.llm.utils.LLMClient")
+    @patch("faciliter_lib.llm.factory.LLMClient")
     def test_create_gemini_client_with_key(self, mock_client_class):
         client = create_gemini_client(api_key="test-key", model="gemini-pro", temperature=0.3)
         mock_client_class.assert_called_once()
@@ -195,6 +195,43 @@ class TestIntegration:
             assert isinstance(res.get("content"), dict) and res["content"].get("a") == 1
             assert isinstance(res.get("text"), str)
             assert isinstance(res.get("content_json"), str)
+
+
+class TestLLMFactory:
+    """Test the new LLMFactory functionality."""
+
+    @patch("faciliter_lib.llm.factory.LLMClient")
+    def test_factory_create_auto_detect(self, mock_client_class):
+        from faciliter_lib.llm import LLMFactory
+        with patch.dict('os.environ', {'LLM_PROVIDER': 'ollama'}):
+            client = LLMFactory.create()
+            mock_client_class.assert_called_once()
+
+    @patch("faciliter_lib.llm.factory.LLMClient")
+    def test_factory_create_with_provider(self, mock_client_class):
+        from faciliter_lib.llm import LLMFactory
+        client = LLMFactory.create(provider="ollama", model="llama3.2", temperature=0.5)
+        mock_client_class.assert_called_once()
+        call_args = mock_client_class.call_args[0][0]
+        assert call_args.model == "llama3.2"
+        assert call_args.temperature == 0.5
+
+    @patch("faciliter_lib.llm.factory.LLMClient")
+    def test_factory_from_config(self, mock_client_class):
+        from faciliter_lib.llm import LLMFactory, OllamaConfig
+        config = OllamaConfig(model="llama3.2", temperature=0.3)
+        client = LLMFactory.from_config(config)
+        mock_client_class.assert_called_once()
+        call_args = mock_client_class.call_args[0][0]
+        assert call_args.model == "llama3.2"
+        assert call_args.temperature == 0.3
+
+    @patch("faciliter_lib.llm.factory.LLMClient")
+    def test_create_llm_client_convenience(self, mock_client_class):
+        from faciliter_lib.llm import create_llm_client
+        with patch.dict('os.environ', {'LLM_PROVIDER': 'ollama'}):
+            client = create_llm_client(model="llama3.2")
+            mock_client_class.assert_called_once()
 
 
 if __name__ == "__main__":

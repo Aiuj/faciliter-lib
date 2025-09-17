@@ -10,7 +10,11 @@ except ImportError:
 
 from pydantic import BaseModel
 from typing import List, Optional
-from faciliter_lib import create_ollama_client, create_gemini_client, create_client_from_env, setup_tracing
+# Import the new factory-based functions (recommended)
+from faciliter_lib.llm import create_llm_client, LLMFactory
+# Also import traditional functions for comparison
+from faciliter_lib.llm import create_ollama_client, create_gemini_client, create_client_from_env
+from faciliter_lib.tracing import setup_tracing
 
 # Initialize tracing
 tracing_client = setup_tracing()
@@ -24,10 +28,14 @@ class WeatherResponse(BaseModel):
 
 
 def example_basic_chat():
-    """Example of basic chat functionality."""
-    print("=== Basic Chat Example ===")
+    """Example of basic chat functionality using the new factory approach."""
+    print("=== Basic Chat Example (New Factory Approach) ===")
     
-    # Create an Ollama client
+    # Simplest way - auto-detect from environment
+    client = create_llm_client()
+    
+    # Or explicitly specify provider with overrides
+    # client = create_llm_client(provider="ollama", model="llama3.2", temperature=0.8)
     client = create_ollama_client(
         model="qwen3:1.7b",
         temperature=0.7,
@@ -190,6 +198,43 @@ def example_from_env():
     print()
 
 
+def example_factory_patterns():
+    """Demonstrates the new factory pattern usage."""
+    print("=== Factory Pattern Examples ===")
+    
+    try:
+        # Method 1: Simplest - auto-detect everything
+        print("1. Auto-detect from environment:")
+        client = create_llm_client()
+        print(f"   Created client with auto-detected provider")
+        
+        # Method 2: Specify provider with overrides
+        print("2. Specify provider with overrides:")
+        client = create_llm_client(provider="ollama", model="qwen3:1.7b", temperature=0.3)
+        print(f"   Created Ollama client with custom settings")
+        
+        # Method 3: Using factory class directly
+        print("3. Using LLMFactory class:")
+        client = LLMFactory.ollama(model="qwen3:1.7b", temperature=0.8)
+        print(f"   Created Ollama client via factory method")
+        
+        # Method 4: From configuration object
+        print("4. From configuration object:")
+        from faciliter_lib.llm import OllamaConfig
+        config = OllamaConfig(model="qwen3:1.7b", temperature=0.5, thinking_enabled=True)
+        client = LLMFactory.from_config(config)
+        print(f"   Created client from config object")
+        
+        # Method 5: Environment with overrides
+        print("5. Environment base with overrides:")
+        client = create_llm_client(temperature=0.9, max_tokens=500)  # Override just specific settings
+        print(f"   Created client with environment base + overrides")
+        
+    except Exception as e:
+        print(f"Error in factory examples: {e}")
+    print()
+
+
 if __name__ == "__main__":
     # Run examples (commented out ones that might not work without proper setup)
     # example_basic_chat()
@@ -199,3 +244,4 @@ if __name__ == "__main__":
     # example_gemini_client()  # Requires API key
     example_ollama_client()  # Requires local Ollama running
     # example_from_env()
+    example_factory_patterns()  # Demonstrates new factory patterns

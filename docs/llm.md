@@ -1,10 +1,11 @@
 # LLM Module Documentation
 
-The LLM module provides a unified interface for working with different Large Language Model providers, currently supporting Google Gemini and local Ollama APIs.
+The LLM module provides a unified interface for working with different Large Language Model providers, currently supporting Google Gemini, OpenAI, Azure OpenAI, and local Ollama APIs.
 
 ## Features
 
 - **Provider Abstraction**: Use the same interface for different LLM providers
+- **Factory-based Creation**: Simplified client creation with intelligent defaults
 - **Configuration Management**: Environment-based configuration with sensible defaults  
 - **Tool Support**: Pass tools in OpenAI JSON format for function calling
 - **Structured Output**: Get structured JSON responses using Pydantic models
@@ -14,60 +15,128 @@ The LLM module provides a unified interface for working with different Large Lan
 
 ## Quick Start
 
-### Basic Usage
+### Simplest Usage (Recommended)
+
+The new factory-based approach automatically detects your configuration and creates the appropriate client:
 
 ```python
-from faciliter_lib import create_ollama_client, create_gemini_client
+from faciliter_lib.llm import create_llm_client
 
-# Create an Ollama client
-client = create_ollama_client(
-    model="llama3.2",
-    temperature=0.7,
-    thinking_enabled=True
-)
+# Auto-detect provider from environment variables
+client = create_llm_client()
 
 # Simple chat
 response = client.chat("What is the capital of France?")
 print(response["content"])
 ```
 
-### Using Gemini
+### Provider-Specific Creation
 
 ```python
-client = create_gemini_client(
-    api_key="your-api-key",
-    model="gemini-1.5-flash",
-    temperature=0.3
+from faciliter_lib.llm import create_llm_client
+
+# Use a specific provider with overrides
+client = create_llm_client(
+    provider="openai",
+    model="gpt-4",
+    temperature=0.2
 )
 
-response = client.chat("Explain quantum computing briefly.")
-print(response["content"])
+# Or use Ollama with custom settings
+client = create_llm_client(
+    provider="ollama",
+    model="llama3.2",
+    thinking_enabled=True
+)
+```
+
+### Using the Factory Class Directly
+
+```python
+from faciliter_lib.llm import LLMFactory
+
+# Create with factory methods
+client = LLMFactory.openai(model="gpt-4", temperature=0.3)
+client = LLMFactory.gemini(model="gemini-1.5-pro")
+client = LLMFactory.ollama(model="llama3.2")
+
+# Or use the main factory method
+client = LLMFactory.create(provider="openai", model="gpt-4")
 ```
 
 ### Environment Configuration
 
-Set environment variables and create clients automatically:
+Set environment variables and let the factory handle detection:
 
 ```bash
-# For Ollama
-export OLLAMA_MODEL=llama3.2
-export OLLAMA_BASE_URL=http://localhost:11434
-export OLLAMA_TEMPERATURE=0.7
+# Option 1: Explicit provider setting
+export LLM_PROVIDER=openai
+
+# Option 2: Let the factory auto-detect based on available API keys
+# For OpenAI
+export OPENAI_API_KEY=sk-your-api-key
+export OPENAI_MODEL=gpt-4o-mini
 
 # For Gemini  
 export GEMINI_API_KEY=your-api-key
 export GEMINI_MODEL=gemini-1.5-flash
-export GEMINI_TEMPERATURE=0.3
+
+# For Ollama
+export OLLAMA_MODEL=llama3.2
+export OLLAMA_BASE_URL=http://localhost:11434
+
+# For Azure OpenAI
+export AZURE_OPENAI_API_KEY=your-api-key
+export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+export AZURE_OPENAI_DEPLOYMENT=gpt-4
 ```
 
 ```python
-from faciliter_lib import create_client_from_env
+from faciliter_lib.llm import create_llm_client
 
-# Uses environment variables
-client = create_client_from_env("ollama")  # or "gemini"
+# Factory auto-detects the provider and uses environment settings
+client = create_llm_client()
+
 ```
 
-## Configuration
+## Environment Variables Reference
+
+### Auto-Detection
+
+The factory automatically detects the provider based on available environment variables:
+
+1. If `LLM_PROVIDER` is set, it uses that provider explicitly
+2. Otherwise, it checks for provider-specific API keys in this order:
+   - `GEMINI_API_KEY` or `GOOGLE_GENAI_API_KEY` → Gemini
+   - `OPENAI_API_KEY` → OpenAI  
+   - `AZURE_OPENAI_API_KEY` → Azure OpenAI
+   - `OLLAMA_BASE_URL` or `OLLAMA_HOST` → Ollama
+   - Default fallback → Ollama
+
+### OpenAI Configuration
+
+Available environment variables:
+
+- `OPENAI_API_KEY`: OpenAI API key (required)
+- `OPENAI_MODEL`: Model name (default: "gpt-4o-mini")
+- `OPENAI_BASE_URL`: Custom base URL for OpenAI-compatible endpoints
+- `OPENAI_TEMPERATURE`: Sampling temperature (default: "0.7")
+- `OPENAI_MAX_TOKENS`: Maximum tokens to generate
+- `OPENAI_THINKING_ENABLED`: Enable thinking mode ("true"/"false")
+- `OPENAI_ORGANIZATION`: OpenAI organization ID
+- `OPENAI_PROJECT`: OpenAI project ID
+
+### Azure OpenAI Configuration
+
+Available environment variables:
+
+- `AZURE_OPENAI_API_KEY`: Azure OpenAI API key (required)
+- `AZURE_OPENAI_ENDPOINT`: Azure OpenAI endpoint URL (required)
+- `AZURE_OPENAI_API_VERSION`: API version (default: "2024-08-01-preview")
+- `AZURE_OPENAI_DEPLOYMENT`: Deployment name (maps to model)
+- `AZURE_OPENAI_TEMPERATURE`: Sampling temperature (default: "0.7")
+- `AZURE_OPENAI_MAX_TOKENS`: Maximum tokens to generate
+- `AZURE_OPENAI_THINKING_ENABLED`: Enable thinking mode ("true"/"false")
 
 ### Ollama Configuration
 
@@ -98,9 +167,52 @@ Available environment variables:
 
 ## Advanced Usage
 
+### Using Custom Configuration Objects
+
+```python
+from faciliter_lib.llm import LLMFactory, OpenAIConfig, GeminiConfig
+
+# Create a custom configuration
+config = OpenAIConfig(
+    api_key="sk-your-key",
+    model="gpt-4",
+    temperature=0.3,
+    max_tokens=2000,
+    thinking_enabled=True
+)
+
+# Use the factory with the custom config
+client = LLMFactory.from_config(config)
+
+# Or apply overrides to environment-loaded config
+client = LLMFactory.from_config(
+    OpenAIConfig.from_env(),
+    temperature=0.8,  # Override just the temperature
+    max_tokens=1500
+)
+```
+
+### Mixing Environment and Manual Configuration
+
+```python
+from faciliter_lib.llm import create_llm_client
+
+# Load base settings from env, override specific parameters
+client = create_llm_client(
+    provider="openai",  # Use OpenAI even if LLM_PROVIDER is different
+    model="gpt-4",      # Override the model from environment
+    temperature=0.2     # Override temperature
+    # API key still comes from OPENAI_API_KEY env var
+)
+```
+
 ### Conversation History
 
 ```python
+from faciliter_lib.llm import create_llm_client
+
+client = create_llm_client()
+
 messages = [
     {"role": "user", "content": "Hello, I'm planning a trip."},
     {"role": "assistant", "content": "Great! Where are you thinking of going?"},
@@ -118,12 +230,15 @@ response = client.chat(
 ```python
 from pydantic import BaseModel
 from typing import Optional
+from faciliter_lib.llm import create_llm_client
 
 class WeatherResponse(BaseModel):
     location: str
     temperature: float
     condition: str
     humidity: Optional[int] = None
+
+client = create_llm_client(provider="openai")  # Structured output works well with OpenAI
 
 response = client.chat(
     "What's the weather in Paris?",
@@ -138,6 +253,10 @@ if response["structured"] and not response.get("error"):
 ### Using Tools
 
 ```python
+from faciliter_lib.llm import create_llm_client
+
+client = create_llm_client()
+
 tools = [
     {
         "type": "function",
@@ -168,29 +287,83 @@ response = client.chat(
     tools=tools
 )
 
-# Check for tool calls
-if response["tool_calls"]:
-    for tool_call in response["tool_calls"]:
-        print(f"Tool: {tool_call['function']['name']}")
-        print(f"Args: {tool_call['function']['arguments']}")
-```
-
-### Grounding with Search (Gemini)
-
-Enable Google Search grounding for supported Gemini models to augment responses with up-to-date web information.
-
-```python
-client = create_gemini_client(api_key="your-api-key", model="gemini-1.5-flash")
-
-resp = client.chat(
-    "Summarize the latest news about Mars exploration.",
-    use_search_grounding=True,
-)
-print(resp["content"])  # text response augmented by Google Search
 ```
 
 Notes:
+
 - The `use_search_grounding` flag is provider-agnostic and is forwarded to providers; only Gemini implements it currently. Other providers will ignore it unless they support a similar capability in the future.
+
+## Factory Class Methods
+
+The `LLMFactory` class provides multiple creation methods:
+
+### Factory.create()
+
+Main factory method that intelligently creates clients based on parameters:
+
+```python
+from faciliter_lib.llm import LLMFactory
+
+# Auto-detect from environment
+client = LLMFactory.create()
+
+# Specify provider with overrides
+client = LLMFactory.create(provider="openai", model="gpt-4", temperature=0.3)
+
+# Use with existing config
+config = OpenAIConfig(api_key="sk-...", model="gpt-4")
+client = LLMFactory.create(config=config)
+```
+
+### Provider-Specific Methods
+
+```python
+# Direct provider methods
+client = LLMFactory.openai(model="gpt-4", temperature=0.2)
+client = LLMFactory.gemini(api_key="key", model="gemini-1.5-pro")
+client = LLMFactory.ollama(model="llama3.2", base_url="http://localhost:11434")
+client = LLMFactory.azure_openai(deployment="gpt-4", azure_endpoint="https://...")
+client = LLMFactory.openai_compatible(base_url="http://localhost:8000")
+```
+
+### Convenience Functions
+
+For simpler usage, several convenience functions are available:
+
+```python
+from faciliter_lib.llm import create_llm_client, create_client_from_env
+
+# Main convenience function - recommended for most use cases
+client = create_llm_client()  # Auto-detect
+client = create_llm_client(provider="openai", model="gpt-4")
+
+# Environment-based creation
+client = create_client_from_env()  # Auto-detect provider
+client = create_client_from_env(provider="gemini")
+```
+
+## Migration from utils.py
+
+If you were using the old `utils.py` functions, here's how to migrate:
+
+```python
+# Old way
+from faciliter_lib.llm.utils import create_gemini_client
+client = create_gemini_client(model="gemini-pro")
+
+# New way (all approaches work)
+from faciliter_lib.llm import LLMFactory, create_llm_client
+
+# Option 1: Use the factory
+client = LLMFactory.gemini(model="gemini-pro")
+
+# Option 2: Use the main convenience function
+client = create_llm_client(provider="gemini", model="gemini-pro")
+
+# Option 3: Backward-compatible functions still work
+from faciliter_lib.llm import create_gemini_client
+client = create_gemini_client(model="gemini-pro")
+```
 
 ## Response Format
 

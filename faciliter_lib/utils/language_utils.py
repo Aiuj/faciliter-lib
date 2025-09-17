@@ -11,7 +11,7 @@ from fast_langdetect import detect
 
 class LanguageUtils:
     @staticmethod
-    def crop_text_preserve_words(text: str, max_length: int = 500, prefer_sentences: bool = True, min_word_boundary: int = None) -> str:
+    def crop_text_preserve_words(text: str, max_length: int = 200, prefer_sentences: bool = True, min_word_boundary: int = None) -> str:
         """
         Crops text to a specified length while preserving word boundaries and optionally sentence boundaries.
         
@@ -70,32 +70,6 @@ class LanguageUtils:
         
         return cropped_text
 
-    @staticmethod
-    def detect_language(text: str) -> dict:
-        """
-        Detects the language of the given text.
-        Args:
-            text (str): The input text.
-        Returns:
-            dict: A dictionary with keys 'lang' (language code, e.g., 'en', 'fr') and 'score' (confidence score).
-            Example: {'lang': 'en', 'score': 0.92}
-        Notes:
-            - Trims whitespace, removes newlines, and limits input to 500 characters for fast-langdetect compatibility.
-        """
-        # Secure input for fast-langdetect
-        if not isinstance(text, str):
-            raise ValueError("Input to detect_language must be a string.")
-        
-        # Trim whitespace
-        text = text.strip()
-        
-        # Check for empty text after trimming
-        if not text:
-            raise ValueError("Input text cannot be empty after trimming whitespace.")
-        
-        # Remove newline characters to prevent FastText errors
-        text = text.replace('\n', ' ').replace('\r', ' ')
-        
     @staticmethod
     def detect_language(text: str) -> dict:
         """

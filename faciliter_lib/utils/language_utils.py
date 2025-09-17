@@ -106,5 +106,50 @@ class LanguageUtils:
         # Final check for minimum length
         if len(text) < 3:
             raise ValueError("Input text is too short for reliable language detection (minimum 3 characters after processing).")
-        
-        return detect(text)
+
+        # Call underlying detector. Different versions of `fast_langdetect` may
+        # return different shapes (dict, list of tuples, list of dicts, str).
+        # Normalize to a dict {'lang': <code>, 'score': <confidence>}.
+        raw = detect(text)
+
+        # Helper to build a dict
+        def as_dict(lang, score=None):
+            return {"lang": lang, "score": score}
+
+        # If already a dict with expected keys, normalize keys if necessary
+        if isinstance(raw, dict):
+            if "lang" in raw:
+                return {"lang": raw.get("lang"), "score": raw.get("score")}
+            if "language" in raw:
+                return {"lang": raw.get("language"), "score": raw.get("score")}
+
+        # If it's a list/tuple, inspect first element
+        if isinstance(raw, (list, tuple)) and len(raw) > 0:
+            first = raw[0]
+            # e.g., [('en', 0.95), ...]
+            if isinstance(first, (list, tuple)) and len(first) >= 1:
+                lang = first[0]
+                score = first[1] if len(first) > 1 else None
+                return as_dict(lang, score)
+
+            # e.g., [{'lang': 'en', 'score': 0.95}, ...]
+            if isinstance(first, dict):
+                if "lang" in first:
+                    return {"lang": first.get("lang"), "score": first.get("score")}
+                if "language" in first:
+                    return {"lang": first.get("language"), "score": first.get("score")}
+
+            # e.g., ['en', 'fr', ...] -> take first
+            if isinstance(first, str):
+                return as_dict(first, None)
+
+        # If it's a plain string language code
+        if isinstance(raw, str):
+            return as_dict(raw, None)
+
+        # Fallback: return stringified raw value as lang
+        try:
+            return as_dict(str(raw), None)
+        except Exception:
+            # Last resort: raise a runtime error to surface unexpected detector result
+            raise RuntimeError("Unexpected return type from language detector: %r" % (type(raw),))

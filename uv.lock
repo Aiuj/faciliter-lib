@@ -444,7 +444,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=22.0.0" },
-    { name = "fast-langdetect", specifier = ">=0.3.2" },
+    { name = "fast-langdetect", specifier = ">=1.0.0" },
     { name = "fastmcp", specifier = ">=2.10.6" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "google-genai", specifier = ">=0.6.0" },
@@ -471,16 +471,16 @@ dev = [
 
 [[package]]
 name = "fast-langdetect"
-version = "0.3.2"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fasttext-predict" },
     { name = "requests" },
     { name = "robust-downloader" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/73/e4/e69fc0a833fb91f6392f46c688f89e484855a8905e9999f3e0d6e8e75759/fast_langdetect-0.3.2.tar.gz", hash = "sha256:21b1f98f738545e9d8f39a080e5276861751af178f6548c896419d1ae20a89ac", size = 792453, upload-time = "2025-03-29T06:51:25.599Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/15/85b0137066be418b6249d8e8d98e2b16c072c65b80c293b9438fdea1be5e/fast_langdetect-1.0.0.tar.gz", hash = "sha256:ea8ac6a8914e0ff1bfc1bbc0f25992eb913ddb69e63ea1b24e907e263d0cd113", size = 796192, upload-time = "2025-09-17T06:32:26.86Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/71/0e6da751ef4a9afae2903f76fb8e43c612e3d288a7b01a74ccc20e81b68f/fast_langdetect-0.3.2-py3-none-any.whl", hash = "sha256:40843fcaf0406e9d3892d9f2e0d05dce8b72794b4c14613804bc1d9707951ba0", size = 788098, upload-time = "2025-03-29T06:51:23.773Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/71/0db1ac89f8661048ebc22d62f503a2e147cb6872c5f2aeb659c1f02c1694/fast_langdetect-1.0.0-py3-none-any.whl", hash = "sha256:aab9e3435cc667ac8ba8b1a38872f75492f65b7087901d0f3a02a88d436cd22a", size = 789944, upload-time = "2025-09-17T06:32:25.363Z" },
 ]
 
 [[package]]

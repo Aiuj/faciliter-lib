@@ -409,7 +409,7 @@ wheels = [
 
 [[package]]
 name = "faciliter-lib"
-version = "0.2.4"
+version = "0.2.5"
 source = { editable = "." }
 dependencies = [
     { name = "fast-langdetect" },
@@ -458,7 +458,7 @@ requires-dist = [
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "redis", specifier = ">=6.2.0" },
+    { name = "redis", specifier = ">=6.4.0" },
     { name = "tabulate", specifier = ">=0.9.0" },
     { name = "valkey", specifier = ">=6.0.0" },
 ]

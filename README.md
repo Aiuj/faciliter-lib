@@ -74,6 +74,17 @@ git+https://github.com/Aiuj/faciliter-lib.git@v0.2.3#egg=faciliter-lib
 
 ---
 
+## Library updates
+
+To tag a new version, after commiting:
+
+```bash
+git tag -a 0.x.y -m "Release version 0.x.y"
+git push origin 0.x.y
+```
+
+---
+
 ## 🚀 Usage
 
 ### Cache Manager

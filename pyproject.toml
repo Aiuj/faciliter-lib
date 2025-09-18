@@ -10,7 +10,7 @@ authors = [{ name = "Julien Nadaud", email = "jnadaud@faciliter.ai" }]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
-keywords = ["cache", "redis", "mcp", "utilities"]
+keywords = ["cache", "redis", "valkey", "mcp", "utilities"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers", 
@@ -27,6 +27,7 @@ dependencies = [
     "langfuse>=3.2.1",
     "openinference-instrumentation-google-genai>=0.1.5",
     "redis>=6.2.0",
+    "valkey>=6.0.0",
     "openai>=1.41.0",
     "openpyxl>=3.1.5",
     "markdown>=3.8.2",

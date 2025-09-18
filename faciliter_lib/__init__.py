@@ -2,7 +2,11 @@
 
 __version__ = "0.2.0"
 
-from .cache.cache_manager import RedisCache, set_cache, get_cache, cache_get, cache_set
+from .cache import (
+    BaseCache, CacheConfig, RedisCache, ValkeyCache, 
+    RedisConfig, ValkeyConfig, create_cache, 
+    set_cache, get_cache, cache_get, cache_set
+)
 from .mcp_utils import parse_from, get_transport_from_args
 from .tracing import setup_tracing, setup_logging, get_logger, get_module_logger
 
@@ -13,7 +17,13 @@ from .config import DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES
 from .tools import ExcelManager
 
 __all__ = [
+    "BaseCache",
+    "CacheConfig", 
     "RedisCache",
+    "ValkeyCache",
+    "RedisConfig",
+    "ValkeyConfig",
+    "create_cache",
     "set_cache", 
     "get_cache", 
     "cache_get",

@@ -47,7 +47,7 @@ def mock_redis(monkeypatch):
     
     # Mock the redis.Redis class
     monkeypatch.setattr('redis.Redis', mock_redis_connection)
-    monkeypatch.setattr('faciliter_lib.cache.cache_manager.redis.Redis', mock_redis_connection)
+    monkeypatch.setattr('faciliter_lib.cache.redis_cache.redis.Redis', mock_redis_connection)
     
     # Reset the global cache instance for test isolation
     import faciliter_lib.cache.cache_manager as cache_module

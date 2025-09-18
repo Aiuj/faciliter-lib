@@ -2,24 +2,26 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from .redis_config import RedisConfig
+
+
 @dataclass
-class ValkeyConfig:
-    host: str
-    port: int
-    db: int
-    prefix: str
-    ttl: int = 3600
-    password: Optional[str] = None
-    time_out: int = 4
+class ValkeyConfig(RedisConfig):
+    """Valkey config re-uses RedisConfig fields for compatibility.
+
+    Valkey is a drop-in replacement so it shares host/port/db/prefix/ttl fields.
+    We inherit from `RedisConfig` and provide an env-based constructor that
+    reads VALKEY-specific environment variables but populates the same fields.
+    """
 
     @classmethod
     def from_env(cls) -> "ValkeyConfig":
         return cls(
-            host=os.getenv("VALKEY_HOST", "localhost"),
-            port=int(os.getenv("VALKEY_PORT", 6379)),
-            db=int(os.getenv("VALKEY_DB", 0)),
-            prefix=os.getenv("VALKEY_PREFIX", "cache:"),
-            ttl=int(os.getenv("VALKEY_CACHE_TTL", 3600)),  # Default TTL of 1 hour
-            password=os.getenv("VALKEY_PASSWORD", None),
-            time_out=int(os.getenv("VALKEY_TIMEOUT", 4))  # Default timeout of 4 seconds
+            host=os.getenv("VALKEY_HOST", os.getenv("REDIS_HOST", "localhost")),
+            port=int(os.getenv("VALKEY_PORT", os.getenv("REDIS_PORT", "6379"))),
+            db=int(os.getenv("VALKEY_DB", os.getenv("REDIS_DB", "0"))),
+            prefix=os.getenv("VALKEY_PREFIX", os.getenv("REDIS_PREFIX", "cache:")),
+            ttl=int(os.getenv("VALKEY_CACHE_TTL", os.getenv("REDIS_CACHE_TTL", "3600"))),
+            password=os.getenv("VALKEY_PASSWORD", os.getenv("REDIS_PASSWORD", None)),
+            time_out=int(os.getenv("VALKEY_TIMEOUT", os.getenv("REDIS_TIMEOUT", "4")))
         )

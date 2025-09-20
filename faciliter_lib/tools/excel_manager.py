@@ -15,16 +15,20 @@ class ExcelManager:
     Manages loading, rendering, and manipulation of Excel workbooks.
     """
 
-    def __init__(self, excel_path):
+    def __init__(self, excel_path: str = None, excel_bytes: bytes = None):
         """
-        Initialize the ExcelManager with the path to the Excel file.
+        Initialize the ExcelManager with either a path to the Excel file or raw bytes.
 
         Args:
-            excel_path (str): Path to the Excel file.
+            excel_path (str, optional): Path to the Excel file.
+            excel_bytes (bytes, optional): Raw bytes of an Excel file. If provided, workbook
+                will be loaded from memory and no temporary file is required.
         """
         self.excel_path = excel_path
+        self.excel_bytes = excel_bytes
+        self._bytes_io = None
         self.wb = None
-        logger.debug(f"ExcelManager initialized with path: {excel_path}")
+        logger.debug(f"ExcelManager initialized with path: {excel_path} and bytes: {'present' if excel_bytes else 'none'}")
 
     def load(self):
         """
@@ -34,13 +38,53 @@ class ExcelManager:
             Workbook: The loaded openpyxl Workbook object.
         """
         try:
-            logger.info(f"Loading Excel workbook from: {self.excel_path}")
-            self.wb = load_workbook(self.excel_path, read_only=True)
+            if self.excel_bytes is not None:
+                # Load from in-memory bytes without creating a temporary file
+                from io import BytesIO
+                logger.info("Loading Excel workbook from in-memory bytes")
+                self._bytes_io = BytesIO(self.excel_bytes)
+                self.wb = load_workbook(self._bytes_io, read_only=True)
+            else:
+                logger.info(f"Loading Excel workbook from: {self.excel_path}")
+                self.wb = load_workbook(self.excel_path, read_only=True)
             logger.info(f"Excel workbook loaded successfully - sheets: {self.wb.sheetnames}")
             return self.wb
         except Exception as e:
             logger.error(f"Failed to load Excel workbook from {self.excel_path}: {str(e)}")
             raise
+
+    def close(self):
+        """
+        Close any open workbook and release associated resources (like BytesIO).
+        Safe to call multiple times.
+        """
+        try:
+            if self.wb is not None:
+                try:
+                    # openpyxl Workbook objects expose a close method on read-only mode
+                    close_fn = getattr(self.wb, 'close', None)
+                    if callable(close_fn):
+                        close_fn()
+                except Exception:
+                    # ignore errors closing workbook
+                    pass
+                self.wb = None
+
+            if self._bytes_io is not None:
+                try:
+                    self._bytes_io.close()
+                except Exception:
+                    pass
+                self._bytes_io = None
+        except Exception:
+            # Ensure we don't raise from cleanup
+            pass
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
     # Replace None and NaN with empty string
     def clean_cell(self, cell):
@@ -344,7 +388,18 @@ class ExcelManager:
                 try:
                     if full_wb is None:
                         from openpyxl import load_workbook as _lb
-                        full_wb = _lb(self.excel_path, read_only=False, data_only=True)
+                        # Prefer loading from in-memory bytes when available to avoid temp files
+                        if self.excel_bytes is not None:
+                            try:
+                                from io import BytesIO
+                                _bio = BytesIO(self.excel_bytes)
+                                full_wb = _lb(_bio, read_only=False, data_only=True)
+                            except Exception:
+                                # Fallback to path if bytes loading fails
+                                full_wb = _lb(self.excel_path, read_only=False, data_only=True)
+                        else:
+                            full_wb = _lb(self.excel_path, read_only=False, data_only=True)
+
                     full_ws = full_wb[sheet_name]
                     f_min_r = f_min_c = None
                     f_max_r = f_max_c = None

@@ -1,21 +1,41 @@
 # cache_manager.py
 # Cache manager with support for Redis and Valkey providers
 import os
-from typing import Any, Optional, Literal, Union
+from typing import Any, Optional, Literal, Union, TYPE_CHECKING
 import logging
 from .base_cache import BaseCache
 from .redis_cache import RedisCache
-from .valkey_cache import ValkeyCache
 from .redis_config import RedisConfig
-from .valkey_config import ValkeyConfig
+
+if TYPE_CHECKING:
+    from .valkey_config import ValkeyConfig
+
+try:
+    from .valkey_cache import ValkeyCache
+    from .valkey_config import ValkeyConfig
+    VALKEY_AVAILABLE = True
+except ImportError:
+    VALKEY_AVAILABLE = False
+    ValkeyCache = None
+    ValkeyConfig = None
 
 CacheProvider = Literal["redis", "valkey", "auto"]
 
+# Module docstring: brief overview of responsibilities
+"""Cache manager helpers to create and manage a global cache instance.
+
+This module centralizes cache backend selection (redis | valkey | auto),
+creation and a simple global accessor API used by the rest of the library.
+It performs runtime detection of available client libraries and provides
+helpers to convert configs when necessary.
+"""
+
 
 def _env_provider_preference() -> CacheProvider:
-    """Read environment-level preference for cache backend.
+    """Return the cache backend preference read from the environment.
 
-    - `CACHE_BACKEND` can be set to `redis`, `valkey`, or `auto` (default).
+    Reads CACHE_BACKEND and normalizes to one of: "redis", "valkey", "auto".
+    Defaults to "auto" when the environment variable is not present or invalid.
     """
     env = os.getenv("CACHE_BACKEND", "auto").lower()
     if env in ("redis", "valkey", "auto"):
@@ -26,17 +46,27 @@ def _env_provider_preference() -> CacheProvider:
 def create_cache(
     provider: CacheProvider = "auto",
     name: str = "",
-    config: Optional[Union[RedisConfig, ValkeyConfig]] = None,
+    config: Optional[Any] = None,
     ttl: Optional[int] = None,
     time_out: Optional[int] = None,
 ) -> BaseCache:
-    """Create a cache instance based on the specified provider.
+    """Instantiate a cache implementation based on the requested provider.
 
-    The function supports:
-    - explicit provider selection (`redis` or `valkey`)
-    - `auto` selection which consults `CACHE_BACKEND` env vars
-    - using a RedisConfig when Valkey is requested (Valkey is treated as a
-      Redis-compatible drop-in and we convert configs where necessary)
+    Parameters:
+        provider: "redis", "valkey" or "auto". If "auto", this function will
+            consult environment preference and the auto-detection helper.
+        name: Optional name/namespace for the cache instance.
+        config: Optional provider-specific config object (RedisConfig or ValkeyConfig).
+        ttl: Optional time-to-live to override default config.
+        time_out: Optional connection timeout override.
+
+    Returns:
+        An instance of BaseCache for the selected provider.
+
+    Notes:
+        - If the caller supplies a RedisConfig but requests the valkey provider,
+          the RedisConfig will be converted into a ValkeyConfig (when Valkey
+          types are available) as Valkey is treated as a Redis-compatible drop-in.
     """
     if provider == "auto":
         provider = _env_provider_preference()
@@ -47,6 +77,7 @@ def create_cache(
     # If caller passed a RedisConfig but requested valkey, convert it
     if provider == "valkey" and isinstance(config, RedisConfig) and not isinstance(config, ValkeyConfig):
         # Cast by creating a ValkeyConfig from the RedisConfig values
+        # This preserves common fields and applies TTL/timeout fallbacks.
         cfg = ValkeyConfig(
             host=config.host,
             port=config.port,
@@ -69,15 +100,15 @@ def create_cache(
 
 
 def _auto_detect_provider() -> CacheProvider:
-    """Automatically detect which cache provider to use.
+    """Auto-detect the preferred cache provider based on installed libraries.
 
-    Behavior:
-    - Prefer Valkey by default in `auto` mode.
-    - If the Valkey client library is not importable, fall back to Redis.
-    - If neither Valkey nor Redis client libraries are installed, return
-      a sentinel of 'redis' by convention but callers should detect client
-      availability before using the cache; we also prevent initialization
-      when no client is installed.
+    Preference order:
+      1. valkey if its client library is importable
+      2. redis if valkey is not available but redis client is installed
+      3. 'redis' as a conventional fallback when no client libs are installed
+
+    Returns:
+        "valkey" | "redis" | "redis" (conventional fallback)
     """
     # Prefer valkey if its client library is available
     try:
@@ -91,10 +122,8 @@ def _auto_detect_provider() -> CacheProvider:
             import redis as _redis  # type: ignore
             return "redis"
         except Exception:
-            # No cache client libraries installed — indicate no-cache by
-            # returning 'auto' which will be interpreted by set_cache
-            # as 'no client available'. We'll still return 'redis' as a
-            # conventional value, but callers should check availability.
+            # No cache client libraries installed — return 'redis' as conventional
+            # value; callers (e.g., set_cache) will handle the absence of client libs.
             return "redis"
 
 
@@ -103,13 +132,23 @@ _cache_instance = None
 
 def set_cache(
     provider: CacheProvider = "auto",
-    config: Optional[Union[RedisConfig, ValkeyConfig]] = None,
+    config: Optional[Any] = None,
     ttl: Optional[int] = None,
     time_out: Optional[int] = None,
 ):
-    """Explicitly initialize the global cache instance with custom parameters.
+    """Initialize the global cache instance.
 
-    Only creates a new instance if one does not already exist.
+    This function will:
+      - Respect an explicit provider argument or the CACHE_BACKEND env var.
+      - Fall back between valkey and redis depending on installed clients.
+      - Create and connect the selected cache instance and set the global.
+
+    Returns:
+        True when a usable cache instance was created and connected.
+        False when caching is disabled or instantiation/connection failed.
+
+    Side effects:
+        Sets the module-level _cache_instance to the instance or False.
     """
     global _cache_instance
     if _cache_instance is not None and _cache_instance is not False:
@@ -137,6 +176,7 @@ def set_cache(
         instance = create_cache(provider=provider, config=config, ttl=ttl, time_out=time_out)
         instance.connect()
         if instance.client is False:
+            # Provider-specific connect logic may set client=False to indicate unusable
             _cache_instance = False
             return False
         _cache_instance = instance
@@ -147,8 +187,14 @@ def set_cache(
         return False
 
 
-def get_cache() -> Optional[BaseCache]:
-    """Return the global cache instance if initialized."""
+def get_cache() -> Union[BaseCache, bool, None]:
+    """Return the global cache instance, initializing it if necessary.
+
+    Returns:
+        - BaseCache instance when caching is initialized and available.
+        - False when caching is disabled or initialization failed.
+        - None only transiently (should not be returned long-term).
+    """
     global _cache_instance
     if _cache_instance is None:
         set_cache()
@@ -158,7 +204,10 @@ def get_cache() -> Optional[BaseCache]:
 
 
 def cache_get(input_data: Any) -> Optional[Any]:
-    """Get cached output for the given input data."""
+    """Retrieve a cached value for the given input key.
+
+    If caching is disabled (get_cache returns False) this returns None.
+    """
     cache = get_cache()
     if cache is False:
         return None
@@ -166,7 +215,10 @@ def cache_get(input_data: Any) -> Optional[Any]:
 
 
 def cache_set(input_data: Any, output_data: Any, ttl: Optional[int] = None):
-    """Set cached output for the given input data."""
+    """Store a value in cache for the given input key.
+
+    No-op when caching is disabled.
+    """
     cache = get_cache()
     if cache is False:
         return

@@ -1,4 +1,7 @@
-import valkey
+try:
+    import valkey
+except ImportError:
+    valkey = None
 from typing import Any, Optional
 import logging
 from .base_cache import BaseCache
@@ -23,8 +26,10 @@ class ValkeyCache(BaseCache):
         if self.config.password:
             self._valkey_kwargs['password'] = self.config.password
 
-    def _create_client(self) -> valkey.Valkey:
+    def _create_client(self) -> Any:
         """Create Valkey client"""
+        if valkey is None:
+            raise ImportError("valkey package is not installed")
         return valkey.Valkey(**self._valkey_kwargs)
 
     def connect(self):

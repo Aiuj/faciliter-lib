@@ -37,6 +37,7 @@ from .factory import (
     create_local_client,
     get_embedding_client,  # Legacy function
 )
+from .models import EmbeddingResponse
 
 # Conditionally import providers based on availability
 try:

@@ -67,6 +67,9 @@ class EmbeddingsConfig(BaseModel):
 
     # HuggingFace or other providers
     huggingface_api_key: Optional[str] = None
+    
+    # Cache configuration
+    cache_duration_seconds: int = 7200  # 2 hours default
 
     @classmethod
     def from_env(cls) -> "EmbeddingsConfig":
@@ -94,6 +97,10 @@ class EmbeddingsConfig(BaseModel):
         cache_dir = getenv("EMBEDDING_CACHE_DIR")
         trust_remote_code = getenv("EMBEDDING_TRUST_REMOTE_CODE", "false").lower() == "true"
         use_sentence_transformers = getenv("EMBEDDING_USE_SENTENCE_TRANSFORMERS", "true").lower() == "true"
+        
+        # Cache configuration
+        cache_duration = getenv("EMBEDDING_CACHE_DURATION_SECONDS", "86400")
+        cache_duration_seconds = int(cache_duration) if cache_duration.isdigit() else 86400
 
         return cls(
             provider=provider,
@@ -114,6 +121,7 @@ class EmbeddingsConfig(BaseModel):
             trust_remote_code=trust_remote_code,
             use_sentence_transformers=use_sentence_transformers,
             huggingface_api_key=getenv("HUGGINGFACE_API_KEY"),
+            cache_duration_seconds=cache_duration_seconds,
         )
 
 

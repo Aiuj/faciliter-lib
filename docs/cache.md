@@ -1,81 +1,103 @@
-# Cache provider and how clients should use it
+ # Cache provider and how clients should use it
 
-The library exposes a unified cache manager that can use either Redis or Valkey as the backing store. Clients should prefer the facade helpers and the cache manager rather than instantiating provider classes directly. This keeps calling code agnostic to which cache backend is used and makes it easier to switch providers via configuration.
-Key high-level points for client usage:
-- Use `faciliter_lib.cache.cache_manager.set_cache` to install a global cache instance for the process. The rest of the helper APIs (`cache_get`, `cache_set`, `cache_delete`) operate against that global cache.
-- Two built-in implementations exist: `RedisCache` (backed by Redis) and `ValkeyCache` (backed by Valkey). Both implement the same minimal interface: `get(key)`, `set(key, value, ttl=None)`, and `delete(key)`.
-- You can configure the cache either in code or via environment variables (see the config notes below).
-Example: basic usage with explicit Redis cache instance
+ The library exposes a unified cache manager that can use either Redis or Valkey as the backing store. The recommended pattern is to initialize the global cache via `faciliter_lib.cache.cache_manager.set_cache()` using environment variables (recommended for deployments). This ensures the library selects the proper backend automatically and keeps application code backend-agnostic.
 
-```python
-from faciliter_lib.cache.redis_cache import RedisCache
-from faciliter_lib.cache.redis_config import RedisConfig
-from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set, cache_delete
+ Key high-level points for client usage:
+ - Use `faciliter_lib.cache.cache_manager.set_cache` (no-args) during app startup so the module can select the best provider based on `CACHE_BACKEND`, installed libraries, and environment settings.
+ - Use the facade helpers (`cache_get`, `cache_set`, `cache_delete`) throughout your code; they operate against the global cache installed by `set_cache()`.
+ - Two built-in implementations exist: `RedisCache` and `ValkeyCache`. Prefer not to instantiate provider classes directly unless you need provider-specific features.
 
-# Build a RedisConfig (or use your own config loader)
-cfg = RedisConfig(host="localhost", port=6379, db=0)
+ Quick startup example (recommended - env-driven)
 
-# Create and install the global cache instance
-cache = RedisCache.from_config(cfg)
-set_cache(cache)
+ ```python
+ # app startup
+ from faciliter_lib.cache.cache_manager import set_cache
 
-# Use facade helpers anywhere in your app
-cache_set("user:123", {"name": "Alice"}, ttl=300)
-user = cache_get("user:123")
-cache_delete("user:123")
-```
+ # Prefer environment-driven initialization; set_cache() will read
+ # `CACHE_BACKEND` and provider-specific env vars and auto-detect clients.
+ set_cache()
 
-Example: using Valkey as the backend (same facade)
+ # Later in app code
+ from faciliter_lib.cache.cache_manager import cache_get, cache_set
+ cache_set("user:123", {"name": "Alice"}, ttl=300)
+ user = cache_get("user:123")
+ ```
 
-```python
-from faciliter_lib.cache.valkey_cache import ValkeyCache
-from faciliter_lib.cache.valkey_config import ValkeyConfig
-from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set
+ When to use programmatic configuration
 
-cfg = ValkeyConfig(url="https://valkey.example.com", api_key="YOUR_KEY")
-cache = ValkeyCache.from_config(cfg)
-set_cache(cache)
+ - Use programmatic initialization only when you must construct provider configs in code (for tests, local scripts, or when envs are not available).
+ - If you do initialize programmatically, call `set_cache(provider=..., config=..., ttl=...)` so the cache manager still performs selection and connection logic.
 
-cache_set("session:abc", "some-value", ttl=600)
-value = cache_get("session:abc")
-```
+ Programmatic examples (optional)
 
-Programmatic vs environment configuration
+ Example: explicit Redis cache instance
 
-- Programmatic: construct a `RedisConfig` or `ValkeyConfig` and call the provider's `from_config(...)` factory, then `set_cache(...)`.
-- Environment-driven (recommended for deployed apps): you can read configuration from environment variables in your app and construct the appropriate config object. Typical env vars might include `CACHE_BACKEND=redis|valkey`, `REDIS_HOST`, `REDIS_PORT`, `VALKEY_URL`, `VALKEY_API_KEY`, etc. This repo's concrete config loader utilities may provide helpers to read from env; otherwise, read env vars and pass them to the config constructors.
+ ```python
+ from faciliter_lib.cache.redis_cache import RedisCache
+ from faciliter_lib.cache.redis_config import RedisConfig
+ from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set
 
-Facade helper API (client-facing)
+ cfg = RedisConfig(host="localhost", port=6379, db=0)
+ cache = RedisCache.from_config(cfg)
+ set_cache(provider="redis", config=cfg)
 
-- `set_cache(cache_instance)` — Install a global cache instance used by helpers.
-- `cache_get(key, default=None)` — Retrieve a value by key (returns `default` if missing).
-- `cache_set(key, value, ttl=None)` — Store a value with optional TTL in seconds.
-- `cache_delete(key)` — Remove a key from the cache.
+ cache_set("user:123", {"name": "Alice"}, ttl=300)
+ user = cache_get("user:123")
+ ```
 
-Notes and best practices
+ Example: using Valkey as the backend (same facade)
 
-- Prefer using the facade helpers (`cache_get`, `cache_set`) in application code so switching providers requires only a single initialization change.
-- Encode TTLs in seconds. Providers should respect the `ttl` argument; `None` means persist until evicted by the provider.
-- Keys are plain strings; use a consistent prefixing strategy (for example, `myapp:users:{id}`) to avoid collisions when sharing a Redis instance.
-- Error handling: when initializing the global cache (e.g., network failures connecting to Redis), handle exceptions and decide whether your app should degrade gracefully (skip caching) or fail fast.
+ ```python
+ from faciliter_lib.cache.valkey_cache import ValkeyCache
+ from faciliter_lib.cache.valkey_config import ValkeyConfig
+ from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set
 
-If you need to access provider-specific functionality, you can still import and use the concrete cache class directly, but that couples your code to the vendor implementation.
+ cfg = ValkeyConfig(url="https://valkey.example.com", api_key="YOUR_KEY")
+ cache = ValkeyCache.from_config(cfg)
+ set_cache(provider="valkey", config=cfg)
 
-## Environment variables
+ cache_set("session:abc", "some-value", ttl=600)
+ value = cache_get("session:abc")
+ ```
 
-The library does not force a specific set of environment variable names, but the following is a recommended convention for simple deployments. Use these env vars to drive which backend to initialize and the provider connection details.
+ Facade helper API (client-facing)
 
-- `CACHE_BACKEND` — Which backend to use. Allowed values: `redis`, `valkey`. Default: `redis`.
+ - `set_cache(cache_instance)` or `set_cache(provider=..., config=...)`: Install the global cache instance used by helpers. Calling `set_cache()` with no arguments uses environment variables and auto-detection (recommended).
+ - `cache_get(key, default=None)`: Retrieve a value by key (returns `default` if missing).
+ - `cache_set(key, value, ttl=None)`: Store a value with optional TTL in seconds.
+ - `cache_delete(key)`: Remove a key from the cache.
 
-Redis-related variables (used when `CACHE_BACKEND=redis`):
+ Notes and best practices
 
-- `REDIS_HOST`: Redis server host (default: `localhost`)
-- `REDIS_PORT`: Redis server port (default: `6379`)
-- `REDIS_DB`: Redis DB/index (default: `0`)
-- `REDIS_PASSWORD`: Optional Redis password
+ - Prefer using the facade helpers (`cache_get`, `cache_set`) in application code so switching providers requires only a single initialization change.
+ - Encode TTLs in seconds. Providers should respect the `ttl` argument; `None` means persist until evicted by the provider.
+ - Keys are plain strings; use a consistent prefixing strategy (for example, `myapp:users:{id}`) to avoid collisions when sharing a Redis instance.
+ - Error handling: when initializing the global cache (e.g., network failures connecting to Redis), handle exceptions and decide whether your app should degrade gracefully (skip caching) or fail fast. `set_cache()` returns `True` when a usable cache was created, and `False` when caching is disabled.
 
-Valkey-related variables (used when `CACHE_BACKEND=valkey`):
+ If you need to access provider-specific functionality, you can still import and use the concrete cache class directly, but that couples your code to the vendor implementation.
 
-- `VALKEY_URL`: Valkey service URL (e.g., `https://valkey.example.com`)
-- `VALKEY_API_KEY`: API key or token for Valkey
+ ## Environment variables
+
+ The library does not force a specific set of environment variable names, but the following is a recommended convention for simple deployments. Use these env vars to drive which backend to initialize and the provider connection details. Calling `set_cache()` with no args will read these vars and prefer the configured backend.
+
+ - `CACHE_BACKEND`: Which backend to use. Allowed values: `redis`, `valkey`, `auto`. Default: `auto` (auto-detect based on installed clients and envs).
+
+ Redis-related variables (used when `CACHE_BACKEND=redis` or when Redis is selected):
+
+ - `REDIS_HOST`: Redis server host (default: `localhost`)
+ - `REDIS_PORT`: Redis server port (default: `6379`)
+ - `REDIS_DB`: Redis DB/index (default: `0`)
+ - `REDIS_PASSWORD`: Optional Redis password
+
+ Valkey-related variables (used when `CACHE_BACKEND=valkey`):
+
+ - `VALKEY_URL`: Valkey service URL (e.g., `https://valkey.example.com`)
+ - `VALKEY_API_KEY`: API key or token for Valkey
+
+ ## When to explicitly specify Redis or Valkey
+
+ - In most cases prefer `set_cache()` with environment-driven configuration so the library picks the appropriate backend.
+ - If you must force a specific backend (for example, during tests or in environments where `valkey` is installed but you still want Redis), call `set_cache(provider="redis", config=...)` or `set_cache(provider="valkey", config=...)`.
+
+ This approach keeps application code simple and ensures the cache manager performs consistent initialization, connection checks, and fallbacks.
 

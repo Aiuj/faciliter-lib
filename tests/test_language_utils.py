@@ -1,5 +1,6 @@
 import unittest
 from faciliter_lib.utils.language_utils import LanguageUtils
+from unittest.mock import patch
 
 class TestLanguageUtils(unittest.TestCase):
     # Tests for crop_text_preserve_words method
@@ -132,6 +133,75 @@ class TestLanguageUtils(unittest.TestCase):
         text = "   This is a test sentence.   "
         lang = LanguageUtils.detect_language(text)
         self.assertEqual(lang["lang"], "en")
+
+    # New tests for detect_languages
+    def test_detect_languages_basic_threshold(self):
+        text = "Bonjour tout le monde!"
+        # Use the real detector for basic smoke test; should return at least French
+        langs = LanguageUtils.detect_languages(text, min_confidence=0.2)
+        # Should include French with a numeric score
+        self.assertTrue(any(l.get("lang") == "fr" and isinstance(l.get("score"), (int, float)) for l in langs))
+
+    def test_detect_languages_respects_threshold(self):
+        # We'll patch the underlying detect() to return a list with controlled scores
+        fake_output = [("fr", 0.95), ("en", 0.25), ("es", 0.1)]
+        with patch('faciliter_lib.utils.language_utils.detect', return_value=fake_output):
+            result = LanguageUtils.detect_languages("dummy text", min_confidence=0.2)
+            # Should include fr and en, but not es
+            langs = [r['lang'] for r in result]
+            self.assertIn('fr', langs)
+            self.assertIn('en', langs)
+            self.assertNotIn('es', langs)
+
+    def test_detect_languages_ignores_non_numeric_scores_for_threshold(self):
+        # Simulate detector returning mixed shapes including non-numeric score
+        fake_output = [{'lang': 'fr', 'score': 0.9}, {'lang': 'xx', 'score': None}, ('en', 0.4), 'de']
+        with patch('faciliter_lib.utils.language_utils.detect', return_value=fake_output):
+            result = LanguageUtils.detect_languages("dummy text", min_confidence=0.3)
+            # 'fr' and 'en' should be present (0.9 and 0.4), 'xx' has None so ignored, 'de' has no score so ignored
+            langs = [r['lang'] for r in result]
+            self.assertIn('fr', langs)
+            self.assertIn('en', langs)
+            self.assertNotIn('xx', langs)
+            self.assertNotIn('de', langs)
+
+    def test_detect_languages_invalid_input(self):
+        with self.assertRaises(ValueError):
+            LanguageUtils.detect_languages(123)
+
+    # Tests for the new detect_most_common_language helper
+    def test_detect_most_common_language_basic(self):
+        samples = [
+            "Bonjour tout le monde! Ceci est un test.",
+            "Une autre phrase en français.",
+            "Short",  # should be skipped as too short
+            "   ",   # whitespace-only skipped
+        ]
+        # Use the real detector as a smoke test (should pick 'fr')
+        result = LanguageUtils.detect_most_common_language(samples, min_confidence=0.2)
+        self.assertIn(result, ("fr", "fr-FR", "fr-CA", "fr-CH", "fr"))
+
+    def test_detect_most_common_language_with_patching(self):
+        samples = ["s1_sample_long", "s2_sample_long", "s3_sample_long"]
+        # Patch detect_languages to return controlled top candidates per sample
+        # We'll simulate that s1->en, s2->en, s3->fr
+        def fake_detect(text, min_confidence=0.5):
+            mapping = {
+                's1_sample_long': [{'lang': 'en', 'score': 0.9}],
+                's2_sample_long': [{'lang': 'en', 'score': 0.8}],
+                's3_sample_long': [{'lang': 'fr', 'score': 0.95}],
+            }
+            return mapping.get(text, [])
+
+        with patch('faciliter_lib.utils.language_utils.LanguageUtils.detect_languages', side_effect=fake_detect):
+            result = LanguageUtils.detect_most_common_language(samples, min_confidence=0.5)
+            self.assertEqual(result, 'en')
+
+    def test_detect_most_common_language_all_skipped(self):
+        # All inputs too short or invalid
+        samples = ["a", "  ", 123, None]
+        result = LanguageUtils.detect_most_common_language(samples)
+        self.assertIsNone(result)
 
 if __name__ == "__main__":
     unittest.main()

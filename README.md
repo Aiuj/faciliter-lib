@@ -231,6 +231,14 @@ confidence = result['score']  # 0.168...
 
 # Other language utilities
 # See docs/language_utils.md for complete API
+
+# If you need multiple candidate languages with confidence scores, use `detect_languages`:
+#
+# ```python
+# # Returns a list like [{'lang': 'fr', 'score': 0.99}, ...] filtered by `min_confidence`.
+# candidates = LanguageUtils.detect_languages("Bonjour tout le monde!", min_confidence=0.2)
+# print(candidates)  # Example: [{'lang': 'fr', 'score': 0.99}]
+# ```
 ```
 
 ---

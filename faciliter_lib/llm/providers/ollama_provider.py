@@ -11,11 +11,64 @@ from typing import Any, Dict, List, Optional, Type
 from pydantic import BaseModel
 
 from .base import BaseProvider
-from ..llm_config import OllamaConfig
+from ..llm_config import LLMConfig
+from dataclasses import dataclass
+from typing import Optional
+
 from faciliter_lib import get_module_logger
 
 logger = get_module_logger()
 
+@dataclass
+class OllamaConfig(LLMConfig):
+    base_url: str = "http://localhost:11434"
+    timeout: int = 60
+    num_ctx: Optional[int] = None
+    num_predict: Optional[int] = None
+    repeat_penalty: Optional[float] = None
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
+
+    def __init__(
+        self,
+        model: str = "qwen3:1.7b",
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        thinking_enabled: bool = False,
+        base_url: str = "http://localhost:11434",
+        timeout: int = 60,
+        num_ctx: Optional[int] = None,
+        num_predict: Optional[int] = None,
+        repeat_penalty: Optional[float] = None,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None,
+    ):
+        super().__init__("ollama", model, temperature, max_tokens, thinking_enabled)
+        self.base_url = base_url
+        self.timeout = timeout
+        self.num_ctx = num_ctx
+        self.num_predict = num_predict
+        self.repeat_penalty = repeat_penalty
+        self.top_k = top_k
+        self.top_p = top_p
+
+    @classmethod
+    def from_env(cls) -> "OllamaConfig":
+        import os
+
+        return cls(
+            model=os.getenv("OLLAMA_MODEL", "qwen3:1.7b"),
+            temperature=float(os.getenv("OLLAMA_TEMPERATURE", "0.1")),
+            max_tokens=int(os.getenv("OLLAMA_MAX_TOKENS")) if os.getenv("OLLAMA_MAX_TOKENS") else None,
+            thinking_enabled=os.getenv("OLLAMA_THINKING_ENABLED", "false").lower() == "true",
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            timeout=int(os.getenv("OLLAMA_TIMEOUT", "60")),
+            num_ctx=int(os.getenv("OLLAMA_NUM_CTX")) if os.getenv("OLLAMA_NUM_CTX") else None,
+            num_predict=int(os.getenv("OLLAMA_NUM_PREDICT")) if os.getenv("OLLAMA_NUM_PREDICT") else None,
+            repeat_penalty=float(os.getenv("OLLAMA_REPEAT_PENALTY")) if os.getenv("OLLAMA_REPEAT_PENALTY") else None,
+            top_k=int(os.getenv("OLLAMA_TOP_K")) if os.getenv("OLLAMA_TOP_K") else None,
+            top_p=float(os.getenv("OLLAMA_TOP_P")) if os.getenv("OLLAMA_TOP_P") else None,
+        )
 
 class OllamaProvider(BaseProvider):
     """Provider implementation for Ollama (local models)."""

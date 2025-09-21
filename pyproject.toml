@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "faciliter-lib"
-version = "0.2.6"
+version = "0.2.7"
 description = "Shared library for MCP agent tools (internal use only)"
 authors = [{ name = "Julien Nadaud", email = "jnadaud@faciliter.ai" }]
 readme = "README.md"
@@ -68,6 +68,7 @@ python_functions = ["test_*"]
 [dependency-groups]
 dev = [
     "build>=1.2.2.post1",
+    "pytest-asyncio>=1.2.0",
     "setuptools>=80.9.0",
     "wheel>=0.45.1",
 ]

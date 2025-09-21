@@ -12,14 +12,93 @@ from typing import Any, Dict, List, Optional, Type
 from pydantic import BaseModel
 
 from .base import BaseProvider
-from ..llm_config import GeminiConfig
+from ..llm_config import LLMConfig
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
 from faciliter_lib import get_module_logger
 from faciliter_lib.tracing.tracing import add_trace_metadata
+from faciliter_lib.llm.rate_limiter import RateLimitConfig, RateLimiter
+from faciliter_lib.llm.retry import RetryConfig, retry_handler
 
 logger = get_module_logger()
 
+
+@dataclass
+class GeminiConfig(LLMConfig):
+    api_key: str
+    base_url: str = "https://generativelanguage.googleapis.com"
+    safety_settings: Optional[Dict[str, Any]] = None
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gemini-1.5-flash",
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        thinking_enabled: bool = False,
+        base_url: str = "https://generativelanguage.googleapis.com",
+        safety_settings: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__("gemini", model, temperature, max_tokens, thinking_enabled)
+        self.api_key = api_key
+        self.base_url = base_url
+        self.safety_settings = safety_settings or {
+            "HARM_CATEGORY_HARASSMENT": "BLOCK_ONLY_HIGH",
+            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_ONLY_HIGH",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_ONLY_HIGH",
+            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_ONLY_HIGH",
+        }
+
+    @classmethod
+    def from_env(cls) -> "GeminiConfig":
+        import os
+
+        def get_env(*names, default=None):
+            for name in names:
+                val = os.getenv(name)
+                if val is not None:
+                    return val
+            return default
+
+        api_key = get_env("GEMINI_API_KEY", "GOOGLE_GENAI_API_KEY", default="")
+        model = get_env("GEMINI_MODEL", "GOOGLE_GENAI_MODEL", "GOOGLE_GENAI_MODEL_DEFAULT", default="gemini-1.5-flash")
+        temperature = float(get_env("GEMINI_TEMPERATURE", "GOOGLE_GENAI_TEMPERATURE", default="0.1"))
+        max_tokens_env = get_env("GEMINI_MAX_TOKENS", "GOOGLE_GENAI_MAX_TOKENS")
+        max_tokens = int(max_tokens_env) if max_tokens_env is not None else None
+        thinking_enabled = get_env("GEMINI_THINKING_ENABLED", "GOOGLE_GENAI_THINKING_ENABLED", default="false").lower() == "true"
+        base_url = get_env("GEMINI_BASE_URL", "GOOGLE_GENAI_BASE_URL", default="https://generativelanguage.googleapis.com")
+
+        return cls(
+            api_key=api_key,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            thinking_enabled=thinking_enabled,
+            base_url=base_url,
+        )
+
 class GoogleGenAIProvider(BaseProvider):
-    """Provider implementation for Google GenAI (Gemini)."""
+    """Provider implementation for Google GenAI (Gemini).
+
+    Includes a lightweight in-process rate limiter enforcing per-model
+    requests-per-minute (RPM) ceilings derived from a hardcoded table. Token
+    and daily limits are currently not enforced client-side. The limiter is
+    best-effort and fail-soft: if acquisition raises, the request proceeds.
+    
+    Also includes retry logic with exponential backoff for transient failures
+    such as rate limits, server errors, and network issues.
+    """
+
+    # Hardcoded per-model request-per-minute limits. Keys are lowercase substrings
+    # we expect to find in the configured model name for a match. These values
+    # reflect only RPM (requests per minute); TPM/RPD intentionally ignored for now.
+    _MODEL_RPM: Dict[str, int] = {
+        "gemini-2.5-pro": 5,          # Gemini 2.5 Pro
+        "gemini-2.5-flash-lite": 15,  # Gemini 2.5 Flash-Lite
+        "gemini-2.5-flash": 10,       # Gemini 2.5 Flash (keep after flash-lite for matching specificity)
+        "gemma-3": 30,         # Gemma 3
+        "embedding": 100,      # Gemini Embedding models
+    }
 
     def __init__(self, config: GeminiConfig) -> None:  # type: ignore[override]
         super().__init__(config)
@@ -33,6 +112,57 @@ class GoogleGenAIProvider(BaseProvider):
 
         from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
         GoogleGenAIInstrumentor().instrument()
+
+        # Initialize a rate limiter based on model RPM. We derive a conservative
+        # per-second rate as max(1, RPM/60). If model not found, default to 60 RPM.
+        model_lc = (config.model or "").lower()
+        rpm = 60  # default fallback
+        # Choose the most specific matching key (longest substring match)
+        matches = [k for k in self._MODEL_RPM.keys() if k in model_lc]
+        if matches:
+            matches.sort(key=len, reverse=True)
+            rpm = self._MODEL_RPM[matches[0]]
+        rps = max(1.0 / 60.0, rpm / 60.0)  # ensure non-zero; may be fractional
+        self._rate_limiter = RateLimiter(
+            RateLimitConfig(requests_per_minute=rpm, requests_per_second=rps)
+        )
+        logger.debug(
+            "Initialized Gemini rate limiter",
+            extra={"model": config.model, "rpm": rpm, "rps": rps},
+        )
+
+        # Configure retry logic for common transient failures
+        # Identify retryable exceptions from google-genai and google.api_core
+        retryable_exceptions = []
+        try:
+            from google.api_core import exceptions as gac_exceptions
+            retryable_exceptions.extend([
+                gac_exceptions.ResourceExhausted,     # 429 rate limits
+                gac_exceptions.ServiceUnavailable,    # 503 service unavailable
+                gac_exceptions.InternalServerError,   # 500 internal errors
+                gac_exceptions.DeadlineExceeded,      # 504 gateway timeout
+                gac_exceptions.TooManyRequests,       # Additional rate limit variant
+            ])
+        except ImportError:
+            # google.api_core might not be available in all setups
+            pass
+
+        # Add common network-level exceptions
+        retryable_exceptions.extend([
+            ConnectionError,
+            TimeoutError,
+        ])
+
+        self._retry_config = RetryConfig(
+            max_retries=3,
+            base_delay=1.0,
+            max_delay=30.0,
+            retry_on_exceptions=tuple(retryable_exceptions) if retryable_exceptions else (Exception,),
+        )
+        logger.debug(
+            "Initialized Gemini retry config",
+            extra={"max_retries": self._retry_config.max_retries, "retryable_exceptions_count": len(retryable_exceptions)},
+        )
 
     def _to_genai_messages(self, messages: List[Dict[str, str]]) -> str:
         """Flatten OpenAI-style messages to a single prompt string.
@@ -130,6 +260,35 @@ class GoogleGenAIProvider(BaseProvider):
             return {}
         return {"tools": tools}
 
+    def _acquire_rate_limit(self) -> None:
+        """Acquire the rate limiter slot.
+
+        The provider's public interface is synchronous, but the RateLimiter is
+        asyncio-based. This helper will attempt to reuse an existing running
+        event loop if one exists (e.g., when called from async context via
+        sync wrapper) by scheduling the coroutine; otherwise it will create a
+        temporary event loop using asyncio.run.
+        """
+        try:
+            import asyncio
+
+            async def _run():  # type: ignore
+                await self._rate_limiter.acquire()
+
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop and loop.is_running():
+                # Run coroutine in existing loop; create a Task and wait.
+                fut = asyncio.run_coroutine_threadsafe(self._rate_limiter.acquire(), loop)  # type: ignore[arg-type]
+                fut.result()
+            else:
+                asyncio.run(_run())
+        except Exception as e:  # pragma: no cover - defensive
+            # Never block the call entirely due to rate limiter errors.
+            logger.warning("Rate limiter acquisition failed; proceeding without throttle", exc_info=e)
+
     def chat(
         self,
         *,
@@ -140,7 +299,44 @@ class GoogleGenAIProvider(BaseProvider):
         use_search_grounding: bool = False,
         thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
+        """Main chat interface with rate limiting and retry logic."""
         try:
+            # Enforce model-specific RPM throttling before performing network call.
+            self._acquire_rate_limit()
+            
+            # Call the actual API with retry logic
+            return self._chat_with_retry(
+                messages=messages,
+                tools=tools,
+                structured_output=structured_output,
+                system_message=system_message,
+                use_search_grounding=use_search_grounding,
+                thinking_enabled=thinking_enabled,
+            )
+        except Exception as e:  # pragma: no cover - network errors
+            logger.exception("genai.chat failed")
+            return {
+                "error": str(e),
+                "content": None,
+                "structured": structured_output is not None,
+                "tool_calls": [],
+                "usage": {},
+            }
+
+    def _chat_with_retry(
+        self,
+        *,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        structured_output: Optional[Type[BaseModel]] = None,
+        system_message: Optional[str] = None,
+        use_search_grounding: bool = False,
+        thinking_enabled: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Core API call logic with retry decoration applied."""
+        
+        @retry_handler(self._retry_config)
+        def _make_api_call() -> Dict[str, Any]:
             # Minimal debug without leaking content
             logger.debug(
                 "genai.chat start",
@@ -255,12 +451,5 @@ class GoogleGenAIProvider(BaseProvider):
                 "tool_calls": tool_calls,
                 "usage": usage,
             }
-        except Exception as e:  # pragma: no cover - network errors
-            logger.exception("genai.chat failed")
-            return {
-                "error": str(e),
-                "content": None,
-                "structured": structured_output is not None,
-                "tool_calls": [],
-                "usage": {},
-            }
+
+        return _make_api_call()

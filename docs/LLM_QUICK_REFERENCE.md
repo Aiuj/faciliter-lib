@@ -36,6 +36,9 @@ print(resp["content"])  # plain text
 ✅ Single-turn and multi-turn support  
 ✅ Thinking mode for Gemini 2.5 models  
 ✅ Optional Google Search grounding (Gemini)  
+✅ **Model-specific rate limiting** (5-100 RPM per model)  
+✅ **Automatic retry with exponential backoff** (network errors, rate limits)  
+✅ **Circuit breaker pattern** with graceful degradation  
 ✅ Graceful error handling
 
 ## Response Format
@@ -151,12 +154,16 @@ resp = client.chat(messages)
     - Thinking (2.5-series): if `thinking_enabled=True`, sets `include_thoughts`; if disabled, sets `thinking_budget=0` for non‑pro models
     - Tools: passes the provided functions list through
     - Search grounding: when `use_search_grounding=True`, enables Google Search tool and tool_config per official docs
+    - **Rate limiting**: Model-specific RPM limits (Gemini 2.5 Pro: 5 RPM, Flash: 10 RPM, Flash-Lite: 15 RPM, Gemma 3: 30 RPM, Embedding: 100 RPM)
+    - **Retry logic**: Automatic retry on rate limits (429), server errors (500/503), network failures with exponential backoff (3 retries, 1-30s delays)
 
 - Ollama (ollama):
     - Uses `ollama.chat()` with OpenAI-style messages
     - Structured: uses `format='json'`; validates with Pydantic when provided; returns `dict`
     - Tools: passes functions through (model support varies)
     - Search grounding: ignored (not supported)
+    - **Rate limiting**: None (local server)
+    - **Retry logic**: None (local server)
 
 ## Provider Comparison
 
@@ -169,6 +176,8 @@ resp = client.chat(messages)
 | Tools | Model-dependent | Native support |
 | Structured Output | JSON + Pydantic validate | response_schema + parsed |
 | Thinking | N/A | 2.5-series (configurable) |
+| **Rate Limiting** | **None** | **Model-specific (5-100 RPM)** |
+| **Retry Logic** | **None** | **Auto-retry with backoff** |
 
 ## Best Practices
 
@@ -177,6 +186,27 @@ resp = client.chat(messages)
 3. Verify model support for tools/structured output
 4. Monitor usage with cloud providers
 5. Keep prompts concise to stay within context
+6. **Rate limiting is handled automatically** - no need to implement client-side throttling
+7. **Retries are transparent** - failed requests automatically retry with exponential backoff
+8. **For high-volume applications**, consider model selection based on RPM limits (Flash > Pro for rate)
+
+## Resilience Features
+
+### Automatic Rate Limiting (Gemini)
+- **Per-model RPM limits**: Automatically enforced based on model type
+- **Transparent throttling**: Requests are delayed to respect API limits
+- **Fail-soft design**: Rate limiter failures don't block requests
+
+### Automatic Retry Logic (Gemini)
+- **Exponential backoff**: 1s → 2s → 4s delays with 50% jitter
+- **Retryable errors**: Network failures, rate limits (429), server errors (500/503)
+- **Max 3 retries**: Prevents infinite loops while providing resilience
+- **Error preservation**: Final error is returned if all retries fail
+
+### Circuit Breaker Pattern
+- **Graceful degradation**: Partial failures don't break the entire system
+- **Comprehensive logging**: All retry attempts and rate limit events are logged
+- **Transparent operation**: No code changes required to benefit from resilience
 
 ## References
 - Google GenAI Python SDK: https://googleapis.github.io/python-genai/

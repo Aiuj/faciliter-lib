@@ -22,12 +22,79 @@ from typing import Any, Dict, List, Optional, Type
 from pydantic import BaseModel
 
 from .base import BaseProvider
-from ..llm_config import OpenAIConfig
+from ..llm_config import LLMConfig
+from dataclasses import dataclass
+from typing import Optional
 from faciliter_lib import get_module_logger
 from faciliter_lib.tracing.tracing import add_trace_metadata
 
 logger = get_module_logger()
 
+
+
+@dataclass
+class OpenAIConfig(LLMConfig):
+    api_key: str
+    base_url: Optional[str] = None
+    organization: Optional[str] = None
+    project: Optional[str] = None
+    azure_endpoint: Optional[str] = None
+    azure_api_version: Optional[str] = None
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        thinking_enabled: bool = False,
+        base_url: Optional[str] = None,
+        organization: Optional[str] = None,
+        project: Optional[str] = None,
+        azure_endpoint: Optional[str] = None,
+        azure_api_version: Optional[str] = None,
+    ):
+        super().__init__("openai", model, temperature, max_tokens, thinking_enabled)
+        self.api_key = api_key
+        self.base_url = base_url
+        self.organization = organization
+        self.project = project
+        self.azure_endpoint = azure_endpoint
+        self.azure_api_version = azure_api_version
+
+    @classmethod
+    def from_env(cls) -> "OpenAIConfig":
+        import os
+
+        def getenv(*names: str, default: Optional[str] = None) -> Optional[str]:
+            for n in names:
+                v = os.getenv(n)
+                if v is not None:
+                    return v
+            return default
+
+        azure_endpoint = getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = getenv("AZURE_OPENAI_API_KEY", "OPENAI_API_KEY", default="") or ""
+        model = getenv("AZURE_OPENAI_DEPLOYMENT", "OPENAI_MODEL", default="gpt-4o-mini") or "gpt-4o-mini"
+        temperature = float(getenv("OPENAI_TEMPERATURE", default="0.7") or 0.7)
+        max_tokens_env = getenv("OPENAI_MAX_TOKENS")
+        max_tokens = int(max_tokens_env) if max_tokens_env else None
+        base_url = getenv("OPENAI_BASE_URL")
+        organization = getenv("OPENAI_ORG", "OPENAI_ORGANIZATION")
+        project = getenv("OPENAI_PROJECT")
+        azure_api_version = getenv("AZURE_OPENAI_API_VERSION", default="2024-08-01-preview")
+
+        return cls(
+            api_key=api_key,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            base_url=base_url,
+            organization=organization,
+            project=project,
+            azure_endpoint=azure_endpoint,
+            azure_api_version=azure_api_version,
+        )
 
 class OpenAIProvider(BaseProvider):
     """Provider implementation for OpenAI-compatible APIs."""

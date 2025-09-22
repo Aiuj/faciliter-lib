@@ -2,6 +2,14 @@
 
 ## Changes done
 
+### 0.2.8
+
+- Add a standard settings class to ease configuration management across all applications
+
+### 0.2.7
+
+- Manage rate limits with retries on Google genai models
+
 ### 0.2.6
 
 - Added returning the list of detected languages in the language detection utility
@@ -30,4 +38,4 @@
 - Implement a reranker implementation similar to the embedding
 - Implement LangChain and LlamaIndex abstraction wrappers
 - Add a circuit Breaker to the LLM interface (https://python.plainenglish.io/architecture-of-ai-driven-systems-what-every-technical-architect-should-know-767f5a1fdcd0)
-- Manage rate limits with retries
+

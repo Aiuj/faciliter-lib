@@ -17,6 +17,39 @@
 - Easy integration in monorepo and external tools
 - Fully tested with Pytest
 - Type hints support
+- **🆕 Unified Settings Management** - Comprehensive configuration system with .env support
+
+---
+
+## ⚙️ Settings Management (New!)
+
+`faciliter-lib` now includes a powerful, unified settings management system that handles all your application configuration:
+
+```python
+from faciliter_lib.config import StandardSettings
+
+# Auto-configure from environment variables and .env files
+settings = StandardSettings.from_env()
+
+print(f"App: {settings.app_name} v{settings.version}")
+print(f"Environment: {settings.environment}")
+
+# Access service configurations if enabled
+if settings.llm:
+    print(f"LLM: {settings.llm.provider} - {settings.llm.model}")
+if settings.cache:
+    print(f"Cache: {settings.cache.host}:{settings.cache.port}")
+```
+
+### Key Features:
+- **Auto-detection**: Automatically enables services based on environment variables
+- **Type-safe**: Full validation and type conversion
+- **Backward compatible**: Works with existing config classes
+- **Easy extension**: Simple to add custom settings
+- **.env support**: Automatic discovery and loading
+- **Multi-environment**: dev/staging/production configurations
+
+See **[Settings Documentation](docs/settings.md)** for complete guide and examples.
 
 ---
 
@@ -86,6 +119,27 @@ git push origin 0.x.y
 ---
 
 ## 🚀 Usage
+
+### Settings Management
+
+Unified configuration for all services:
+
+```python
+from faciliter_lib.config import StandardSettings
+
+# Load all settings from environment
+settings = StandardSettings.from_env()
+
+# Use with existing clients - backward compatible
+if settings.llm:
+    llm_config = settings.get_llm_config()  # Returns OpenAIConfig/GeminiConfig/etc.
+if settings.cache:
+    redis_config = settings.get_redis_config()  # Returns RedisConfig
+
+# Or access settings directly
+print(f"App: {settings.app_name} v{settings.version}")
+print(f"LLM Model: {settings.llm.model if settings.llm else 'Not configured'}")
+```
 
 ### Cache Manager
 
@@ -247,6 +301,7 @@ confidence = result['score']  # 0.168...
 
 Detailed documentation is available in the `docs/` directory:
 
+- **[Settings Management](docs/settings.md)** - 🆕 Unified configuration system guide
 - **[Excel Manager](docs/excel_manager.md)** - Complete guide for Excel file processing
 - **[Cache System](docs/cache.md)** - Redis caching configuration and usage
 - **[LLM Integration](docs/llm.md)** - Multi-provider LLM client documentation

@@ -7,12 +7,28 @@ This module provides utilities for:
 - Text cropping while preserving word and sentence boundaries
 """
 
-from fast_langdetect import detect
+from fast_langdetect import detect, LangDetectConfig, LangDetector
 import logging
 import re
 from typing import List, Dict, Optional
 
+# Module-level detector configured with max_input_length=200
+_LANG_DETECTOR_CONFIG = None
+DETECTOR = None
+try:
+    _LANG_DETECTOR_CONFIG = LangDetectConfig(max_input_length=200)
+    DETECTOR = LangDetector(_LANG_DETECTOR_CONFIG)
+    # Provide a module-level detect wrapper that prefers the configured detector
+    def _module_detect(text, **kwargs):
+        return DETECTOR.detect(text, **kwargs)
+    detect = _module_detect
+except Exception:
+    # If initialization fails, leave the imported `detect` as-is
+    DETECTOR = None
+
+
 class LanguageUtils:
+    pass
     @staticmethod
     def crop_text_preserve_words(text: str, max_length: int = 200, prefer_sentences: bool = True, min_word_boundary: int = None) -> str:
         """
@@ -144,6 +160,21 @@ class LanguageUtils:
             raise ValueError("Input text cannot be empty after trimming whitespace.")
         text = text.replace('\n', ' ').replace('\r', ' ')
         text = re.sub(r'\s+', ' ', text).strip()
+        # If no explicit max_length provided, prefer the module-level detector's setting
+        if max_length is None:
+            max_length = 200
+        # Use detector's configured max_input_length when available
+        try:
+            detector_cfg_max = _LANG_DETECTOR_CONFIG.max_input_length if _LANG_DETECTOR_CONFIG is not None else None
+            if detector_cfg_max is not None:
+                max_length = detector_cfg_max
+        except Exception:
+            pass
+
+        # Default min_word_boundary to 80% of effective max_length when not provided
+        if min_word_boundary is None:
+            min_word_boundary = int(max_length * 0.8)
+
         text = LanguageUtils.crop_text_preserve_words(text, max_length=max_length, prefer_sentences=True, min_word_boundary=min_word_boundary)
         if len(text) < 3:
             raise ValueError("Input text is too short for reliable language detection (minimum 3 characters after processing).")
@@ -158,6 +189,7 @@ class LanguageUtils:
         # Reuse centralized preprocessing
         text = LanguageUtils._preprocess_text_for_detection(text, max_length=500, min_word_boundary=400)
 
+        # Use module-level `detect` wrapper so tests can patch it.
         raw = detect(text)
         normalized = LanguageUtils._normalize_detector_output(raw)
 
@@ -182,6 +214,7 @@ class LanguageUtils:
         # Reuse centralized preprocessing
         text = LanguageUtils._preprocess_text_for_detection(text, max_length=500, min_word_boundary=400)
 
+        # Use module-level `detect` wrapper so tests can patch it.
         raw = detect(text)
         normalized = LanguageUtils._normalize_detector_output(raw)
 

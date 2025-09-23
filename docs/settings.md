@@ -366,6 +366,573 @@ REDIS_HOST=localhost
 ✅ **Compatible with existing StandardSettings APIs**  
 ✅ **Easy to test and maintain**
 
+### Custom Initialization and Validation
+
+For scenarios where you need custom initialization logic, validation, or post-processing, the cleanest approach is to inherit directly from `StandardSettings`:
+
+```python
+from pathlib import Path
+from dataclasses import dataclass, field
+from typing import Optional, List
+from faciliter_lib.config import StandardSettings, SettingsError, EnvParser
+
+@dataclass(frozen=True)
+class MyAppSettings(StandardSettings):
+    """Custom settings that extend StandardSettings with app-specific configuration."""
+    
+    # Custom fields
+    api_key: Optional[str] = None
+    api_timeout: int = 30
+    debug_mode: bool = False
+    max_workers: int = 4
+    feature_flags: List[str] = field(default_factory=list)
+    temp_dir: str = "/tmp/myapp"
+    output_format: str = "json"
+    
+    # Computed fields (will be set after initialization)
+    computed_output_dir: Optional[str] = field(default=None)
+    
+    @classmethod
+    def from_env(cls, load_dotenv=True, dotenv_paths=None, **overrides):
+        """Load settings from environment with custom fields and logic."""
+        # Load dotenv files
+        cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
+        
+        # First get standard settings using parent class logic
+        standard_settings = super().from_env(load_dotenv=False, **overrides)
+        
+        # Parse our custom environment variables
+        custom_fields = {
+            "api_key": EnvParser.get_env("API_KEY", "MY_API_KEY", required=True),
+            "api_timeout": EnvParser.get_env("API_TIMEOUT", "TIMEOUT", default=30, env_type=int),
+            "debug_mode": EnvParser.get_env("DEBUG_MODE", "DEBUG", default=False, env_type=bool),
+            "max_workers": EnvParser.get_env("MAX_WORKERS", "WORKERS", default=4, env_type=int),
+            "feature_flags": EnvParser.get_env("FEATURE_FLAGS", default=[], env_type=list),
+            "temp_dir": EnvParser.get_env("TEMP_DIR", "TMP_DIR", default="/tmp/myapp"),
+            "output_format": EnvParser.get_env("OUTPUT_FORMAT", default="json"),
+        }
+        
+        # Create the instance with both standard and custom fields
+        instance_data = {
+            # Standard fields
+            **standard_settings.as_dict(),
+            # Custom fields
+            **custom_fields,
+            # Overrides
+            **overrides
+        }
+        
+        # Create instance
+        instance = cls(**instance_data)
+        
+        # Perform custom initialization and return modified instance
+        return instance._post_init_setup()
+    
+    def _post_init_setup(self):
+        """Custom initialization logic after loading settings."""
+        updates = {}
+        
+        # Ensure temp directory exists and get absolute path
+        temp_path = Path(self.temp_dir)
+        temp_path.mkdir(parents=True, exist_ok=True)
+        updates['temp_dir'] = str(temp_path.absolute())
+        
+        # Set up output directory based on environment
+        if self.environment == 'production':
+            output_dir = Path('/var/log/myapp')
+        else:
+            output_dir = Path('./logs')
+        output_dir.mkdir(parents=True, exist_ok=True)
+        updates['computed_output_dir'] = str(output_dir)
+        
+        # Adjust worker count based on available CPUs
+        import os
+        cpu_count = os.cpu_count() or 1
+        adjusted_workers = min(self.max_workers, cpu_count * 2)
+        updates['max_workers'] = adjusted_workers
+        
+        # Update log level if debug mode
+        if self.debug_mode:
+            updates['log_level'] = 'DEBUG'
+        
+        # Validate settings
+        self._validate_custom_settings()
+        
+        # Create new instance with updates (since dataclass is frozen)
+        if updates:
+            # Get current values and apply updates
+            current_dict = {
+                field.name: getattr(self, field.name)
+                for field in self.__dataclass_fields__.values()
+                if field.init
+            }
+            current_dict.update(updates)
+            return type(self)(**current_dict)
+        
+        return self
+    
+    def _validate_custom_settings(self):
+        """Custom validation logic."""
+        # Validate API configuration
+        if self.api_timeout <= 0:
+            raise SettingsError("API timeout must be positive")
+        
+        # Validate worker configuration
+        if self.max_workers <= 0:
+            raise SettingsError("Max workers must be positive")
+        
+        # Validate feature flags
+        allowed_flags = ['feature_a', 'feature_b', 'feature_c', 'beta_features']
+        invalid_flags = [flag for flag in self.feature_flags if flag not in allowed_flags]
+        if invalid_flags:
+            raise SettingsError(f"Invalid feature flags: {invalid_flags}")
+        
+        # Validate output format
+        valid_formats = ['json', 'yaml', 'xml']
+        if self.output_format not in valid_formats:
+            raise SettingsError(f"Output format must be one of: {valid_formats}")
+
+# Usage - Clean and simple!
+settings = MyAppSettings.from_env()
+
+# All standard services work perfectly
+if settings.enable_llm:
+    llm_config = settings.get_llm_config()
+    print(f"LLM Provider: {llm_config.provider}")
+
+if settings.enable_cache:
+    redis_config = settings.get_redis_config()
+    print(f"Redis Host: {redis_config.host}")
+
+# Custom fields with post-initialization
+print(f"API Key: {settings.api_key[:8]}...")
+print(f"Temp directory: {settings.temp_dir}")  # Absolute path, guaranteed to exist
+print(f"Output directory: {settings.computed_output_dir}")  # Created based on environment
+print(f"Adjusted workers: {settings.max_workers}")  # Adjusted for CPU count
+print(f"Debug mode: {settings.debug_mode}")
+print(f"Feature flags: {settings.feature_flags}")
+```
+
+### Simplified Version (No Post-Processing)
+
+If you don't need complex initialization logic, you can make it even simpler:
+
+```python
+from dataclasses import dataclass
+from typing import Optional, List
+from faciliter_lib.config import StandardSettings, EnvParser
+
+@dataclass(frozen=True)
+class SimpleAppSettings(StandardSettings):
+    """Simple custom settings without complex post-processing."""
+    
+    api_key: Optional[str] = None
+    api_timeout: int = 30
+    debug_mode: bool = False
+    max_workers: int = 4
+    
+    @classmethod
+    def from_env(cls, load_dotenv=True, dotenv_paths=None, **overrides):
+        """Load settings from environment."""
+        cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
+        
+        # Get standard settings
+        standard_settings = super().from_env(load_dotenv=False, **overrides)
+        
+        # Parse custom fields
+        custom_fields = {
+            "api_key": EnvParser.get_env("API_KEY", required=True),
+            "api_timeout": EnvParser.get_env("API_TIMEOUT", default=30, env_type=int),
+            "debug_mode": EnvParser.get_env("DEBUG_MODE", default=False, env_type=bool),
+            "max_workers": EnvParser.get_env("MAX_WORKERS", default=4, env_type=int),
+        }
+        
+        # Combine and create instance
+        return cls(**{**standard_settings.as_dict(), **custom_fields, **overrides})
+
+# Usage
+settings = SimpleAppSettings.from_env()
+print(f"API Key: {settings.api_key}")
+print(f"LLM Enabled: {settings.enable_llm}")
+```
+
+### Testing Your Custom Settings
+
+When writing unit tests, you want to ensure tests are isolated and don't depend on external `.env` files or environment variables. Here are several strategies:
+
+#### Strategy 1: Disable .env Loading in Tests
+
+```python
+import unittest
+import os
+from unittest.mock import patch
+from pathlib import Path
+
+class TestMyAppSettings(unittest.TestCase):
+    
+    def setUp(self):
+        """Clear environment before each test."""
+        # Store original environment
+        self.original_env = dict(os.environ)
+        
+        # Clear relevant environment variables
+        test_vars = [
+            'API_KEY', 'API_TIMEOUT', 'DEBUG_MODE', 'MAX_WORKERS',
+            'OPENAI_API_KEY', 'REDIS_HOST', 'TEMP_DIR', 'OUTPUT_FORMAT'
+        ]
+        for var in test_vars:
+            os.environ.pop(var, None)
+    
+    def tearDown(self):
+        """Restore original environment after each test."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_settings_with_defaults_no_dotenv(self):
+        """Test settings using only defaults, no .env files."""
+        # Set only required variables
+        os.environ['API_KEY'] = 'test-key'
+        
+        # Disable .env loading and provide overrides
+        settings = MyAppSettings.from_env(
+            load_dotenv=False,  # Disable .env file loading
+            # Provide defaults for testing
+            temp_dir='/tmp/test',
+            enable_llm=False,   # Disable services for faster tests
+            enable_cache=False,
+            enable_tracing=False
+        )
+        
+        self.assertEqual(settings.api_key, 'test-key')
+        self.assertEqual(settings.api_timeout, 30)  # Default value
+        self.assertFalse(settings.debug_mode)       # Default value
+        self.assertEqual(settings.max_workers, 4)   # Default value
+        self.assertFalse(settings.enable_llm)       # Disabled for test
+    
+    def test_settings_with_mocked_env(self):
+        """Test settings with specific environment variables."""
+        test_env = {
+            'API_KEY': 'test-api-key',
+            'API_TIMEOUT': '60',
+            'DEBUG_MODE': 'true',
+            'MAX_WORKERS': '8',
+            'TEMP_DIR': '/tmp/test_app'
+        }
+        
+        with patch.dict(os.environ, test_env, clear=True):
+            settings = MyAppSettings.from_env(
+                load_dotenv=False,  # Don't load .env files
+                enable_llm=False,   # Keep tests fast
+                enable_cache=False
+            )
+            
+            self.assertEqual(settings.api_key, 'test-api-key')
+            self.assertEqual(settings.api_timeout, 60)
+            self.assertTrue(settings.debug_mode)
+            self.assertEqual(settings.max_workers, 8)
+    
+    def test_settings_direct_instantiation(self):
+        """Test settings by direct instantiation (bypassing environment)."""
+        settings = MyAppSettings(
+            # Standard fields
+            app_name='test-app',
+            version='1.0.0',
+            environment='test',
+            log_level='DEBUG',
+            project_root=None,
+            # Service configurations (None = disabled)
+            llm=None,
+            embeddings=None,
+            cache=None,
+            tracing=None,
+            database=None,
+            mcp_server=None,
+            # Service flags
+            enable_llm=False,
+            enable_embeddings=False,
+            enable_cache=False,
+            enable_tracing=False,
+            enable_database=False,
+            enable_mcp_server=False,
+            # Custom fields
+            api_key='test-key',
+            api_timeout=30,
+            debug_mode=False,
+            max_workers=4,
+            feature_flags=['test_feature'],
+            temp_dir='/tmp/test',
+            output_format='json',
+            computed_output_dir=None
+        )
+        
+        self.assertEqual(settings.api_key, 'test-key')
+        self.assertEqual(settings.app_name, 'test-app')
+        self.assertFalse(settings.enable_llm)
+```
+
+#### Strategy 2: Test-Specific Settings Class
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+from faciliter_lib.config import StandardSettings, EnvParser
+
+@dataclass(frozen=True)
+class TestAppSettings(StandardSettings):
+    """Test-specific settings that don't require external dependencies."""
+    
+    api_key: Optional[str] = "test-default-key"
+    api_timeout: int = 30
+    debug_mode: bool = False
+    max_workers: int = 2  # Lower for tests
+    
+    @classmethod
+    def from_env(cls, load_dotenv=False, **overrides):  # Default to no .env
+        """Test-friendly settings loader."""
+        # Set test-friendly defaults
+        test_defaults = {
+            'enable_llm': False,
+            'enable_cache': False,
+            'enable_tracing': False,
+            'enable_database': False,
+            'enable_mcp_server': False,
+            'environment': 'test',
+            'log_level': 'DEBUG',
+            'temp_dir': '/tmp/test_app',
+            **overrides
+        }
+        
+        # Only load .env if explicitly requested
+        return super().from_env(load_dotenv=load_dotenv, **test_defaults)
+
+# In your tests
+def test_app_functionality():
+    settings = TestAppSettings.from_env()  # No .env loading, test defaults
+    assert settings.api_key == "test-default-key"
+    assert settings.environment == "test"
+    assert not settings.enable_llm  # Services disabled
+```
+
+#### Strategy 3: Environment Variable Mocking with Pytest
+
+```python
+import pytest
+import os
+from unittest.mock import patch
+
+@pytest.fixture
+def clean_env():
+    """Fixture that provides a clean environment for each test."""
+    with patch.dict(os.environ, {}, clear=True):
+        yield
+
+@pytest.fixture
+def test_env():
+    """Fixture that provides a controlled test environment."""
+    test_vars = {
+        'API_KEY': 'test-key',
+        'API_TIMEOUT': '30',
+        'DEBUG_MODE': 'false',
+        'MAX_WORKERS': '2',
+        'ENVIRONMENT': 'test'
+    }
+    with patch.dict(os.environ, test_vars, clear=True):
+        yield
+
+def test_settings_with_clean_env(clean_env):
+    """Test with completely clean environment."""
+    # This will use only defaults and overrides
+    settings = MyAppSettings.from_env(
+        load_dotenv=False,
+        api_key='test-override',  # Direct override
+        enable_llm=False
+    )
+    assert settings.api_key == 'test-override'
+
+def test_settings_with_test_env(test_env):
+    """Test with controlled environment variables."""
+    settings = MyAppSettings.from_env(
+        load_dotenv=False,  # Don't load .env files
+        enable_llm=False    # Keep tests fast
+    )
+    assert settings.api_key == 'test-key'
+    assert settings.environment == 'test'
+```
+
+#### Strategy 4: Configuration Factory for Tests
+
+```python
+class SettingsFactory:
+    """Factory for creating test settings configurations."""
+    
+    @staticmethod
+    def create_test_settings(**overrides):
+        """Create settings optimized for testing."""
+        defaults = {
+            # App defaults
+            'app_name': 'test-app',
+            'version': '1.0.0-test',
+            'environment': 'test',
+            'log_level': 'DEBUG',
+            
+            # Disable external services
+            'enable_llm': False,
+            'enable_cache': False,
+            'enable_tracing': False,
+            'enable_database': False,
+            'enable_mcp_server': False,
+            
+            # Test-friendly values
+            'api_key': 'test-key',
+            'api_timeout': 10,  # Fast timeouts
+            'debug_mode': True,
+            'max_workers': 1,   # Single worker for deterministic tests
+            'temp_dir': '/tmp/test',
+            'output_format': 'json',
+            
+            # Override any custom values
+            **overrides
+        }
+        
+        return MyAppSettings.from_env(load_dotenv=False, **defaults)
+    
+    @staticmethod
+    def create_integration_test_settings(**overrides):
+        """Create settings for integration tests (with some services enabled)."""
+        return SettingsFactory.create_test_settings(
+            enable_cache=True,  # Enable cache for integration tests
+            **overrides
+        )
+
+# Usage in tests
+def test_business_logic():
+    settings = SettingsFactory.create_test_settings()
+    # Your test logic here
+    
+def test_with_cache_integration():
+    settings = SettingsFactory.create_integration_test_settings(
+        redis_host='localhost:6379'
+    )
+    # Integration test logic here
+```
+
+### Best Practices for Testing Settings
+
+✅ **Always disable .env loading** in unit tests (`load_dotenv=False`)  
+✅ **Use environment mocking** for controlled test environments  
+✅ **Disable external services** by default (LLM, cache, database)  
+✅ **Use direct instantiation** when you need full control  
+✅ **Create test-specific settings classes** for complex scenarios  
+✅ **Use fixtures** to ensure test isolation  
+✅ **Mock external dependencies** rather than using real services
+
+### Pytest Integration
+
+For pytest users, here's a complete testing setup:
+
+```python
+# conftest.py
+import pytest
+import os
+from unittest.mock import patch
+
+@pytest.fixture
+def clean_env():
+    """Provide a clean environment for tests."""
+    with patch.dict(os.environ, {}, clear=True):
+        yield
+
+@pytest.fixture  
+def test_env():
+    """Provide a controlled test environment."""
+    env_vars = {
+        'API_KEY': 'pytest-test-key',
+        'ENVIRONMENT': 'test',
+        'LOG_LEVEL': 'DEBUG'
+    }
+    with patch.dict(os.environ, env_vars, clear=True):
+        yield
+
+@pytest.fixture
+def test_settings():
+    """Provide test-optimized settings."""
+    return MyAppSettings.from_env(
+        load_dotenv=False,
+        enable_llm=False,
+        enable_cache=False,
+        api_key='fixture-test-key',
+        temp_dir='/tmp/pytest'
+    )
+
+# test_settings.py
+import pytest
+from my_app.settings import MyAppSettings
+
+def test_settings_defaults(clean_env):
+    """Test settings with default values only."""
+    settings = MyAppSettings.from_env(
+        load_dotenv=False,
+        api_key='test-key',  # Required field
+        enable_llm=False
+    )
+    assert settings.api_timeout == 30
+    assert not settings.debug_mode
+
+def test_settings_with_env(test_env):
+    """Test settings with environment variables."""
+    settings = MyAppSettings.from_env(load_dotenv=False)
+    assert settings.api_key == 'pytest-test-key'
+    assert settings.environment == 'test'
+
+def test_business_logic(test_settings):
+    """Test business logic with pre-configured settings."""
+    # Use the test_settings fixture
+    assert test_settings.api_key == 'fixture-test-key'
+    # Your business logic tests here
+
+@pytest.mark.parametrize('api_timeout,expected', [
+    (10, 10),
+    (60, 60),
+    (120, 120)
+])
+def test_api_timeout_values(clean_env, api_timeout, expected):
+    """Test different API timeout values."""
+    settings = MyAppSettings.from_env(
+        load_dotenv=False,
+        api_key='test',
+        api_timeout=api_timeout,
+        enable_llm=False
+    )
+    assert settings.api_timeout == expected
+```
+
+### Environment Variables
+
+```bash
+# Custom settings
+API_KEY=your-secret-key
+API_TIMEOUT=60
+DEBUG_MODE=true
+MAX_WORKERS=8
+FEATURE_FLAGS=feature_a,feature_b,feature_c
+TEMP_DIR=/tmp/myapp
+OUTPUT_FORMAT=yaml
+
+# Standard services still work
+OPENAI_API_KEY=sk-your-key
+REDIS_HOST=localhost
+MCP_SERVER_PORT=8204
+```
+
+### Key Benefits of Direct Inheritance
+
+✅ **Clean class hierarchy** - `MyAppSettings` IS-A `StandardSettings`  
+✅ **No data copying** - Direct inheritance, no object-to-object copying  
+✅ **Full type safety** - Proper dataclass with defined fields  
+✅ **IDE support** - Full autocomplete and type checking  
+✅ **Custom validation** - Override methods as needed  
+✅ **Familiar pattern** - Standard OOP inheritance
+
 ### Alternative: Advanced Custom Settings (BaseSettings)
 
 For more complex scenarios where you need full control over validation logic or want completely custom settings classes, you can still inherit from `BaseSettings`:

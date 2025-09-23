@@ -5,6 +5,7 @@
 ### 0.2.8
 
 - Add a standard settings class to ease configuration management across all applications
+- Add a connection pooling and healthcheck on cache manager (Redis and ValKey)
 
 ### 0.2.7
 

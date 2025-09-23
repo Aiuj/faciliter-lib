@@ -16,6 +16,9 @@ class CacheConfig:
     ttl: int = 3600
     password: Optional[str] = None
     time_out: int = 4
+    # Connection pool settings
+    max_connections: int = 50
+    retry_on_timeout: bool = True
 
 
 class BaseCache(ABC):
@@ -63,3 +66,13 @@ class BaseCache(ABC):
     def _deserialize_data(self, data: str) -> Any:
         """Deserialize data from storage"""
         return json.loads(data)
+    
+    @abstractmethod
+    def health_check(self) -> bool:
+        """Check if the cache server is healthy and responding"""
+        pass
+
+    def close(self):
+        """Close connections and cleanup resources - override in subclasses if needed"""
+        self.connected = False
+        self.client = None

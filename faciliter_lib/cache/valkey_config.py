@@ -23,5 +23,7 @@ class ValkeyConfig(RedisConfig):
             prefix=os.getenv("VALKEY_PREFIX", os.getenv("REDIS_PREFIX", "cache:")),
             ttl=int(os.getenv("VALKEY_CACHE_TTL", os.getenv("REDIS_CACHE_TTL", "3600"))),
             password=os.getenv("VALKEY_PASSWORD", os.getenv("REDIS_PASSWORD", None)),
-            time_out=int(os.getenv("VALKEY_TIMEOUT", os.getenv("REDIS_TIMEOUT", "4")))
+            time_out=int(os.getenv("VALKEY_TIMEOUT", os.getenv("REDIS_TIMEOUT", "4"))),
+            max_connections=int(os.getenv("VALKEY_MAX_CONNECTIONS", os.getenv("REDIS_MAX_CONNECTIONS", "50"))),
+            retry_on_timeout=os.getenv("VALKEY_RETRY_ON_TIMEOUT", os.getenv("REDIS_RETRY_ON_TIMEOUT", "true")).lower() == "true"
         )

@@ -9,28 +9,39 @@ from .valkey_config import ValkeyConfig
 
 
 class ValkeyCache(BaseCache):
-    """Valkey-specific cache implementation"""
+    """Valkey-specific cache implementation with connection pooling"""
     
     def __init__(self, name: str = '', config: ValkeyConfig = None, ttl: Optional[int] = None, time_out: Optional[int] = None):
         config = config or ValkeyConfig.from_env()
         super().__init__(name, config, ttl, time_out)
         self.config: ValkeyConfig = config
-        self._valkey_kwargs = {
+        self._pool_kwargs = {
             'host': self.config.host,
             'port': self.config.port,
             'db': self.config.db,
             'decode_responses': True,
             'socket_connect_timeout': self.time_out,
-            'socket_timeout': self.time_out
+            'socket_timeout': self.time_out,
+            'max_connections': self.config.max_connections,
+            'retry_on_timeout': self.config.retry_on_timeout
         }
         if self.config.password:
-            self._valkey_kwargs['password'] = self.config.password
+            self._pool_kwargs['password'] = self.config.password
+        self._connection_pool = None
 
-    def _create_client(self) -> Any:
-        """Create Valkey client"""
+    def _create_connection_pool(self) -> Any:
+        """Create Valkey connection pool"""
         if valkey is None:
             raise ImportError("valkey package is not installed")
-        return valkey.Valkey(**self._valkey_kwargs)
+        return valkey.ConnectionPool(**self._pool_kwargs)
+
+    def _create_client(self) -> Any:
+        """Create Valkey client using connection pool"""
+        if valkey is None:
+            raise ImportError("valkey package is not installed")
+        if self._connection_pool is None:
+            self._connection_pool = self._create_connection_pool()
+        return valkey.Valkey(connection_pool=self._connection_pool)
 
     def connect(self):
         """Establish connection to Valkey server"""
@@ -78,3 +89,27 @@ class ValkeyCache(BaseCache):
             self.client.expire(key, ttl_to_use)
         except Exception:
             pass
+
+    def health_check(self) -> bool:
+        """Check if Valkey server is healthy and responding"""
+        if self.client is False or not self.connected:
+            return False
+        try:
+            result = self.client.ping()
+            return bool(result)
+        except Exception as e:
+            logging.error(f"[ValkeyCache] Health check failed: {e}")
+            return False
+
+    def close(self):
+        """Close connection pool and cleanup resources"""
+        if self._connection_pool:
+            try:
+                self._connection_pool.disconnect()
+                logging.info("[ValkeyCache] Connection pool closed")
+            except Exception as e:
+                logging.warning(f"[ValkeyCache] Error closing connection pool: {e}")
+            finally:
+                self._connection_pool = None
+                self.connected = False
+                self.client = False

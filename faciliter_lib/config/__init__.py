@@ -19,6 +19,7 @@ from .cache_settings import CacheSettings
 from .tracing_settings import TracingSettings
 from .database_settings import DatabaseSettings
 from .mcp_settings import MCPServerSettings
+from .fastapi_settings import FastAPIServerSettings
 from .standard_settings import StandardSettings
 
 __all__ = [
@@ -42,5 +43,6 @@ __all__ = [
     "TracingSettings",
     "DatabaseSettings",
     "MCPServerSettings",
+    "FastAPIServerSettings",
     "StandardSettings",
 ]

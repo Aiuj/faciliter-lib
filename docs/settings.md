@@ -28,6 +28,7 @@ faciliter_lib/config/
 ├── tracing_settings.py    # Tracing provider configuration
 ├── database_settings.py   # Database configuration
 ├── mcp_settings.py        # MCP server configuration
+├── fastapi_settings.py    # FastAPI HTTP server configuration
 └── standard_settings.py   # Main unified settings class
 ```
 
@@ -119,6 +120,12 @@ settings = StandardSettings.from_env(
     enable_cache=True,
     enable_tracing=False
 )
+
+# Null-safe accessors for convenience
+# Access sub-config attributes without checking None
+print(settings.mcp_server_safe.transport)     # str or None
+print(settings.fastapi_server_safe.url)       # str or None
+print(settings.llm_safe.model)                # str or None
 ```
 
 ### Adding Custom Configuration
@@ -246,6 +253,27 @@ connection_config = mcp_settings.get_connection_config()
 settings = StandardSettings.from_env()
 if settings.mcp_server:
     mcp_config = settings.get_mcp_server_config()  # Returns MCPServerSettings
+```
+
+### FastAPI Server Settings
+
+```python
+from faciliter_lib.config import FastAPIServerSettings
+
+# Configure optional FastAPI HTTP server
+fastapi_settings = FastAPIServerSettings.from_env(
+    host="0.0.0.0",
+    port=8096,
+    reload=False,
+    api_auth_enabled=False,
+    api_key_header_name="x-api-key",
+)
+
+# Use with StandardSettings
+settings = StandardSettings.from_env()
+if settings.fastapi_server:
+    api_cfg = settings.get_fastapi_server_config()  # Returns FastAPIServerSettings
+    print(api_cfg.url)
 ```
 
 ### Tracing Settings
@@ -1236,6 +1264,19 @@ except SettingsError as e:
 | `MCP_SERVER_URL` | Auto-generated | Full URL for server |
 | `MCP_SERVER_TIMEOUT` | `30` | Request timeout in seconds |
 | `MCP_TRANSPORT` | `"streamable-http"` | Transport type (streamable-http/stdio/websocket) |
+
+### FastAPI HTTP Server Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENABLE_FASTAPI_SERVER` | Auto-detected | Force enable/disable FastAPI server |
+| `FASTAPI_HOST` | `"0.0.0.0"` | Host address to bind server |
+| `FASTAPI_PORT` | `8096` | Port number for server |
+| `FASTAPI_RELOAD` | `false` | Enable Hot Reload (development) |
+| `FASTAPI_URL` | Auto-generated | Full URL for server |
+| `API_AUTH_ENABLED` | `false` | Require API key authentication |
+| `API_KEY_HEADER_NAME` | `"x-api-key"` | Header name to read API key from |
+| `API_KEYS` | `[]` | Comma-separated list of valid keys |
 
 ### Service Enablement
 

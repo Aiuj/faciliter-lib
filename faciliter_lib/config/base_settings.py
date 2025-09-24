@@ -329,3 +329,21 @@ class SettingsManager:
 
 # Global settings manager instance
 settings_manager = SettingsManager()
+
+
+class NullConfig:
+    """Null-object for configuration sections.
+
+    - Any attribute access returns None
+    - Falsy in boolean context
+    - `as_dict()` returns None
+    """
+
+    def __getattr__(self, name: str):  # noqa: D401
+        return None
+
+    def __bool__(self) -> bool:
+        return False
+
+    def as_dict(self):
+        return None

@@ -102,32 +102,39 @@ class TestTracingManager(unittest.TestCase):
     def test_initialization_with_service_name(self):
         """Test manager initialization with service name."""
         manager = TracingManager("test-service")
-        self.assertEqual(manager.service_name, "test-service")
-        self.assertEqual(manager.service_version, "0.1.0")
+        self.assertEqual(manager.settings.service_name, "test-service")
+        self.assertEqual(manager.settings.service_version, "0.1.0")
         self.assertIsNone(manager._provider)
         self.assertFalse(manager._initialized)
     
     def test_initialization_without_service_name(self):
         """Test manager initialization without service name."""
         manager = TracingManager()
-        self.assertEqual(manager.service_name, "unknown")
-        self.assertEqual(manager.service_version, "0.1.0")
+        self.assertEqual(manager.settings.service_name, "unknown")
+        self.assertEqual(manager.settings.service_version, "0.1.0")
     
     def test_initialization_with_env_variables(self):
         """Test manager initialization with environment variables."""
         os.environ["APP_NAME"] = "env-service"
         os.environ["APP_VERSION"] = "2.0.0"
         
-        manager = TracingManager()
-        self.assertEqual(manager.service_name, "env-service")
-        self.assertEqual(manager.service_version, "2.0.0")
+        try:
+            manager = TracingManager()
+            self.assertEqual(manager.settings.service_name, "env-service")
+            self.assertEqual(manager.settings.service_version, "2.0.0")
+        finally:
+            os.environ.pop("APP_NAME", None)
+            os.environ.pop("APP_VERSION", None)
     
     def test_service_name_priority(self):
         """Test that explicit service name takes priority over environment variable."""
         os.environ["APP_NAME"] = "env-service"
         
-        manager = TracingManager("explicit-service")
-        self.assertEqual(manager.service_name, "explicit-service")
+        try:
+            manager = TracingManager("explicit-service")
+            self.assertEqual(manager.settings.service_name, "explicit-service")
+        finally:
+            os.environ.pop("APP_NAME", None)
     
     @patch('faciliter_lib.tracing.tracing.trace')
     @patch('faciliter_lib.tracing.tracing.get_client')
@@ -265,6 +272,48 @@ class TestTracingManager(unittest.TestCase):
         # Should not raise exception
         manager.add_metadata({"name": "test"})
 
+    def test_initialization_with_settings(self):
+        """Test TracingManager initialization with TracingSettings."""
+        from faciliter_lib.config.tracing_settings import TracingSettings
+        
+        settings = TracingSettings(
+            enabled=True,
+            service_name="settings-service",
+            service_version="2.0.0",
+            langfuse_public_key="settings-public-key",
+            langfuse_secret_key="settings-secret-key",
+            langfuse_host="https://settings-host.com"
+        )
+        
+        manager = TracingManager(service_name="override-service", settings=settings)
+        
+        # Settings should take precedence, but service_name parameter should override settings.service_name
+        self.assertEqual(manager.settings.service_name, "override-service")
+        self.assertEqual(manager.settings.service_version, "2.0.0")
+        self.assertEqual(manager.settings.langfuse_public_key, "settings-public-key")
+        self.assertEqual(manager.settings.langfuse_secret_key, "settings-secret-key")
+        self.assertEqual(manager.settings.langfuse_host, "https://settings-host.com")
+        self.assertTrue(manager.settings.enabled)
+
+    def test_initialization_with_settings_disabled(self):
+        """Test TracingManager initialization with disabled tracing."""
+        from faciliter_lib.config.tracing_settings import TracingSettings
+        
+        settings = TracingSettings(
+            enabled=False,
+            service_name="disabled-service",
+            langfuse_public_key="disabled-key",
+            langfuse_secret_key="disabled-secret"
+        )
+        
+        manager = TracingManager(settings=settings)
+        self.assertFalse(manager.settings.enabled)
+        
+        # When disabled, setup should return NoOpTracingProvider
+        provider = manager.setup()
+        from faciliter_lib.tracing.tracing import NoOpTracingProvider
+        self.assertIsInstance(provider, NoOpTracingProvider)
+
 
 class TestSetupTracing(unittest.TestCase):
     """Test the setup_tracing function."""
@@ -279,7 +328,7 @@ class TestSetupTracing(unittest.TestCase):
         
         result = setup_tracing("test-service")
         
-        mock_manager_class.assert_called_once_with("test-service")
+        mock_manager_class.assert_called_once_with(service_name="test-service", settings=None)
         mock_manager.setup.assert_called_once()
         self.assertEqual(result, mock_provider)
     
@@ -293,7 +342,33 @@ class TestSetupTracing(unittest.TestCase):
         
         result = setup_tracing()
         
-        mock_manager_class.assert_called_once_with(None)
+        mock_manager_class.assert_called_once_with(service_name=None, settings=None)
+        mock_manager.setup.assert_called_once()
+        self.assertEqual(result, mock_provider)
+    
+    @patch('faciliter_lib.tracing.tracing.TracingManager')
+    def test_setup_tracing_with_settings(self, mock_manager_class):
+        """Test setup_tracing function with TracingSettings."""
+        from faciliter_lib.config.tracing_settings import TracingSettings
+        
+        mock_manager = Mock()
+        mock_provider = Mock()
+        mock_manager.setup.return_value = mock_provider
+        mock_manager_class.return_value = mock_manager
+        
+        # Create mock settings
+        settings = TracingSettings(
+            enabled=True,
+            service_name="test-service",
+            service_version="1.0.0",
+            langfuse_public_key="test-public-key",
+            langfuse_secret_key="test-secret-key",
+            langfuse_host="https://test-host.com"
+        )
+        
+        result = setup_tracing(name="override-service", settings=settings)
+        
+        mock_manager_class.assert_called_once_with(service_name="override-service", settings=settings)
         mock_manager.setup.assert_called_once()
         self.assertEqual(result, mock_provider)
 

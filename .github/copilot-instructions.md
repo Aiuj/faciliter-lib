@@ -2,6 +2,8 @@
 
 This doc orients AI agents to be productive in this repo in minutes. Keep responses concise, act directly in code, and run tests after changes.
 
+Always use "uv run" to execute scripts and tests, ensuring the virtual environment and dependencies are correctly applied.
+
 ## Architecture at a glance
 - Library, not an app. Python package `faciliter_lib/` with focused modules:
   - `utils/` and `mcp_utils.py`: parsing helpers and MCP convenience.

@@ -310,7 +310,12 @@ class GoogleGenAIProvider(BaseProvider):
             try:
                 asyncio.run(_acquire_with_timeout())
             except Exception as loop_error:
-                logger.warning(f"Event loop creation failed: {loop_error}; proceeding without throttle")
+                # Check if this is a rate limiter error specifically
+                error_msg = str(loop_error)
+                if "Rate limiter failed" in error_msg or hasattr(loop_error, '__cause__'):
+                    logger.warning("Rate limiter acquisition failed; proceeding without throttle", exc_info=loop_error)
+                else:
+                    logger.warning(f"Event loop creation failed: {loop_error}; proceeding without throttle")
                     
         except Exception as e:  # pragma: no cover - defensive
             # Never block the call entirely due to rate limiter errors.

@@ -264,27 +264,54 @@ class GoogleGenAIProvider(BaseProvider):
         """Acquire the rate limiter slot.
 
         The provider's public interface is synchronous, but the RateLimiter is
-        asyncio-based. This helper will attempt to reuse an existing running
-        event loop if one exists (e.g., when called from async context via
-        sync wrapper) by scheduling the coroutine; otherwise it will create a
-        temporary event loop using asyncio.run.
+        asyncio-based. This method creates a simple temporary event loop to 
+        handle the async rate limiter with a reasonable timeout.
         """
         try:
             import asyncio
-
-            async def _run():  # type: ignore
-                await self._rate_limiter.acquire()
-
+            import signal
+            import threading
+            
+            # Short timeout since rate limiting should be fast (5 seconds max)
+            MAX_TIMEOUT = 5.0
+            
+            async def _acquire_with_timeout():
+                try:
+                    await asyncio.wait_for(self._rate_limiter.acquire(), timeout=MAX_TIMEOUT)
+                    return True
+                except asyncio.TimeoutError:
+                    logger.warning(f"Rate limiter acquisition timed out after {MAX_TIMEOUT}s; proceeding without throttle")
+                    return False
+            
+            # Check if we're already in an async context
             try:
-                loop = asyncio.get_running_loop()
+                current_loop = asyncio.get_running_loop()
+                if current_loop.is_running():
+                    # We're in an async context but need sync behavior
+                    # Use run_in_executor to run in a separate thread with its own event loop
+                    import concurrent.futures
+                    
+                    def run_in_new_loop():
+                        return asyncio.run(_acquire_with_timeout())
+                    
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                        future = executor.submit(run_in_new_loop)
+                        try:
+                            future.result(timeout=MAX_TIMEOUT + 1.0)  # Extra buffer for thread overhead
+                        except concurrent.futures.TimeoutError:
+                            logger.warning(f"Rate limiter thread timed out; proceeding without throttle")
+                    return
+                    
             except RuntimeError:
-                loop = None
-            if loop and loop.is_running():
-                # Run coroutine in existing loop; create a Task and wait.
-                fut = asyncio.run_coroutine_threadsafe(self._rate_limiter.acquire(), loop)  # type: ignore[arg-type]
-                fut.result()
-            else:
-                asyncio.run(_run())
+                # No running loop, which is the normal case for sync calls
+                pass
+            
+            # Standard case: no running event loop, create a temporary one
+            try:
+                asyncio.run(_acquire_with_timeout())
+            except Exception as loop_error:
+                logger.warning(f"Event loop creation failed: {loop_error}; proceeding without throttle")
+                    
         except Exception as e:  # pragma: no cover - defensive
             # Never block the call entirely due to rate limiter errors.
             logger.warning("Rate limiter acquisition failed; proceeding without throttle", exc_info=e)

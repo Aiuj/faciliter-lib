@@ -54,9 +54,9 @@ DOC_CATEGORIES = [
         "relationship": "client",
     },
     {
-        "key": "sales_rfp_responses",
-        "label": _("Sales - RFP Responses"),
-        "description": _("Previous RFP responses, proposal templates, and bid documentation."),
+        "key": "sales_rfx",
+        "label": _("Sales - RFx Received"),
+        "description": _("RFP/RFI/RFQ received that need to be answered."),
         "icon": "assignment",
         "area": "SALES",
         "relationship": "supplier",

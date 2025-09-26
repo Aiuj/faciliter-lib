@@ -1,161 +1,174 @@
-# Centralized Logging Setup for MCP News
+## Centralized Logging for faciliter-lib
 
-This document explains how the centralized logging system works in the MCP News application and how to use it consistently across all modules.
+This document explains the centralized logging utilities provided by `faciliter-lib` and how to use them consistently across applications, scripts, and libraries that depend on the package.
 
 ## Overview
 
-The application now uses a centralized logging configuration through the `logger_config.py` module. This ensures that:
+The library exposes a centralized logging configuration via `faciliter_lib.tracing.logger` (re-exported from the top-level package). This provides:
 
-1. **All modules use the same logging format and configuration**
-2. **Log levels are controlled centrally via environment variables**
-3. **No duplicate logging setup across modules**
-4. **Consistent naming convention for all loggers**
+1. Consistent logging format and handler setup (console + optional rotating file)
+2. Centralized control of log levels via arguments, settings, or environment
+3. Safe, side-effect free module log access (modules do not initialize global logging)
+4. Ability to reconfigure logging later (e.g., promote INFO → DEBUG) using `force=True`
+5. Optional rotating file logging with size-based rotation
 
 ## How It Works
 
 ### Logger Configuration
 
-The centralized logging system is managed by `src/logger_config.py`, which:
+Managed by `faciliter_lib.tracing.logger`:
 
-- Sets up a root logger named `mcp_news` 
-- Creates module-specific child loggers (e.g., `mcp_news.main`, `mcp_news.utils`, etc.)
-- Uses the `LOG_LEVEL` setting from `settings.py` (which reads from environment variables)
-- Applies a consistent format: `%(asctime)s [%(levelname)s] %(name)s: %(message)s`
+- Root logger named after `app_name` (optional). Resolution precedence:
+    1. Explicit `app_name` argument
+    2. `app_settings.app_name` if `app_settings` provided
+    3. `APP_NAME` environment variable
+    4. Fallback: `faciliter_lib`
+- Module-specific loggers (e.g., `faciliter_lib.rate_limiter`)
+- Format: `%(asctime)s [%(levelname)s] %(name)s: %(message)s`
+- Optional rotating file handler
+- Reconfiguration on demand
 
-### Environment Configuration
+### Configuration Precedence
 
-The log level is controlled by the `LOG_LEVEL` environment variable in your `.env` file:
+Log level precedence (highest → lowest):
+1. Explicit `level` argument to `setup_logging`
+2. `AppSettings.log_level` (when `app_settings` provided)
+3. `LOG_LEVEL` environment variable
+4. Default: `INFO`
+
+File logging activation precedence:
+1. Explicit `file_logging` argument
+2. `LOG_FILE_ENABLED` environment variable (true/1/on/yes)
+3. Default: disabled
+
+### Environment Variables
 
 ```bash
-# Set to DEBUG, INFO, WARNING, ERROR, or CRITICAL
-LOG_LEVEL=DEBUG
+LOG_LEVEL=INFO              # DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FILE_ENABLED=false      # Enable rotating file logging
+LOG_FILE_PATH=logs/app.log  # Default: logs/<app_name>.log
+LOG_FILE_MAX_BYTES=1048576  # 1 MB rotation threshold
+LOG_FILE_BACKUP_COUNT=3     # Keep this many rotated archives
 ```
 
-## Usage in Your Modules
+## Usage Patterns
 
-### For New Modules
+### Application Entrypoint (API server / CLI main)
 
 ```python
-# Import the centralized logger at the top of your module
-from logger_config import get_module_logger
+from faciliter_lib import setup_logging
+from faciliter_lib.config.app_settings import AppSettings
 
-# Get a logger instance for your module
+settings = AppSettings.from_env()
+# app_name auto-resolves from settings; explicit arg not required
+logger = setup_logging(app_settings=settings)
+logger.info("Application startup complete")
+```
+
+Reconfigure with higher verbosity after CLI flag parsing:
+
+```python
+setup_logging(level="INFO")
+# later after parsing --debug
+setup_logging(level="DEBUG", force=True)
+```
+
+Enable file logging:
+
+```python
+setup_logging(level="INFO", file_logging=True, file_path="logs/service.log")
+```
+
+### Library / Internal Module Code
+
+Avoid calling `setup_logging` inside library modules. Use lightweight accessors:
+
+```python
+from faciliter_lib import get_module_logger
 logger = get_module_logger()
 
-# Use the logger throughout your module
-def my_function():
-    logger.info("This is an info message")
-    logger.warning("This is a warning")
-    logger.error("This is an error message")
-    logger.debug("This is a debug message (only shown if LOG_LEVEL=DEBUG)")
+def compute():
+    logger.debug("Running compute step")
 ```
 
-### For Existing Modules
-
-Replace the old logging setup:
+Explicit naming:
 
 ```python
-# OLD WAY - Don't do this anymore
-import logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from faciliter_lib import get_logger
+logger = get_logger("faciliter_lib.custom")
 ```
 
-With the new centralized setup:
+### Script-Level One-Off Override
 
 ```python
-# NEW WAY - Use this instead
-from logger_config import get_module_logger
-logger = get_module_logger()
+from faciliter_lib import setup_logging
+log = setup_logging(level="DEBUG", file_logging=True, file_path="logs/debug_script.log")
+log.debug("Verbose diagnostics enabled")
+```
+
+### Inspect Last Configuration
+
+```python
+from faciliter_lib import setup_logging, get_last_logging_config
+setup_logging(level="INFO", file_logging=True)
+print(get_last_logging_config())
 ```
 
 ## Key Benefits
 
 ### 1. Consistent Formatting
-All log messages now follow the same format:
 ```
-2025-08-06 18:25:41,076 [INFO] mcp_news.main: Starting application
-2025-08-06 18:25:41,102 [DEBUG] mcp_news.utils: Processing date string
-2025-08-06 18:25:41,115 [ERROR] mcp_news.gemini_provider: API call failed
+2025-09-26 10:03:12,431 [INFO] faciliter_lib.rate_limiter: Token bucket replenished
+2025-09-26 10:03:12,432 [DEBUG] faciliter_lib.openai_provider: Request payload size=842 chars
 ```
 
-### 2. Centralized Control
-Change the log level once in your `.env` file and it affects the entire application:
-- `LOG_LEVEL=DEBUG` - Shows all messages (very verbose)
-- `LOG_LEVEL=INFO` - Shows info, warning, error, and critical messages
-- `LOG_LEVEL=WARNING` - Shows only warnings, errors, and critical messages
-- `LOG_LEVEL=ERROR` - Shows only errors and critical messages
+### 2. Centralized, Reconfigurable Control
+Precedence-based level selection with runtime `force=True` reconfiguration.
 
-### 3. Module Identification
-Each log message clearly shows which module generated it:
-- `mcp_news.main` - Messages from main.py
-- `mcp_news.utils` - Messages from utils.py  
-- `mcp_news.gemini_provider` - Messages from gemini_provider.py
-- `mcp_news.tools.cache_manager` - Messages from tools/cache_manager.py
+### 3. Clear Module Identification
+Logger names reflect origin (e.g., `faciliter_lib.tools.excel_manager`).
 
 ### 4. No Duplicate Setup
-Previously, each module was setting up its own logging configuration, potentially conflicting with others. Now there's one central configuration.
+Modules do not invoke `logging.basicConfig()`, preventing duplicate handlers.
 
-## Modules Updated
+### 5. Optional Rotating File Logging
+Enable via flag or environment without changing module code.
 
-The following modules have been updated to use centralized logging:
+## File Logging & Rotation
 
-### Core Modules
-- `src/main.py` - Main application entry point
-- `src/utils.py` - Utility functions
-- `src/article_reader.py` - Article reading functionality
+Uses `logging.handlers.RotatingFileHandler` with size-based rotation.
 
-### Provider Modules  
-- `src/gemini_provider.py` - Google Gemini API integration
-- `src/google_provider.py` - Google News provider
-- `src/qwant_provider.py` - Qwant search provider  
-- `src/rss_provider.py` - RSS feed processing
-
-### Tool Modules
-- `src/tools/cache_manager.py` - Redis caching
-- `src/tools/crawl4ai_extraction.py` - Web crawling and extraction
-
-## Testing the Setup
-
-Run the test script to verify centralized logging is working:
-
-```bash
-python test_logging.py
+Examples:
+```python
+setup_logging(file_logging=True)  # logs/faciliter_lib.log
+setup_logging(file_logging=True, file_path="/var/log/myapp/app.log", file_max_bytes=5_000_000, file_backup_count=10)
 ```
 
-This will demonstrate that all modules use the same logger configuration and formatting.
+If file handler creation fails (permission / path), a warning is emitted and console logging continues.
 
 ## Migration Notes
 
-### What Changed
-1. Removed individual `logging.basicConfig()` calls from each module
-2. Replaced `import logging` and `logging.getLogger(__name__)` with centralized setup
-3. Updated all `logging.info()`, `logging.warning()`, etc. calls to use `logger.info()`, `logger.warning()`, etc.
+### Recommended Practices
+1. Only call `setup_logging` in your process entrypoint.
+2. Use `get_module_logger()` inside library / module code.
+3. Use `force=True` to reconfigure after initial setup if needed.
+4. Prefer structured, contextual messages; avoid secrets (API keys, PII).
 
-### What Stayed the Same
-- All the actual logging calls in your code work exactly the same
-- Log levels and message formatting remain consistent
-- Environment-based configuration still works
+### Common Troubleshooting
+1. Import errors: ensure `faciliter_lib` installed / in PYTHONPATH.
+2. Missing logs: verify level precedence (explicit arg beats env).
+3. Duplicate logs: multiple `setup_logging` calls without `force=True` or stray `basicConfig` calls.
+4. No file output: ensure `LOG_FILE_ENABLED=true` or `file_logging=True` and that directory is writable.
 
-### Troubleshooting
+## Best Practices Summary
 
-If you encounter issues:
+Use log levels appropriately:
+- DEBUG: detailed diagnostic data
+- INFO: high-level application flow
+- WARNING: unexpected but recoverable situations
+- ERROR: failures of operations / requests
+- CRITICAL: unrecoverable errors requiring immediate attention
 
-1. **Import errors**: Make sure `logger_config.py` is in your Python path
-2. **Missing logs**: Check your `LOG_LEVEL` environment variable
-3. **Duplicate logs**: Remove any remaining `logging.basicConfig()` calls from individual modules
+Include contextual identifiers (ids, counts, durations) but exclude secrets and large payload bodies.
 
-## Best Practices
-
-1. **Always use the centralized logger**: Import from `logger_config` rather than setting up logging manually
-2. **Use appropriate log levels**: 
-   - `DEBUG` for detailed diagnostic information
-   - `INFO` for general information about program execution
-   - `WARNING` for unexpected situations that don't prevent the program from working
-   - `ERROR` for serious problems that prevented a function from working
-   - `CRITICAL` for very serious errors that might cause the program to terminate
-
-3. **Include context in log messages**: Add relevant details that will help with debugging
-4. **Don't log sensitive information**: Avoid logging passwords, API keys, or personal data
-
-This centralized logging setup provides a much cleaner, more maintainable approach to logging across the entire MCP News application.
+This centralized system delivers a clean, composable, and script‑friendly logging approach across all `faciliter-lib` components.

@@ -203,23 +203,110 @@ def get_cache() -> Union[BaseCache, bool, None]:
     return _cache_instance
 
 
-def cache_get(input_data: Any) -> Optional[Any]:
+def cache_get(input_data: Any, company_id: Optional[str] = None) -> Optional[Any]:
     """Retrieve a cached value for the given input key.
 
+    Optional company_id enforces tenant isolation at key generation time.
     If caching is disabled (get_cache returns False) this returns None.
     """
     cache = get_cache()
     if cache is False:
         return None
-    return cache.get(input_data)
+    # Preserve backward compatibility: avoid passing company_id when None so
+    # existing mocks/tests expecting the old signature still pass.
+    if company_id is None:
+        return cache.get(input_data)
+    return cache.get(input_data, company_id=company_id)
 
 
-def cache_set(input_data: Any, output_data: Any, ttl: Optional[int] = None):
+def cache_set(input_data: Any, output_data: Any, ttl: Optional[int] = None, company_id: Optional[str] = None):
     """Store a value in cache for the given input key.
 
-    No-op when caching is disabled.
+    Optional company_id adds tenant scoping. No-op when caching is disabled.
     """
     cache = get_cache()
     if cache is False:
         return
-    cache.set(input_data, output_data, ttl)
+    if company_id is None:
+        cache.set(input_data, output_data, ttl)
+    else:
+        cache.set(input_data, output_data, ttl, company_id=company_id)
+
+
+def cache_clear_company(company_id: str):
+    """Clear all cached entries for a specific company_id."""
+    cache = get_cache()
+    if cache is False:
+        return
+    clear_func = getattr(cache, "clear_company", None)
+    if callable(clear_func):
+        clear_func(company_id)
+
+
+def cache_clear_global():
+    """Clear all cached entries that are not associated with any company_id."""
+    cache = get_cache()
+    if cache is False:
+        return
+    clear_func = getattr(cache, "clear_global", None)
+    if callable(clear_func):
+        clear_func()
+
+
+def cache_clear_all():
+    """Clear all cached entries across all tenants and global keys."""
+    cache = get_cache()
+    if cache is False:
+        return
+    clear_func = getattr(cache, "clear_all", None)
+    if callable(clear_func):
+        clear_func()
+
+
+def cache_delete(input_data: Any, company_id: Optional[str] = None) -> bool:
+    """Delete cached data for the given input and optional company_id.
+    
+    Returns:
+        True if key was deleted, False if key didn't exist or caching is disabled
+    """
+    cache = get_cache()
+    if cache is False:
+        return False
+    delete_func = getattr(cache, "delete", None)
+    if callable(delete_func):
+        if company_id is None:
+            return delete_func(input_data)
+        return delete_func(input_data, company_id=company_id)
+    return False
+
+
+def cache_exists(input_data: Any, company_id: Optional[str] = None) -> bool:
+    """Check if cached data exists for the given input and optional company_id.
+    
+    Returns:
+        True if key exists, False if key doesn't exist or caching is disabled
+    """
+    cache = get_cache()
+    if cache is False:
+        return False
+    exists_func = getattr(cache, "exists", None)
+    if callable(exists_func):
+        if company_id is None:
+            return exists_func(input_data)
+        return exists_func(input_data, company_id=company_id)
+    return False
+
+
+def get_cache_client():
+    """Get direct access to the underlying cache client.
+    
+    Returns:
+        The underlying cache client instance (e.g., Redis client) or None if disabled
+    """
+    cache = get_cache()
+    if cache is False:
+        return None
+    get_client_func = getattr(cache, "get_client", None)
+    if callable(get_client_func):
+        return get_client_func()
+    return None

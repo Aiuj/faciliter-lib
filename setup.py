@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='faciliter-lib',
-    version='0.2.8',
+    version='0.2.9',
     description='Shared library for MCP agent tools (internal use only)',
     author='Julien Nadaud',
     author_email='jnadaud@faciliter.ai',

@@ -25,6 +25,8 @@ class CacheSettings(BaseSettings):
     ttl: int = 3600
     password: Optional[str] = None
     timeout: int = 4
+    max_connections: int = 50
+    retry_on_timeout: bool = True
     
     @classmethod
     def from_env(
@@ -89,4 +91,6 @@ class CacheSettings(BaseSettings):
             "ttl": self.ttl,
             "password": self.password,
             "timeout": self.timeout,
+            "max_connections": self.max_connections,
+            "retry_on_timeout": self.retry_on_timeout,
         }

@@ -65,9 +65,49 @@
  Facade helper API (client-facing)
 
  - `set_cache(cache_instance)` or `set_cache(provider=..., config=...)`: Install the global cache instance used by helpers. Calling `set_cache()` with no arguments uses environment variables and auto-detection (recommended).
- - `cache_get(key, default=None)`: Retrieve a value by key (returns `default` if missing).
- - `cache_set(key, value, ttl=None)`: Store a value with optional TTL in seconds.
- - `cache_delete(key)`: Remove a key from the cache.
+ - `cache_get(key, company_id=None)`: Retrieve a value by key (returns `None` if missing). Optional `company_id` enforces tenant scoping.
+ - `cache_set(key, value, ttl=None, company_id=None)`: Store a value with optional TTL in seconds. Provide `company_id` to segregate data for that tenant.
+ - `cache_clear_company(company_id)`: Remove all cached entries associated with a specific tenant.
+ - `cache_clear_global()`: Remove all cached entries that are not associated with any tenant (`company_id=None`).
+ - `cache_clear_all()`: Remove all cached entries across all tenants and global.
+
+ Tenant-aware caching (multi-tenant / company isolation)
+ -----------------------------------------------------
+ Many applications require strict separation of cached data across tenants (companies). The cache system now supports an optional `company_id` parameter on `cache_get` and `cache_set` that creates a hard namespace wall between tenants.
+
+ Key design:
+ - Global (no tenant): `<prefix><name>:<hash>`
+ - Tenant scoped: `<prefix>tenant:<company_id>:<name>:<hash>`
+
+ This ensures no accidental key collisions across tenants and makes it feasible to selectively purge cache for one tenant without affecting others.
+
+ Clearing strategies:
+ - Per-tenant purge: `cache_clear_company("acme")`
+ - Global-only purge (entries cached without a `company_id`): `cache_clear_global()`
+ - Complete purge across all tenants and global: `cache_clear_all()` (scans internal registry sets).
+
+ Implementation overview:
+ - Each stored key is added to a Redis/Valkey Set registry per tenant (`<prefix>registry:tenant:<company_id>`) or to a global registry (`<prefix>registry:global`).
+ - Clear operations read the registry, delete member keys, then remove the registry set itself.
+ - Failures in registry bookkeeping never prevent core cache operations (best-effort tracking).
+
+ Example:
+ ```python
+ from faciliter_lib.cache.cache_manager import set_cache, cache_set, cache_get, cache_clear_company
+
+ set_cache()  # environment driven
+ cache_set({'user_id': 10}, {'name': 'Alice'}, company_id='acme')
+ cache_set({'user_id': 11}, {'name': 'Bob'}, company_id='globex')
+
+ # Retrieve within tenant scopes
+ alice = cache_get({'user_id': 10}, company_id='acme')
+ bob = cache_get({'user_id': 11}, company_id='globex')
+
+ # Purge only Acme's cached entries
+ cache_clear_company('acme')
+ assert cache_get({'user_id': 10}, company_id='acme') is None
+ assert cache_get({'user_id': 11}, company_id='globex') == bob
+ ```
 
  Notes and best practices
 

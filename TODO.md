@@ -2,6 +2,13 @@
 
 ## Changes done
 
+### 0.2.9
+
+- Manage multi-tenancy on the cache manager
+- Add methods to clear cache (global or company/related)
+- Add better logging settings
+- Add capability to log in local files
+
 ### 0.2.8
 
 - Add a standard settings class to ease configuration management across all applications

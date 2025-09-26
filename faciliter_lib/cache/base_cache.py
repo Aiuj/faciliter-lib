@@ -24,7 +24,7 @@ class CacheConfig:
 class BaseCache(ABC):
     """Abstract base class for cache providers"""
     
-    def __init__(self, name: str = '', config: CacheConfig = None, ttl: Optional[int] = None, time_out: Optional[int] = None):
+    def __init__(self, name: str = '', config: Optional[CacheConfig] = None, ttl: Optional[int] = None, time_out: Optional[int] = None):
         self.name = name or ''
         self.config = config
         self.ttl = ttl or (config.ttl if config else 3600)
@@ -42,21 +42,49 @@ class BaseCache(ABC):
         """Create and return the client instance for the specific provider"""
         pass
 
-    def _make_key(self, input_data: Any) -> str:
-        """Generate a cache key from input data"""
+    def _make_key(self, input_data: Any, company_id: Optional[str] = None) -> str:
+        """Generate a cache key from input data with optional tenant isolation.
+
+        Key patterns:
+          Global (no tenant): <prefix><name>:<hash>
+          Tenant:            <prefix>tenant:<company_id>:<name>:<hash>
+
+        A hard wall between tenants is achieved by including the company_id
+        early in the key path. The prefix always ends with a colon (by config convention).
+        """
         input_str = json.dumps(input_data, sort_keys=True, default=str)
         hash_key = hashlib.sha256(input_str.encode('utf-8')).hexdigest()
         prefix = self.config.prefix if self.config else "cache:"
+        if company_id:
+            return f"{prefix}tenant:{company_id}:{self.name}:{hash_key}"
         return f"{prefix}{self.name}:{hash_key}"
 
     @abstractmethod
-    def get(self, input_data: Any) -> Optional[Any]:
-        """Retrieve cached data for the given input"""
+    def get(self, input_data: Any, company_id: Optional[str] = None) -> Optional[Any]:
+        """Retrieve cached data for the given input and optional company_id"""
         pass
 
     @abstractmethod
-    def set(self, input_data: Any, output_data: Any, ttl: Optional[int] = None):
-        """Store data in cache with optional TTL"""
+    def set(self, input_data: Any, output_data: Any, ttl: Optional[int] = None, company_id: Optional[str] = None):
+        """Store data in cache with optional TTL and optional company_id"""
+        pass
+
+    @abstractmethod
+    def delete(self, input_data: Any, company_id: Optional[str] = None) -> bool:
+        """Delete cached data for the given input and optional company_id.
+        
+        Returns:
+            True if key was deleted, False if key didn't exist
+        """
+        pass
+
+    @abstractmethod
+    def exists(self, input_data: Any, company_id: Optional[str] = None) -> bool:
+        """Check if cached data exists for the given input and optional company_id.
+        
+        Returns:
+            True if key exists, False otherwise
+        """
         pass
 
     def _serialize_data(self, data: Any) -> str:
@@ -71,6 +99,14 @@ class BaseCache(ABC):
     def health_check(self) -> bool:
         """Check if the cache server is healthy and responding"""
         pass
+
+    def get_client(self) -> Any:
+        """Get direct access to the underlying cache client.
+        
+        Returns:
+            The underlying cache client instance (e.g., Redis client)
+        """
+        return self.client
 
     def close(self):
         """Close connections and cleanup resources - override in subclasses if needed"""

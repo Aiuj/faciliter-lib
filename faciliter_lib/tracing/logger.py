@@ -1,40 +1,101 @@
-"""
-Centralized logging configuration for the MCP News application.
-This module provides a consistent logger setup that should be used across all modules.
+"""Centralized logging utilities for faciliter-lib.
+
+Capabilities:
+ - One-time global logging initialization that can be triggered from an application entrypoint
+     (e.g. API server startup) using settings or environment variables.
+ - Module-level lightweight accessors (`get_logger`, `get_module_logger`) that DO NOT force
+     global initialization during import time.
+ - Override support: callers can explicitly pass a `level` to `setup_logging` to override
+     environment / settings derived values (useful for scripts or ad‑hoc notebooks).
+ - Optional file logging with rotation (disabled by default) controlled via function params
+     or environment variables.
+
+Environment variables (used only if explicit params not provided):
+ LOG_LEVEL                -> root/application log level (default: INFO)
+ LOG_FILE_ENABLED=true    -> enable file logging (default: false)
+ LOG_FILE_PATH=logs/app.log
+ LOG_FILE_MAX_BYTES=1048576 (1MB default) 
+ LOG_FILE_BACKUP_COUNT=3
+
+Notes:
+ - Re-calling `setup_logging` with `force=True` allows reconfiguration (e.g. promote from
+     default INFO to DEBUG after parsing CLI flags).
+ - We intentionally avoid heavy dependencies; rotation uses `logging.handlers.RotatingFileHandler`.
+ - This module avoids importing application settings at import time to prevent circular imports;
+     pass an `app_settings` object to `setup_logging` if you already loaded configuration.
 """
 
 import logging
 import sys
 import os
-from typing import Optional, Union
+from logging.handlers import RotatingFileHandler
+from typing import Optional, Union, Any
+
+try:  # Optional – settings may not be available yet
+    from faciliter_lib.config.app_settings import AppSettings  # type: ignore
+except Exception:  # pragma: no cover - defensive
+    AppSettings = Any  # fallback typing only
 
 
-# Global logger instance
 _logger_initialized = False
-_root_logger = None
+_root_logger: Optional[logging.Logger] = None
+
+_LAST_CONFIG: dict = {}  # keep track of parameters used to configure logging
 
 
-def setup_logging(app_name: str = "faciliter_lib", name: Optional[str] = None, level: Optional[Union[str, int]] = None) -> logging.Logger:
-    """
-    Set up centralized logging configuration and return a logger instance.
-    
+def setup_logging(
+    app_name: Optional[str] = None,
+    name: Optional[str] = None,
+    level: Optional[Union[str, int]] = None,
+    app_settings: Optional[Any] = None,
+    *,
+    file_logging: Optional[bool] = None,
+    file_path: Optional[str] = None,
+    file_max_bytes: Optional[int] = None,
+    file_backup_count: Optional[int] = None,
+    force: bool = False,
+) -> logging.Logger:
+    """Initialize (or reconfigure) global logging and return a module logger.
+
+    Precedence for determining log level:
+        explicit `level` arg > `app_settings.log_level` > LOG_LEVEL env > INFO
+
+    File logging is enabled when (in precedence order):
+        explicit `file_logging` arg True | env LOG_FILE_ENABLED=true/1 | False
+
     Args:
-        app_name (str): Name of the application.
-        name (str, optional): Name for the logger. If None, uses the calling module's __name__.
-        level (str or int, optional): Logging level, can be string name or integer constant.
-        
-    Returns:
-        logging.Logger: Configured logger instance
-    """
-    global _logger_initialized, _root_logger
-    
-    # Initialize root logger only once. If `level` is not provided, consult
-    # the `LOG_LEVEL` environment variable (defaults to INFO).
-    if level is None:
-        level_env = os.getenv("LOG_LEVEL", "INFO")
-        level = level_env
+        app_name: Root application logger namespace. If None, resolved by precedence:
+                  explicit arg > app_settings.app_name > APP_NAME env > "faciliter_lib".
+        name: Optional explicit module name (defaults to caller module).
+        level: Override log level (str/int). Highest precedence.
+        app_settings: Optional AppSettings instance (used for log level and environment detection).
+        file_logging: Explicitly enable/disable file logging (overrides env if not None).
+        file_path: Path to log file (default derived: logs/<app_name>.log).
+        file_max_bytes: Rotate at this size (default 1MB or env LOG_FILE_MAX_BYTES).
+        file_backup_count: Number of rotated backups to keep (default 3 or env LOG_FILE_BACKUP_COUNT).
+        force: If True, reconfigure even if already initialized.
 
-    # Convert level to integer if it's a string
+    Returns:
+        logging.Logger: A logger instance scoped to the caller / provided name.
+    """
+    global _logger_initialized, _root_logger, _LAST_CONFIG
+
+    # Resolve application name
+    if app_name is None:
+        candidate = None
+        if app_settings is not None:
+            candidate = getattr(app_settings, "app_name", None)
+        if not candidate:
+            candidate = os.getenv("APP_NAME")
+        app_name = candidate or "faciliter_lib"
+
+    # Determine log level
+    if level is None:
+        if app_settings is not None:
+            level = getattr(app_settings, "log_level", None)
+        if level is None:
+            level = os.getenv("LOG_LEVEL", "INFO")
+
     if isinstance(level, str):
         numeric_level = getattr(logging, level.upper(), logging.INFO)
     elif isinstance(level, int):
@@ -42,44 +103,86 @@ def setup_logging(app_name: str = "faciliter_lib", name: Optional[str] = None, l
     else:
         numeric_level = logging.INFO
 
-    if not _logger_initialized:
-        # Clear any existing handlers to avoid duplicates
+    # Determine file logging config
+    if file_logging is None:
+        raw = os.getenv("LOG_FILE_ENABLED", "false").lower()
+        file_logging = raw in {"1", "true", "yes", "on"}
+    file_path = file_path or os.getenv("LOG_FILE_PATH") or os.path.join("logs", f"{app_name}.log")
+    try:
+        file_max_bytes = int(file_max_bytes if file_max_bytes is not None else os.getenv("LOG_FILE_MAX_BYTES", "1048576"))
+    except ValueError:
+        file_max_bytes = 1_048_576
+    try:
+        file_backup_count = int(file_backup_count if file_backup_count is not None else os.getenv("LOG_FILE_BACKUP_COUNT", "3"))
+    except ValueError:
+        file_backup_count = 3
+
+    new_config = {
+        "level": numeric_level,
+        "file_logging": file_logging,
+        "file_path": file_path,
+        "file_max_bytes": file_max_bytes,
+        "file_backup_count": file_backup_count,
+        "app_name": app_name,
+    }
+
+    if _logger_initialized and not force:
+        # Already configured; just return module logger (still allow different module name)
+        pass
+    else:
+        # If reconfiguring, clear existing handlers from root
         root_logger = logging.getLogger()
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
-        # Set up the root logger configuration
+        handlers = [logging.StreamHandler(sys.stdout)]
+        if file_logging:
+            # Ensure directory exists
+            try:
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                file_handler = RotatingFileHandler(
+                    filename=file_path,
+                    maxBytes=file_max_bytes,
+                    backupCount=file_backup_count,
+                    encoding="utf-8",
+                )
+                file_handler.setLevel(numeric_level)
+                handlers.append(file_handler)
+            except Exception as e:  # pragma: no cover (IO edge cases)
+                # Fallback silently if file handler creation fails
+                logging.basicConfig()
+                logging.getLogger(app_name).warning(f"Failed to set up file logging at {file_path}: {e}")
+
         logging.basicConfig(
             level=numeric_level,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            handlers=[logging.StreamHandler(sys.stdout)],
+            handlers=handlers,
+            force=True,  # Python 3.8+: replace handlers
         )
 
-        # Set specific logger levels to reduce noise
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
-        logging.getLogger("requests").setLevel(logging.WARNING)
-        logging.getLogger("opensearch").setLevel(logging.WARNING)
-        logging.getLogger("psycopg2").setLevel(logging.WARNING)
-        logging.getLogger("redis").setLevel(logging.WARNING)
+        # Noise reduction
+        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis"]:
+            try:
+                logging.getLogger(noisy).setLevel(logging.WARNING)
+            except Exception:
+                pass
 
         _root_logger = logging.getLogger(app_name)
         _root_logger.setLevel(numeric_level)
         _logger_initialized = True
+        _LAST_CONFIG = new_config
+        _root_logger.info(
+            "Logging initialized", extra={"config": {k: v for k, v in new_config.items() if k != "level"}, "level_int": numeric_level}
+        )
 
-        _root_logger.info(f"Logging initialized with level: {numeric_level}")
-    
-    # Return a logger for the specific module
+    # Determine caller name if not provided
     if name is None:
-        # Try to get the caller's module name
         import inspect
-
         frame = inspect.currentframe().f_back
         name = frame.f_globals.get("__name__", "unknown")
 
-    # Create module-specific logger as child of root logger
     logger = logging.getLogger(f"{app_name}.{name.split('.')[-1]}")
     logger.setLevel(numeric_level)
-
     return logger
 
 
@@ -108,3 +211,11 @@ def get_module_logger() -> logging.Logger:
     frame = inspect.currentframe().f_back
     module_name = frame.f_globals.get("__name__", "unknown")
     return logging.getLogger(module_name)
+
+
+def get_last_logging_config() -> dict:
+    """Return the last applied logging configuration dictionary.
+
+    Useful for debugging / tests.
+    """
+    return dict(_LAST_CONFIG)

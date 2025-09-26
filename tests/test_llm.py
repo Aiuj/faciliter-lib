@@ -128,6 +128,15 @@ class TestLLMClient:
             kwargs = mock_provider.chat.call_args.kwargs
             assert kwargs.get("use_search_grounding") is True
 
+    def test_close_is_idempotent(self):
+        config = OllamaConfig(model="llama3.2")
+        with patch("faciliter_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
+            mock_provider = mock_provider_cls.return_value
+            client = LLMClient(config)
+            client.close()
+            client.close()
+            assert mock_provider.close.call_count == 1
+
 
 class TestUtilityFunctions:
     @patch("faciliter_lib.llm.factory.LLMClient")

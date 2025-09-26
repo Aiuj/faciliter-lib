@@ -19,6 +19,15 @@ class BaseProvider(ABC):
     def __init__(self, config: LLMConfig) -> None:
         self.config = config
 
+    def close(self) -> None:
+        """Release any provider resources.
+
+        Providers that maintain network clients or pools should override this
+        method. The default implementation is a no-op so that callers can
+        safely invoke ``close()`` on any provider instance.
+        """
+        return
+
     @abstractmethod
     def chat(
         self,

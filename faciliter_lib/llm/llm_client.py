@@ -28,6 +28,7 @@ class LLMClient:
         """
         self.config = config
         self._provider = self._initialize_provider()
+        self._closed = False
     
     def _initialize_provider(self) -> BaseProvider:
         """Initialize the appropriate provider based on the configuration."""
@@ -148,6 +149,22 @@ class LLMClient:
                 "tool_calls": [],
                 "usage": {},
             }
+
+    def close(self) -> None:
+        """Release underlying provider resources."""
+        if self._closed:
+            return
+        try:
+            self._provider.close()
+        finally:
+            self._closed = True
+
+    def __enter__(self) -> "LLMClient":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        self.close()
+        return False
     
     def _normalize_messages(
         self,

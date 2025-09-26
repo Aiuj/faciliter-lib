@@ -164,6 +164,18 @@ class GoogleGenAIProvider(BaseProvider):
             extra={"max_retries": self._retry_config.max_retries, "retryable_exceptions_count": len(retryable_exceptions)},
         )
 
+    def close(self) -> None:  # type: ignore[override]
+        """Close the underlying google-genai client."""
+        client = getattr(self, "_client", None)
+        if client is None:
+            return
+        try:
+            close_method = getattr(client, "close", None)
+            if callable(close_method):
+                close_method()
+        except Exception as exc:
+            logger.debug("Gemini client close failed", extra={"error": str(exc)})
+
     def _to_genai_messages(self, messages: List[Dict[str, str]]) -> str:
         """Flatten OpenAI-style messages to a single prompt string.
 

@@ -32,6 +32,15 @@ def pytest_pyfunc_call(pyfuncitem):  # type: ignore
         return False  # let plugin handle
 
     if "asyncio" in pyfuncitem.keywords and inspect.iscoroutinefunction(pyfuncitem.obj):
-        asyncio.run(pyfuncitem.obj(**pyfuncitem.funcargs))
+        # Get the function signature to determine which arguments it actually accepts
+        sig = inspect.signature(pyfuncitem.obj)
+        valid_params = set(sig.parameters.keys())
+        
+        # Only pass arguments that the function actually accepts
+        filtered_kwargs = {
+            k: v for k, v in pyfuncitem.funcargs.items() 
+            if k in valid_params
+        }
+        asyncio.run(pyfuncitem.obj(**filtered_kwargs))
         return True  # indicate we handled invocation
     return False

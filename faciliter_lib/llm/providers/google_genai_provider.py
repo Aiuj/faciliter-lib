@@ -276,62 +276,51 @@ class GoogleGenAIProvider(BaseProvider):
         """Acquire the rate limiter slot.
 
         The provider's public interface is synchronous, but the RateLimiter is
-        asyncio-based. This method creates a simple temporary event loop to 
-        handle the async rate limiter with a reasonable timeout.
+        asyncio-based. This method handles the async rate limiter with proper
+        timeout and thread-safety for both sync and async contexts.
         """
         try:
             import asyncio
-            import signal
-            import threading
+            import concurrent.futures
             
-            # Short timeout since rate limiting should be fast (5 seconds max)
+            # Short timeout since rate limiting should be fast
             MAX_TIMEOUT = 5.0
             
             async def _acquire_with_timeout():
+                """Acquire with timeout wrapper."""
                 try:
-                    await asyncio.wait_for(self._rate_limiter.acquire(), timeout=MAX_TIMEOUT)
+                    await asyncio.wait_for(
+                        self._rate_limiter.acquire(), 
+                        timeout=MAX_TIMEOUT
+                    )
                     return True
                 except asyncio.TimeoutError:
-                    logger.warning(f"Rate limiter acquisition timed out after {MAX_TIMEOUT}s; proceeding without throttle")
+                    logger.warning(
+                        f"Rate limiter acquisition timed out after {MAX_TIMEOUT}s"
+                    )
                     return False
+            
+            def _run_in_new_loop():
+                """Run the async function in a new event loop."""
+                return asyncio.run(_acquire_with_timeout())
             
             # Check if we're already in an async context
             try:
-                current_loop = asyncio.get_running_loop()
-                if current_loop.is_running():
-                    # We're in an async context but need sync behavior
-                    # Use run_in_executor to run in a separate thread with its own event loop
-                    import concurrent.futures
-                    
-                    def run_in_new_loop():
-                        return asyncio.run(_acquire_with_timeout())
-                    
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                        future = executor.submit(run_in_new_loop)
-                        try:
-                            future.result(timeout=MAX_TIMEOUT + 1.0)  # Extra buffer for thread overhead
-                        except concurrent.futures.TimeoutError:
-                            logger.warning(f"Rate limiter thread timed out; proceeding without throttle")
-                    return
-                    
+                loop = asyncio.get_running_loop()
+                # We're in an async context - use thread executor
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(_run_in_new_loop)
+                    future.result(timeout=MAX_TIMEOUT + 1.0)
             except RuntimeError:
-                # No running loop, which is the normal case for sync calls
-                pass
-            
-            # Standard case: no running event loop, create a temporary one
-            try:
+                # No running loop - standard case for sync calls
                 asyncio.run(_acquire_with_timeout())
-            except Exception as loop_error:
-                # Check if this is a rate limiter error specifically
-                error_msg = str(loop_error)
-                if "Rate limiter failed" in error_msg or hasattr(loop_error, '__cause__'):
-                    logger.warning("Rate limiter acquisition failed; proceeding without throttle", exc_info=loop_error)
-                else:
-                    logger.warning(f"Event loop creation failed: {loop_error}; proceeding without throttle")
                     
-        except Exception as e:  # pragma: no cover - defensive
-            # Never block the call entirely due to rate limiter errors.
-            logger.warning("Rate limiter acquisition failed; proceeding without throttle", exc_info=e)
+        except Exception as e:
+            # Never block the call due to rate limiter errors
+            logger.warning(
+                "Rate limiter acquisition failed; proceeding without throttle",
+                exc_info=e
+            )
 
     def chat(
         self,

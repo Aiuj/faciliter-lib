@@ -28,9 +28,20 @@ except Exception:
 
 
 class LanguageUtils:
-    pass
+    """Utilities for language detection and text manipulation.
+    
+    This class provides static methods for language detection using fast-langdetect,
+    text cropping with word/sentence boundary preservation, and multi-text language
+    analysis. All methods are static and don't require instantiation.
+    """
+    
     @staticmethod
-    def crop_text_preserve_words(text: str, max_length: int = 200, prefer_sentences: bool = True, min_word_boundary: int = None) -> str:
+    def crop_text_preserve_words(
+        text: str, 
+        max_length: int = 200, 
+        prefer_sentences: bool = True, 
+        min_word_boundary: Optional[int] = None
+    ) -> str:
         """
         Crops text to a specified length while preserving word boundaries and optionally sentence boundaries.
         
@@ -148,7 +159,11 @@ class LanguageUtils:
 
     # New helper to centralize preprocessing for detection methods
     @staticmethod
-    def _preprocess_text_for_detection(text: str, max_length: int = 500, min_word_boundary: int = 400) -> str:
+    def _preprocess_text_for_detection(
+        text: str, 
+        max_length: int = 500, 
+        min_word_boundary: Optional[int] = 400
+    ) -> str:
         """
         Validate and preprocess text for language detection:
         - Ensure it's a non-empty string
@@ -156,7 +171,17 @@ class LanguageUtils:
         - Collapse whitespace
         - Crop using crop_text_preserve_words
         - Ensure minimum length (>=3) after processing
-        Returns the processed text.
+        
+        Args:
+            text: Input text to preprocess
+            max_length: Maximum length after cropping
+            min_word_boundary: Minimum length threshold for word boundary breaking
+            
+        Returns:
+            Preprocessed text ready for language detection
+            
+        Raises:
+            ValueError: If input is not a string, empty, or too short after processing
         """
         if not isinstance(text, str):
             raise ValueError("Input to detect_language must be a string.")
@@ -210,11 +235,27 @@ class LanguageUtils:
         return result
 
     @staticmethod
-    def detect_language(text: str) -> dict:
+    def detect_language(text: str) -> Dict[str, Optional[float]]:
         """
         Detects the single best language candidate for the given text.
-        Returns a dict {'lang': <code>, 'score': <confidence|None>}.
-        Uses the same preprocessing as detect_languages and the normalizer.
+        
+        Args:
+            text: Input text to analyze (will be preprocessed)
+            
+        Returns:
+            Dictionary with 'lang' (language code) and 'score' (confidence) keys.
+            Example: {'lang': 'en', 'score': 0.95}
+            
+        Raises:
+            ValueError: If text is invalid or too short
+            RuntimeError: If language detector returns no results
+            
+        Examples:
+            >>> LanguageUtils.detect_language("Hello world")
+            {'lang': 'en', 'score': 0.95}
+            
+            >>> LanguageUtils.detect_language("Bonjour le monde")
+            {'lang': 'fr', 'score': 0.98}
         """
         # Reuse centralized preprocessing
         text = LanguageUtils._preprocess_text_for_detection(text, max_length=500, min_word_boundary=400)

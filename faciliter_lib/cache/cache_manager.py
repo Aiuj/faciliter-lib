@@ -302,8 +302,32 @@ def cache_clear_all():
 def cache_delete(input_data: Any, company_id: Optional[str] = None) -> bool:
     """Delete cached data for the given input and optional company_id.
     
+    This function removes a specific cached entry. Useful for invalidating
+    stale data or implementing custom cache eviction strategies.
+    
+    Args:
+        input_data: The input key to delete. Can be any hashable type
+                   (dict, string, tuple, etc.). Must match the key used
+                   in cache_set.
+        company_id: Optional tenant identifier for multi-tenant isolation.
+                   If provided, only deletes from that tenant's cache space.
+    
     Returns:
-        True if key was deleted, False if key didn't exist or caching is disabled
+        True if the key was found and deleted, False if the key didn't exist
+        or if caching is disabled.
+    
+    Examples:
+        >>> # Delete global cache entry
+        >>> cache_delete({"query": "old data"})
+        True
+        
+        >>> # Delete tenant-specific entry
+        >>> cache_delete({"user_id": "123"}, company_id="acme-corp")
+        True
+        
+        >>> # Key doesn't exist
+        >>> cache_delete({"nonexistent": "key"})
+        False
     """
     cache = get_cache()
     if cache is False:
@@ -319,8 +343,34 @@ def cache_delete(input_data: Any, company_id: Optional[str] = None) -> bool:
 def cache_exists(input_data: Any, company_id: Optional[str] = None) -> bool:
     """Check if cached data exists for the given input and optional company_id.
     
+    This is more efficient than cache_get when you only need to check
+    existence without retrieving the value. Useful for cache hit/miss
+    metrics or conditional logic.
+    
+    Args:
+        input_data: The input key to check. Can be any hashable type
+                   (dict, string, tuple, etc.). Must match the key used
+                   in cache_set.
+        company_id: Optional tenant identifier for multi-tenant isolation.
+                   If provided, only checks that tenant's cache space.
+    
     Returns:
-        True if key exists, False if key doesn't exist or caching is disabled
+        True if the key exists in cache, False if it doesn't exist or
+        if caching is disabled.
+    
+    Examples:
+        >>> # Check global cache
+        >>> if cache_exists({"query": "data"}):
+        ...     print("Cache hit!")
+        
+        >>> # Check tenant-specific cache
+        >>> if cache_exists({"report_id": "456"}, company_id="acme-corp"):
+        ...     result = cache_get({"report_id": "456"}, company_id="acme-corp")
+        
+        >>> # Use for metrics
+        >>> total_requests = 100
+        >>> cache_hits = sum(cache_exists(req) for req in all_requests)
+        >>> hit_rate = cache_hits / total_requests
     """
     cache = get_cache()
     if cache is False:

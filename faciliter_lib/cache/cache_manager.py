@@ -1,5 +1,50 @@
 # cache_manager.py
 # Cache manager with support for Redis and Valkey providers
+"""Cache manager helpers to create and manage a global cache instance.
+
+This module centralizes cache backend selection (redis | valkey | auto),
+creation and a simple global accessor API used by the rest of the library.
+It performs runtime detection of available client libraries and provides
+helpers to convert configs when necessary.
+
+Key Features:
+    - Multi-provider support: Redis and Valkey (Redis-compatible)
+    - Auto-detection of available cache clients
+    - Tenant isolation via company_id parameter
+    - Global singleton cache instance for easy access
+    - Configuration from environment variables
+
+Usage Examples:
+    # Initialize the global cache
+    >>> from faciliter_lib.cache import set_cache, cache_get, cache_set
+    >>> set_cache(provider="auto", ttl=3600)
+    
+    # Simple global cache usage
+    >>> result = cache_get({"query": "expensive operation"})
+    >>> if result is None:
+    ...     result = expensive_computation()
+    ...     cache_set({"query": "expensive operation"}, result)
+    
+    # Tenant-scoped caching
+    >>> cache_set({"query": "data"}, result, company_id="tenant-123")
+    >>> tenant_result = cache_get({"query": "data"}, company_id="tenant-123")
+    
+    # Advanced: Direct instance creation
+    >>> from faciliter_lib.cache import create_cache, RedisConfig
+    >>> config = RedisConfig(host="localhost", port=6379, ttl=7200)
+    >>> cache = create_cache(provider="redis", config=config)
+    >>> cache.connect()
+
+Environment Variables:
+    CACHE_BACKEND: Preferred provider ("redis", "valkey", or "auto")
+    REDIS_HOST: Redis/Valkey server host
+    REDIS_PORT: Redis/Valkey server port
+    REDIS_DB: Database number
+    REDIS_PREFIX: Key prefix for namespacing
+    REDIS_CACHE_TTL: Default time-to-live in seconds
+    REDIS_PASSWORD: Optional authentication password
+    REDIS_TIMEOUT: Connection timeout in seconds
+"""
 import os
 from typing import Any, Optional, Literal, Union, TYPE_CHECKING
 import logging
@@ -20,15 +65,6 @@ except ImportError:
     ValkeyConfig = None
 
 CacheProvider = Literal["redis", "valkey", "auto"]
-
-# Module docstring: brief overview of responsibilities
-"""Cache manager helpers to create and manage a global cache instance.
-
-This module centralizes cache backend selection (redis | valkey | auto),
-creation and a simple global accessor API used by the rest of the library.
-It performs runtime detection of available client libraries and provides
-helpers to convert configs when necessary.
-"""
 
 
 def _env_provider_preference() -> CacheProvider:

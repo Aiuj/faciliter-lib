@@ -39,7 +39,7 @@ class EmbeddingsConfig(BaseModel):
 
     provider: str = "openai"
     model: str = "text-embedding-3-small"
-    embedding_dimension: Optional[int] = None
+    embedding_dimension: Optional[int] = None  # Optional dimension, can be set from env
     
     # Task configuration
     task_type: Optional[str] = None
@@ -81,7 +81,13 @@ class EmbeddingsConfig(BaseModel):
         model = getenv("EMBEDDING_MODEL", "text-embedding-3-small") or "text-embedding-3-small"
 
         emb_dim = getenv("EMBEDDING_DIMENSION")
-        embedding_dimension = int(emb_dim) if emb_dim and emb_dim.isdigit() else None
+        # Handle both string and int types from environment
+        if isinstance(emb_dim, int):
+            embedding_dimension = emb_dim
+        elif emb_dim and str(emb_dim).isdigit():
+            embedding_dimension = int(emb_dim)
+        else:
+            embedding_dimension = None
 
         ollama_timeout = None
         ot = getenv("OLLAMA_TIMEOUT")

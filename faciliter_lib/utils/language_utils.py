@@ -89,57 +89,62 @@ class LanguageUtils:
         
         return cropped_text
 
-    # New helper: normalize raw detector output into a list of {'lang':..., 'score':...}
     @staticmethod
     def _normalize_detector_output(raw) -> List[Dict[str, Optional[float]]]:
         """
-        Normalize various detector return shapes into a list of dicts:
-        [{'lang': <code>, 'score': <float|None>}, ...]
+        Normalize various detector return shapes into a list of dicts.
+        
+        Converts detector output from various formats (dict, list, tuple, string) into 
+        a consistent format: [{'lang': <code>, 'score': <float|None>}, ...]
+        
+        Args:
+            raw: Raw output from language detector in any supported format
+            
+        Returns:
+            List of normalized language detection results
+            
+        Examples:
+            >>> _normalize_detector_output({'lang': 'en', 'score': 0.95})
+            [{'lang': 'en', 'score': 0.95}]
+            
+            >>> _normalize_detector_output([('en', 0.95), ('fr', 0.03)])
+            [{'lang': 'en', 'score': 0.95}, {'lang': 'fr', 'score': 0.03}]
         """
-        out: List[Dict[str, Optional[float]]] = []
-
-        # Single dict result
+        # Handle single dict result
         if isinstance(raw, dict):
             lang = raw.get("lang") or raw.get("language")
-            score = raw.get("score")
             if lang is not None:
-                out.append({"lang": lang, "score": score})
-            return out
+                return [{"lang": lang, "score": raw.get("score")}]
+            return []
 
-        # Iterable result (list/tuple)
+        # Handle plain string result
+        if isinstance(raw, str):
+            return [{"lang": raw, "score": None}]
+
+        # Handle iterable results (list/tuple)
         if isinstance(raw, (list, tuple)):
+            results = []
             for item in raw:
-                # tuple/list like ('en', 0.95)
+                # Handle tuple/list like ('en', 0.95)
                 if isinstance(item, (list, tuple)) and len(item) >= 1:
                     lang = item[0]
                     score = item[1] if len(item) > 1 else None
-                    out.append({"lang": lang, "score": score})
-                    continue
-
-                # dict like {'lang': 'en', 'score': 0.95}
-                if isinstance(item, dict):
+                    results.append({"lang": lang, "score": score})
+                # Handle dict like {'lang': 'en', 'score': 0.95}
+                elif isinstance(item, dict):
                     lang = item.get("lang") or item.get("language")
-                    score = item.get("score")
                     if lang is not None:
-                        out.append({"lang": lang, "score": score})
-                    continue
-
-                # plain string items ['en', 'fr', ...]
-                if isinstance(item, str):
-                    out.append({"lang": item, "score": None})
-                    continue
-
-            return out
-
-        # Plain string result 'en'
-        if isinstance(raw, str):
-            return [{"lang": raw, "score": None}]
+                        results.append({"lang": lang, "score": item.get("score")})
+                # Handle plain string items
+                elif isinstance(item, str):
+                    results.append({"lang": item, "score": None})
+            return results
 
         # Fallback: stringify unknown types
         try:
             return [{"lang": str(raw), "score": None}]
         except Exception:
-            raise RuntimeError("Unexpected return type from language detector: %r" % (type(raw),))
+            raise RuntimeError(f"Unexpected return type from language detector: {type(raw)}")
 
     # New helper to centralize preprocessing for detection methods
     @staticmethod

@@ -93,11 +93,26 @@ And add in the `.vscode/settings.json` the following:
 }
 ```
 
+VS Code setup for the best dev experience
+
+- Open both repos in one VS Code workspace (so Copilot and Pylance “see” both):
+  - File → Add Folder to Workspace… (add your main application AND ../faciliter-lib)
+  - Save as a .code-workspace file.
+
 ### In pyproject.toml
 
-```txt
-"faciliter-lib @ git+https://github.com/Aiuj/faciliter-lib.git",
+Add the library and a local override source in pyproject.toml
+
+```toml
+[project]
+dependencies = [
+  "faciliter-lib @ git+https://github.com/Aiuj/faciliter-lib.git"
+]
+
+[tool.uv.sources]
+faciliter-lib = { path = "../faciliter-lib", editable = true }
 ```
+
 
 ### In requirements.txt
 
@@ -204,6 +219,49 @@ transport = get_transport_from_args()  # Returns 'stdio', 'sse', etc.
 
 - `get_transport_from_args()`:  
   Detects the transport type from command-line arguments (e.g., 'stdio', 'sse').
+
+### LLM Client
+
+Access multiple LLM providers through a unified interface:
+
+```python
+from faciliter_lib import create_llm_client, LLMClient
+
+# Auto-detect from environment
+client = create_llm_client()
+
+# Or specify provider and settings
+client = create_llm_client(provider="openai", model="gpt-4", temperature=0.2)
+
+# Provider-specific creation
+from faciliter_lib import create_gemini_client, create_openai_client
+gemini_client = create_gemini_client(model="gemini-pro")
+openai_client = create_openai_client(model="gpt-4")
+
+# Chat with the model
+messages = [{"role": "user", "content": "Hello!"}]
+response = client.chat(messages)
+print(response["content"])
+```
+
+#### LLM API
+
+- `create_llm_client(provider=None, **kwargs)`:  
+  Create an LLM client. Auto-detects provider if not specified.
+
+- `create_client_from_env()`:  
+  Create client using environment variables.
+
+- `create_openai_client(model, api_key=None, **kwargs)`:  
+  Create OpenAI client.
+
+- `create_gemini_client(model, api_key=None, **kwargs)`:  
+  Create Google Gemini client.
+
+- `create_ollama_client(model, host=None, **kwargs)`:  
+  Create Ollama client for local models.
+
+See **[LLM Documentation](docs/llm.md)** for complete guide.
 
 ### Excel Manager
 

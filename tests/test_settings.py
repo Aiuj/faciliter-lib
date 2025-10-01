@@ -878,7 +878,9 @@ class TestSettingsManager(unittest.TestCase):
         invalid_settings = CustomTestSettings(name="invalid", count=-1)
         
         self.manager.register("valid", valid_settings)
-        self.manager.register("invalid", invalid_settings)
+        # Expect warning when registering invalid settings
+        with pytest.warns(UserWarning, match="Registering invalid settings 'invalid'"):
+            self.manager.register("invalid", invalid_settings)
         
         errors = self.manager.validate_all()
         

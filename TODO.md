@@ -2,6 +2,10 @@
 
 ## Changes done
 
+### 0.2.10
+
+- Better settings singleton management
+
 ### 0.2.9
 
 - Manage multi-tenancy on the cache manager

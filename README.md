@@ -18,6 +18,7 @@
 - Fully tested with Pytest
 - Type hints support
 - **🆕 Unified Settings Management** - Comprehensive configuration system with .env support
+- **🆕 Settings Singleton Manager** - Thread-safe singleton pattern for application-wide config
 
 ---
 
@@ -155,6 +156,46 @@ if settings.cache:
 print(f"App: {settings.app_name} v{settings.version}")
 print(f"LLM Model: {settings.llm.model if settings.llm else 'Not configured'}")
 ```
+
+### Settings Singleton Manager
+
+Manage a single global Settings instance throughout your application:
+
+```python
+from faciliter_lib.config import initialize_settings, get_settings
+from dataclasses import dataclass
+
+# Initialize once at application startup
+settings = initialize_settings(
+    app_name="my-app",
+    log_level="INFO",
+    enable_cache=True
+)
+
+# Access anywhere in your application
+def some_function():
+    config = get_settings()
+    print(config.app_name)
+
+# With custom settings class
+@dataclass(frozen=True)
+class MySettings(StandardSettings):
+    api_key: str = ""
+    max_retries: int = 3
+
+settings = initialize_settings(
+    settings_class=MySettings,
+    api_key="secret"
+)
+```
+
+**Key features:**
+- Thread-safe singleton pattern
+- Easy initialization and global access
+- Support for custom settings classes
+- Reset/reconfigure capabilities for testing
+
+See **[Settings Singleton Documentation](docs/settings_singleton.md)** for complete guide.
 
 ### Cache Manager
 

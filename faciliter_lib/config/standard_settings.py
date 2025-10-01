@@ -362,19 +362,20 @@ class StandardSettings(BaseSettings):
             custom_fields[field_name] = value
         
         # Convert standard settings to dict and add custom fields
+        # Keep nested settings as objects, not dicts, so properties can be accessed
         settings_dict = {
             "app_name": standard_settings.app_name,
             "version": standard_settings.version,
             "environment": standard_settings.environment,
             "log_level": standard_settings.log_level,
             "project_root": standard_settings.project_root,
-            "llm": standard_settings.llm.as_dict() if standard_settings.llm else None,
-            "embeddings": standard_settings.embeddings.as_dict() if standard_settings.embeddings else None,
-            "cache": standard_settings.cache.as_dict() if standard_settings.cache else None,
-            "tracing": standard_settings.tracing.as_dict() if standard_settings.tracing else None,
-            "database": standard_settings.database.as_dict() if standard_settings.database else None,
-            "mcp_server": standard_settings.mcp_server.as_dict() if standard_settings.mcp_server else None,
-            "fastapi_server": standard_settings.fastapi_server.as_dict() if getattr(standard_settings, 'fastapi_server', None) else None,
+            "llm": standard_settings.llm,
+            "embeddings": standard_settings.embeddings,
+            "cache": standard_settings.cache,
+            "tracing": standard_settings.tracing,
+            "database": standard_settings.database,
+            "mcp_server": standard_settings.mcp_server,
+            "fastapi_server": getattr(standard_settings, 'fastapi_server', None),
             "enable_llm": standard_settings.enable_llm,
             "enable_embeddings": standard_settings.enable_embeddings,
             "enable_cache": standard_settings.enable_cache,
@@ -403,7 +404,19 @@ class StandardSettings(BaseSettings):
         extended.get_database_config = lambda: standard_settings.get_database_config() if standard_settings.database else None
         extended.get_mcp_server_config = lambda: standard_settings.get_mcp_server_config() if standard_settings.mcp_server else None
         extended.get_fastapi_server_config = lambda: standard_settings.get_fastapi_server_config() if getattr(standard_settings, 'fastapi_server', None) else None
-        extended.as_dict = lambda: settings_dict
+        
+        # Create a dict serializer that converts nested objects to dicts
+        def _as_dict():
+            result = {}
+            for key, value in settings_dict.items():
+                if hasattr(value, 'as_dict'):
+                    result[key] = value.as_dict()
+                else:
+                    result[key] = value
+            result.update(custom_fields)
+            return result
+        
+        extended.as_dict = _as_dict
         
         return extended
     

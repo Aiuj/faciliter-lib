@@ -21,6 +21,15 @@ from .database_settings import DatabaseSettings
 from .mcp_settings import MCPServerSettings
 from .fastapi_settings import FastAPIServerSettings
 from .standard_settings import StandardSettings
+from .settings_singleton import (
+    SettingsSingletonManager,
+    initialize_settings,
+    get_settings,
+    set_settings,
+    reset_settings,
+    has_settings,
+    get_settings_safe,
+)
 
 __all__ = [
     # Legacy doc categories
@@ -45,4 +54,13 @@ __all__ = [
     "MCPServerSettings",
     "FastAPIServerSettings",
     "StandardSettings",
+    
+    # Settings singleton
+    "SettingsSingletonManager",
+    "initialize_settings",
+    "get_settings",
+    "set_settings",
+    "reset_settings",
+    "has_settings",
+    "get_settings_safe",
 ]

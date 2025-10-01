@@ -8,6 +8,7 @@
 
 - Reusable utility functions
 - Redis-based caching system with configurable TTL
+- **🆕 Redis-based job queue system** with background worker support
 - MCP (Model Context Protocol) utilities
 - LLM client with support for multiple providers (OpenAI, Gemini, Ollama)
 - Excel file processing and markdown conversion
@@ -219,6 +220,40 @@ if cached_result is None:
     result = compute_result(input_data)
     cache.set(input_data, result, ttl=7200)
 ```
+
+### Job Queue System (New!)
+
+Async job processing with Redis-based queue:
+
+```python
+from faciliter_lib.jobs import submit_job, get_job_status, JobWorker, JobHandler
+
+# Submit a job
+job_id = submit_job(
+    job_type="process_data",
+    input_data={"param": "value"},
+    company_id="company1"
+)
+
+# Check status
+job = get_job_status(job_id)
+print(f"Status: {job.status.value}, Progress: {job.progress}%")
+
+# Create a worker
+class DataProcessorHandler(JobHandler):
+    def get_job_type(self):
+        return "process_data"
+    
+    def handle(self, job):
+        # Process job
+        return {"result": "success"}
+
+worker = JobWorker()
+worker.register_handler(DataProcessorHandler())
+worker.start()  # Blocks and processes jobs
+```
+
+See **[Job Queue Documentation](docs/JOB_QUEUE_QUICK_REFERENCE.md)** for complete guide.
 
 #### Cache API
 

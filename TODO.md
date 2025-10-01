@@ -5,6 +5,7 @@
 ### 0.2.10
 
 - Better settings singleton management
+- Basic job queue implementation using Redis/Valkey
 
 ### 0.2.9
 

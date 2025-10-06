@@ -1236,7 +1236,7 @@ except SettingsError as e:
 |----------|---------|-------------|
 | `POSTGRES_HOST` / `DATABASE_HOST` | `"localhost"` | PostgreSQL server host |
 | `POSTGRES_PORT` / `DATABASE_PORT` | `5432` | PostgreSQL server port |
-| `POSTGRES_DB` / `DATABASE_NAME` | `"faciliter-qa-rag"` | Database name |
+| `POSTGRES_DB` / `DATABASE_NAME` | `"faciliter-doc-qa"` | Database name |
 | `POSTGRES_USER` / `DATABASE_USER` | `"rfp_user"` | Database username |
 | `POSTGRES_PASSWORD` / `DATABASE_PASSWORD` | `"rfp_password"` | Database password |
 | `POSTGRES_SSLMODE` / `DATABASE_SSLMODE` | `"disable"` | SSL mode (disable/allow/prefer/require/verify-ca/verify-full) |

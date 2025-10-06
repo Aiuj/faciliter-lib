@@ -19,7 +19,7 @@ class DatabaseSettings(BaseSettings):
     
     host: str = "localhost"
     port: int = 5432
-    database: str = "faciliter-qa-rag"
+    database: str = "faciliter-doc-qa"
     username: str = "rfp_user"
     password: str = "rfp_password"
     sslmode: str = "disable"
@@ -40,7 +40,7 @@ class DatabaseSettings(BaseSettings):
         settings_dict = {
             "host": EnvParser.get_env("POSTGRES_HOST", "DATABASE_HOST", default="localhost"),
             "port": EnvParser.get_env("POSTGRES_PORT", "DATABASE_PORT", default=5432, env_type=int),
-            "database": EnvParser.get_env("POSTGRES_DB", "DATABASE_NAME", default="faciliter-qa-rag"),
+            "database": EnvParser.get_env("POSTGRES_DB", "DATABASE_NAME", default="faciliter-doc-qa"),
             "username": EnvParser.get_env("POSTGRES_USER", "DATABASE_USER", default="rfp_user"),
             "password": EnvParser.get_env("POSTGRES_PASSWORD", "DATABASE_PASSWORD", default="rfp_password"),
             "sslmode": EnvParser.get_env("POSTGRES_SSLMODE", "DATABASE_SSLMODE", default="disable"),

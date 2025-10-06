@@ -575,7 +575,7 @@ class TestDatabaseSettings(unittest.TestCase):
         
         self.assertEqual(settings.host, "localhost")
         self.assertEqual(settings.port, 5432)
-        self.assertEqual(settings.database, "faciliter-qa-rag")
+        self.assertEqual(settings.database, "faciliter-doc-qa")
         self.assertEqual(settings.username, "rfp_user")
         self.assertEqual(settings.password, "rfp_password")
         self.assertEqual(settings.sslmode, "disable")

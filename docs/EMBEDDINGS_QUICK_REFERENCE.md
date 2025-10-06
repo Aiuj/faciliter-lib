@@ -10,6 +10,7 @@ Optional dependencies for different providers:
 - `sentence-transformers` (for local HuggingFace models)
 - `transformers` + `torch` (alternative for local models)
 - `ollama` (for local Ollama embeddings)
+- `requests` (for Infinity server embeddings)
 
 ## Quick Start
 
@@ -39,10 +40,11 @@ client = create_google_genai_client(
 ## Key Features
 
 ✅ Unified interface across all providers  
-✅ Multiple providers: OpenAI, Google GenAI, Local (HuggingFace), Ollama  
+✅ Multiple providers: OpenAI, Google GenAI, Local (HuggingFace), Ollama, Infinity  
 ✅ Task type support (SEMANTIC_SIMILARITY, CLASSIFICATION, CLUSTERING, etc.)  
 ✅ Environment configuration with auto-detection  
 ✅ Local model inference (privacy-friendly)  
+✅ High-throughput local server (Infinity)  
 ✅ Custom embedding dimensions (where supported)  
 ✅ L2 normalization support  
 ✅ Batch processing for efficiency  
@@ -61,6 +63,14 @@ client = create_google_genai_client(
 - **Models**: `text-embedding-004` and others
 - **Features**: Task types, grounding context, title parameter
 - **API Key**: `GOOGLE_GENAI_API_KEY` or `GEMINI_API_KEY`
+
+### Infinity (NEW)
+
+- **Models**: Any HuggingFace embedding model
+- **Features**: High-throughput local server, OpenAI-compatible API, GPU support
+- **Setup**: Requires Infinity server running (Docker or pip)
+- **Popular**: `BAAI/bge-small-en-v1.5`, `BAAI/bge-base-en-v1.5`, `intfloat/e5-base-v2`
+- **Documentation**: See [INFINITY_PROVIDER.md](./INFINITY_PROVIDER.md)
 
 ### Local (HuggingFace)
 

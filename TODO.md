@@ -4,6 +4,7 @@
 
 ### 0.2.10
 
+- Added infinity server provider for embeddings
 - Better settings singleton management
 - Basic job queue implementation using Redis/Valkey
 

@@ -30,6 +30,13 @@ except ImportError:
     LocalEmbeddingClient = None
     _local_available = False
 
+try:
+    from .infinity_provider import InfinityEmbeddingClient
+    _infinity_available = True
+except ImportError:
+    InfinityEmbeddingClient = None
+    _infinity_available = False
+
 
 class EmbeddingFactory:
     """Factory class for creating embedding clients with various providers."""
@@ -46,7 +53,7 @@ class EmbeddingFactory:
         """Create an embedding client with the specified provider.
         
         Args:
-            provider: Provider name ('openai', 'google_genai', 'ollama', 'local')
+            provider: Provider name ('openai', 'google_genai', 'ollama', 'local', 'infinity')
             model: Model name
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
@@ -83,6 +90,13 @@ class EmbeddingFactory:
             )
         elif provider == "local" or provider == "huggingface":
             return cls.local(
+                model=model,
+                embedding_dim=embedding_dim,
+                use_l2_norm=use_l2_norm,
+                **kwargs
+            )
+        elif provider == "infinity":
+            return cls.infinity(
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
@@ -245,6 +259,43 @@ class EmbeddingFactory:
         )
 
     @classmethod
+    def infinity(
+        cls,
+        model: Optional[str] = None,
+        embedding_dim: Optional[int] = None,
+        use_l2_norm: bool = True,
+        base_url: Optional[str] = None,
+        timeout: Optional[int] = None,
+        **kwargs
+    ) -> BaseEmbeddingClient:
+        """Create an Infinity embedding client.
+        
+        Args:
+            model: Model name (e.g., 'BAAI/bge-small-en-v1.5')
+            embedding_dim: Target embedding dimension
+            use_l2_norm: Whether to apply L2 normalization
+            base_url: Base URL of Infinity server (default: http://localhost:7997)
+            timeout: Request timeout in seconds
+            **kwargs: Additional parameters
+            
+        Returns:
+            Infinity embedding client instance
+        """
+        if not _infinity_available or InfinityEmbeddingClient is None:
+            raise ImportError(
+                "Infinity provider not available. Install with: pip install requests"
+            )
+
+        return InfinityEmbeddingClient(
+            model=model,
+            embedding_dim=embedding_dim,
+            use_l2_norm=use_l2_norm,
+            base_url=base_url,
+            timeout=timeout,
+            **kwargs
+        )
+
+    @classmethod
     def from_config(cls, config: Optional[object] = None) -> BaseEmbeddingClient:
         """Create a client from configuration object.
         
@@ -401,6 +452,24 @@ def create_local_client(
         Local embedding client instance
     """
     return EmbeddingFactory.local(model=model, device=device, **kwargs)
+
+
+def create_infinity_client(
+    model: str = "BAAI/bge-small-en-v1.5",
+    base_url: Optional[str] = None,
+    **kwargs
+) -> BaseEmbeddingClient:
+    """Create an Infinity embedding client.
+    
+    Args:
+        model: Model name
+        base_url: Base URL of Infinity server
+        **kwargs: Additional parameters
+        
+    Returns:
+        Infinity embedding client instance
+    """
+    return EmbeddingFactory.infinity(model=model, base_url=base_url, **kwargs)
 
 
 # Legacy function for backward compatibility - now with enhanced capabilities

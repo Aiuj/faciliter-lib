@@ -50,6 +50,11 @@ class EmbeddingsConfig(BaseModel):
     ollama_url: Optional[str] = None
     ollama_timeout: Optional[int] = None
 
+    # Infinity-specific (reuses base_url and ollama_timeout)
+    # Infinity runs on http://localhost:7997 by default
+    infinity_url: Optional[str] = None  # Alias for base_url
+    infinity_timeout: Optional[int] = None  # Alias for ollama_timeout
+
     # OpenAI / compatible
     api_key: Optional[str] = None
     base_url: Optional[str] = None
@@ -107,6 +112,12 @@ class EmbeddingsConfig(BaseModel):
         # Cache configuration
         cache_duration = getenv("EMBEDDING_CACHE_DURATION_SECONDS", "86400")
         cache_duration_seconds = int(cache_duration) if cache_duration.isdigit() else 86400
+        
+        # Infinity configuration (reuses some common settings)
+        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL")
+        infinity_timeout = getenv("INFINITY_TIMEOUT")
+        if infinity_timeout and infinity_timeout.isdigit():
+            infinity_timeout = int(infinity_timeout)
 
         return cls(
             provider=provider,
@@ -128,6 +139,8 @@ class EmbeddingsConfig(BaseModel):
             use_sentence_transformers=use_sentence_transformers,
             huggingface_api_key=getenv("HUGGINGFACE_API_KEY"),
             cache_duration_seconds=cache_duration_seconds,
+            infinity_url=infinity_url,
+            infinity_timeout=infinity_timeout,
         )
 
 

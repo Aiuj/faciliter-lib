@@ -114,7 +114,7 @@ class EmbeddingsConfig(BaseModel):
         cache_duration_seconds = int(cache_duration) if cache_duration.isdigit() else 86400
         
         # Infinity configuration (reuses some common settings)
-        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL")
+        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL") or getenv("EMBEDDING_BASE_URL")
         infinity_timeout = getenv("INFINITY_TIMEOUT")
         if infinity_timeout and infinity_timeout.isdigit():
             infinity_timeout = int(infinity_timeout)

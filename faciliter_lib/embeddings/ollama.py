@@ -14,12 +14,14 @@ logger = logging.getLogger(__name__)
 class OllamaEmbeddingClient(BaseEmbeddingClient):
     """Client for generating embeddings using a local Ollama HTTP API."""
 
-    def __init__(self, model: str | None = None, embedding_dim: int | None = None, use_l2_norm: bool = False):
+    def __init__(self, model: str | None = None, embedding_dim: int | None = None, use_l2_norm: bool = False, base_url: str | None = None, timeout: int | None = None):
         # If model/embedding_dim are not provided, BaseEmbeddingClient will
         # fall back to values from `settings`.
         super().__init__(model=model, embedding_dim=embedding_dim, use_l2_norm=use_l2_norm)
-        self.base_url = embeddings_settings.ollama_url
-        self.timeout = embeddings_settings.ollama_timeout
+        # Priority: explicit param > OLLAMA_URL > EMBEDDING_BASE_URL > default
+        self.base_url = base_url or embeddings_settings.ollama_url or "http://localhost:11434"
+        # Priority: explicit param > OLLAMA_TIMEOUT > EMBEDDING_TIMEOUT > None
+        self.timeout = timeout or embeddings_settings.ollama_timeout
         """Initialize Ollama client with configuration from settings."""
         self.client = ollama.Client(host=self.base_url)  # Use Ollama library client
 

@@ -31,10 +31,17 @@ class EmbeddingsSettings(BaseSettings):
     google_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
     
+    # Timeout settings (EMBEDDING_TIMEOUT is common default, provider-specific overrides)
+    timeout: Optional[int] = None  # From EMBEDDING_TIMEOUT
+    
     # Ollama settings
     ollama_host: Optional[str] = None
     ollama_url: Optional[str] = None
     ollama_timeout: Optional[int] = None
+    
+    # Infinity settings
+    infinity_url: Optional[str] = None
+    infinity_timeout: Optional[int] = None
     
     # Local model settings
     device: str = "auto"
@@ -58,21 +65,41 @@ class EmbeddingsSettings(BaseSettings):
         provider = EnvParser.get_env("EMBEDDING_PROVIDER", default="openai")
         model = EnvParser.get_env("EMBEDDING_MODEL", default="text-embedding-3-small")
         
+        # Unified base URL and timeout (common defaults for all providers)
+        embedding_base_url = EnvParser.get_env("EMBEDDING_BASE_URL")
+        embedding_timeout = EnvParser.get_env("EMBEDDING_TIMEOUT", env_type=int)
+        
+        # Provider-specific URLs with fallback to common EMBEDDING_BASE_URL
+        ollama_url = EnvParser.get_env("OLLAMA_URL") or embedding_base_url
+        infinity_url = (
+            EnvParser.get_env("INFINITY_URL") or 
+            EnvParser.get_env("INFINITY_BASE_URL") or 
+            embedding_base_url
+        )
+        openai_base_url = (
+            EnvParser.get_env("OPENAI_BASE_URL") or 
+            EnvParser.get_env("BASE_URL") or 
+            embedding_base_url
+        )
+        
         settings_dict = {
             "provider": provider,
             "model": model,
             "embedding_dimension": EnvParser.get_env("EMBEDDING_DIMENSION", env_type=int),
             "task_type": EnvParser.get_env("EMBEDDING_TASK_TYPE"),
             "title": EnvParser.get_env("EMBEDDING_TITLE"),
+            "timeout": embedding_timeout,
             "api_key": EnvParser.get_env("OPENAI_API_KEY", "API_KEY"),
-            "base_url": EnvParser.get_env("OPENAI_BASE_URL", "BASE_URL"),
+            "base_url": openai_base_url,
             "organization": EnvParser.get_env("OPENAI_ORGANIZATION"),
             "project": EnvParser.get_env("OPENAI_PROJECT"),
             "google_api_key": EnvParser.get_env("GOOGLE_GENAI_API_KEY", "GEMINI_API_KEY"),
             "huggingface_api_key": EnvParser.get_env("HUGGINGFACE_API_KEY"),
             "ollama_host": EnvParser.get_env("OLLAMA_HOST"),
-            "ollama_url": EnvParser.get_env("OLLAMA_URL"),
-            "ollama_timeout": EnvParser.get_env("OLLAMA_TIMEOUT", env_type=int),
+            "ollama_url": ollama_url,
+            "ollama_timeout": EnvParser.get_env("OLLAMA_TIMEOUT", env_type=int) or embedding_timeout,
+            "infinity_url": infinity_url,
+            "infinity_timeout": EnvParser.get_env("INFINITY_TIMEOUT", env_type=int) or embedding_timeout,
             "device": EnvParser.get_env("EMBEDDING_DEVICE", default="auto"),
             "cache_dir": EnvParser.get_env("EMBEDDING_CACHE_DIR"),
             "trust_remote_code": EnvParser.get_env("EMBEDDING_TRUST_REMOTE_CODE", default=False, env_type=bool),
@@ -97,9 +124,12 @@ class EmbeddingsSettings(BaseSettings):
             "project": self.project,
             "google_api_key": self.google_api_key,
             "huggingface_api_key": self.huggingface_api_key,
+            "timeout": self.timeout,
             "ollama_host": self.ollama_host,
             "ollama_url": self.ollama_url,
             "ollama_timeout": self.ollama_timeout,
+            "infinity_url": self.infinity_url,
+            "infinity_timeout": self.infinity_timeout,
             "device": self.device,
             "cache_dir": self.cache_dir,
             "trust_remote_code": self.trust_remote_code,

@@ -32,9 +32,12 @@ Add to your `.env` file:
 ```bash
 EMBEDDING_PROVIDER=infinity
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-INFINITY_URL=http://localhost:7997
+EMBEDDING_BASE_URL=http://localhost:7997  # Unified configuration
+EMBEDDING_TIMEOUT=30                       # Optional timeout
 EMBEDDING_DIMENSION=384
 ```
+
+**Note:** You can also use `INFINITY_URL` instead of `EMBEDDING_BASE_URL` if you need to run multiple embedding providers simultaneously. See [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md) for details.
 
 ### 3. Use It!
 
@@ -81,7 +84,8 @@ Update `mcp-doc-qa/.env.docker`:
 ```bash
 EMBEDDING_PROVIDER=infinity
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-INFINITY_URL=http://localhost:7997
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_TIMEOUT=30
 EMBEDDING_DIMENSION=384
 ```
 

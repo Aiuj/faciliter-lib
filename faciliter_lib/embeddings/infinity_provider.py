@@ -66,7 +66,7 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
         self.base_url = self.base_url.rstrip('/')
         
         # Set timeout
-        # Priority: explicit param > INFINITY_TIMEOUT env var > OLLAMA_TIMEOUT > default 30s
+        # Priority: explicit param > INFINITY_TIMEOUT > EMBEDDING_TIMEOUT > OLLAMA_TIMEOUT > default 30s
         self.timeout = timeout or embeddings_settings.infinity_timeout or embeddings_settings.ollama_timeout or 30
         
         # Set default model if not provided

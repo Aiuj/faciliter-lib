@@ -29,6 +29,7 @@ Example usage:
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .ollama import OllamaEmbeddingClient
 from .embeddings_config import EmbeddingsConfig, embeddings_settings, TaskType
+from .embedding_utils import normalize_embedding_dimension, normalize_embeddings_batch
 from .factory import (
     EmbeddingFactory,
     create_embedding_client,

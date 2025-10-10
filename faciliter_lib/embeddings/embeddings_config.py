@@ -113,11 +113,24 @@ class EmbeddingsConfig(BaseModel):
         cache_duration = getenv("EMBEDDING_CACHE_DURATION_SECONDS", "86400")
         cache_duration_seconds = int(cache_duration) if cache_duration.isdigit() else 86400
         
-        # Infinity configuration (reuses some common settings)
-        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL") or getenv("EMBEDDING_BASE_URL")
-        infinity_timeout = getenv("INFINITY_TIMEOUT")
-        if infinity_timeout and infinity_timeout.isdigit():
-            infinity_timeout = int(infinity_timeout)
+        # Unified timeout configuration (shared across providers)
+        embedding_timeout = None
+        et = getenv("EMBEDDING_TIMEOUT")
+        if et and et.isdigit():
+            embedding_timeout = int(et)
+        
+        infinity_timeout = None
+        it = getenv("INFINITY_TIMEOUT")
+        if it and it.isdigit():
+            infinity_timeout = int(it)
+
+        # Unified base URL configuration
+        # EMBEDDING_BASE_URL serves as common default for all providers
+        # Provider-specific URLs (OLLAMA_URL, INFINITY_URL, OPENAI_BASE_URL) override for multi-provider setups
+        embedding_base_url = getenv("EMBEDDING_BASE_URL")
+        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL") or embedding_base_url
+        ollama_url = getenv("OLLAMA_URL") or embedding_base_url
+        openai_base_url = getenv("OPENAI_BASE_URL") or getenv("BASE_URL") or embedding_base_url
 
         return cls(
             provider=provider,
@@ -126,10 +139,10 @@ class EmbeddingsConfig(BaseModel):
             task_type=task_type,
             title=title,
             ollama_host=getenv("OLLAMA_HOST"),
-            ollama_url=getenv("OLLAMA_URL"),
-            ollama_timeout=ollama_timeout,
+            ollama_url=ollama_url,
+            ollama_timeout=embedding_timeout or ollama_timeout,
             api_key=getenv("OPENAI_API_KEY") or getenv("API_KEY"),
-            base_url=getenv("OPENAI_BASE_URL") or getenv("BASE_URL"),
+            base_url=openai_base_url,
             organization=getenv("OPENAI_ORGANIZATION"),
             project=getenv("OPENAI_PROJECT"),
             google_api_key=getenv("GOOGLE_GENAI_API_KEY") or getenv("GEMINI_API_KEY"),
@@ -140,7 +153,7 @@ class EmbeddingsConfig(BaseModel):
             huggingface_api_key=getenv("HUGGINGFACE_API_KEY"),
             cache_duration_seconds=cache_duration_seconds,
             infinity_url=infinity_url,
-            infinity_timeout=infinity_timeout,
+            infinity_timeout=embedding_timeout or infinity_timeout,
         )
 
 

@@ -41,19 +41,23 @@ EMBEDDING_PROVIDER=infinity
 # Model selection
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 
-# Infinity server URL (default: http://localhost:7997)
-INFINITY_URL=http://localhost:7997
-# or
+# URL Configuration (choose one approach):
+# Option 1: Unified configuration (recommended for single provider)
 EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_TIMEOUT=30
 
-# Request timeout in seconds (default: 30)
-INFINITY_TIMEOUT=30
-# or
-OLLAMA_TIMEOUT=30
+# Option 2: Provider-specific (for multi-provider setups)
+# INFINITY_URL=http://localhost:7997
+# INFINITY_TIMEOUT=30
 
 # Optional: embedding dimension
 EMBEDDING_DIMENSION=384
 ```
+
+**Configuration Guide:** The library supports both unified (`EMBEDDING_BASE_URL`) and provider-specific (`INFINITY_URL`) configuration. 
+- Use `EMBEDDING_BASE_URL` for simpler single-provider setups
+- Use `INFINITY_URL` when running multiple embedding providers (Infinity + Ollama + OpenAI)
+- See [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md) for complete details and examples
 
 ### Supported Models
 
@@ -242,7 +246,8 @@ To use Infinity with mcp-doc-qa, simply set the environment variables in `.env`:
 ```bash
 EMBEDDING_PROVIDER=infinity
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-INFINITY_URL=http://localhost:7997
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_TIMEOUT=30
 EMBEDDING_DIMENSION=384
 ```
 

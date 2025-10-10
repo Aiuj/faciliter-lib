@@ -180,7 +180,9 @@ EMBEDDING_TITLE="My Embedding Task"
 
 ```bash
 OPENAI_API_KEY=your-openai-key
-OPENAI_BASE_URL=https://api.openai.com/v1  # For Azure or custom endpoints
+# For custom endpoints (Azure, etc.) - use EMBEDDING_BASE_URL or OPENAI_BASE_URL
+EMBEDDING_BASE_URL=https://api.openai.com/v1  # Recommended for single provider
+# OPENAI_BASE_URL=https://api.openai.com/v1  # Alternative for multi-provider setups
 OPENAI_ORGANIZATION=org-id
 OPENAI_PROJECT=project-id
 ```
@@ -201,9 +203,27 @@ EMBEDDING_USE_SENTENCE_TRANSFORMERS=true|false
 
 ### Ollama Configuration
 ```bash
-OLLAMA_HOST=localhost:11434
-OLLAMA_URL=http://localhost:11434
-OLLAMA_TIMEOUT=30
+# Recommended for single provider
+EMBEDDING_BASE_URL=http://localhost:11434
+EMBEDDING_TIMEOUT=30
+
+# Alternative for multi-provider setups
+# OLLAMA_URL=http://localhost:11434
+# OLLAMA_TIMEOUT=30
+```
+
+### Infinity Configuration
+```bash
+# Recommended for single provider
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_TIMEOUT=30
+
+# Alternative for multi-provider setups
+# INFINITY_URL=http://localhost:7997
+# INFINITY_TIMEOUT=30
+```
+
+**📖 For detailed URL configuration including multi-provider setups, see [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md)**
 ```
 
 ## Usage Patterns

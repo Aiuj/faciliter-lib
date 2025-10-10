@@ -283,6 +283,66 @@ class TestBaseEmbeddingClient:
         client = MockOpenAIEmbeddingClient()
         client.embedding_time_ms = 150.5
         assert client.get_embedding_time_ms() == 150.5
+    
+    @patch('faciliter_lib.embeddings.base.cache_get')
+    @patch('faciliter_lib.embeddings.base.cache_set')
+    def test_cache_disabled_with_zero_duration(self, mock_cache_set, mock_cache_get):
+        """Test that cache is completely bypassed when cache_duration_seconds=0."""
+        # Create client with cache disabled
+        client = MockOpenAIEmbeddingClient(
+            use_l2_norm=False, 
+            cache_duration_seconds=0
+        )
+        
+        # Test single embedding - cache should not be checked or set
+        embedding = client.generate_embedding_single("test text")
+        assert isinstance(embedding, list)
+        assert len(embedding) == 3
+        mock_cache_get.assert_not_called()
+        mock_cache_set.assert_not_called()
+        
+        # Reset mocks for batch test
+        mock_cache_get.reset_mock()
+        mock_cache_set.reset_mock()
+        
+        # Test batch embeddings - cache should not be checked or set
+        embeddings = client.generate_embedding_batch(["text1", "text2"])
+        assert isinstance(embeddings, list)
+        assert len(embeddings) == 2
+        mock_cache_get.assert_not_called()
+        mock_cache_set.assert_not_called()
+    
+    @patch('faciliter_lib.embeddings.base.cache_get')
+    @patch('faciliter_lib.embeddings.base.cache_set')
+    def test_cache_enabled_with_positive_duration(self, mock_cache_set, mock_cache_get):
+        """Test that cache is used when cache_duration_seconds > 0."""
+        # Mock cache_get to return None (cache miss)
+        mock_cache_get.return_value = None
+        
+        # Create client with cache enabled
+        client = MockOpenAIEmbeddingClient(
+            use_l2_norm=False, 
+            cache_duration_seconds=3600
+        )
+        
+        # Test single embedding - cache should be checked and set
+        embedding = client.generate_embedding_single("test text")
+        assert isinstance(embedding, list)
+        assert len(embedding) == 3
+        assert mock_cache_get.call_count == 1
+        assert mock_cache_set.call_count == 1
+        
+        # Reset mocks for batch test
+        mock_cache_get.reset_mock()
+        mock_cache_set.reset_mock()
+        mock_cache_get.return_value = None
+        
+        # Test batch embeddings - cache should be checked and set
+        embeddings = client.generate_embedding_batch(["text1", "text2"])
+        assert isinstance(embeddings, list)
+        assert len(embeddings) == 2
+        assert mock_cache_get.call_count == 2  # Once per text
+        assert mock_cache_set.call_count == 2  # Once per text
 
 
 class TestProviderAvailability:

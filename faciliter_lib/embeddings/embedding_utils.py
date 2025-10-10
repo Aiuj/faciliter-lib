@@ -6,10 +6,21 @@ to match the expected dimensions defined in database schemas (PostgreSQL and Ope
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+# Keywords/patterns that indicate Matryoshka support
+MATRYOSHKA_PATTERNS = [
+    "matryoshka",
+    "mrl",
+    "adaptive",
+    "flexible-dim",
+    "multi-dimension",
+    "variable-dim",
+]
 
 
 def normalize_embedding_dimension(
@@ -164,6 +175,125 @@ def _pca_approximate(embedding: List[float], target_dimension: int) -> List[floa
         return _truncate_or_pad(embedding, target_dimension)
 
 
+def is_matryoshka_model(model_name: str) -> bool:
+    """
+    Check if a model supports Matryoshka Representation Learning.
+    
+    Uses the models database and fuzzy matching to identify models that support MRL,
+    which allows for efficient dimension reduction without significant quality loss.
+    
+    Args:
+        model_name: The name or identifier of the embedding model
+    
+    Returns:
+        bool: True if the model supports Matryoshka representation
+        
+    Example:
+        >>> is_matryoshka_model("nomic-embed-text-v1.5")
+        True
+        >>> is_matryoshka_model("text-embedding-3-large")
+        True
+        >>> is_matryoshka_model("text-embedding-ada-002")
+        False
+    """
+    if not model_name:
+        return False
+    
+    # First check the models database
+    from .models_database import supports_matryoshka as db_supports_matryoshka
+    
+    if db_supports_matryoshka(model_name):
+        return True
+    
+    # Fallback: Check for Matryoshka-related patterns in the name
+    model_lower = model_name.lower().strip()
+    for pattern in MATRYOSHKA_PATTERNS:
+        if pattern in model_lower:
+            return True
+    
+    return False
+
+
+def get_best_normalization_method(
+    model_name: Optional[str] = None,
+    current_dimension: Optional[int] = None,
+    target_dimension: Optional[int] = None
+) -> str:
+    """
+    Determine the best normalization method based on the model and dimension change.
+    
+    This function intelligently selects the optimal normalization strategy:
+    - For Matryoshka models: prefers truncate_or_pad (preserves trained dimensions)
+    - For non-Matryoshka models: prefers interpolate (preserves more information)
+    - For large dimension increases: always uses interpolate
+    - For small changes: considers PCA-approximate
+    
+    Args:
+        model_name: Name or identifier of the embedding model (optional)
+        current_dimension: Current embedding dimension (optional)
+        target_dimension: Target embedding dimension (optional)
+    
+    Returns:
+        str: Recommended normalization method ("truncate_or_pad", "interpolate", or "pca_approximate")
+        
+    Example:
+        >>> get_best_normalization_method("nomic-embed-text-v1.5", 768, 512)
+        'truncate_or_pad'
+        >>> get_best_normalization_method("text-embedding-ada-002", 1536, 512)
+        'interpolate'
+        >>> get_best_normalization_method(current_dimension=1024, target_dimension=1536)
+        'interpolate'
+    """
+    # If model is specified, check if it supports Matryoshka
+    if model_name:
+        is_mrl = is_matryoshka_model(model_name)
+        
+        # For Matryoshka models, truncate_or_pad is optimal
+        # because these models are explicitly trained to maintain quality at various dimensions
+        if is_mrl:
+            logger.debug(
+                f"Model '{model_name}' supports Matryoshka representation. "
+                "Recommending 'truncate_or_pad' method."
+            )
+            return "truncate_or_pad"
+    
+    # If we have dimension information, make dimension-aware decisions
+    if current_dimension is not None and target_dimension is not None:
+        dimension_ratio = target_dimension / current_dimension if current_dimension > 0 else 0
+        
+        # No change needed
+        if current_dimension == target_dimension:
+            return "truncate_or_pad"  # Doesn't matter, but this is fastest
+        
+        # Large dimension increase (>20%) - interpolation is better
+        if dimension_ratio > 1.2:
+            logger.debug(
+                f"Large dimension increase detected ({current_dimension} -> {target_dimension}). "
+                "Recommending 'interpolate' method."
+            )
+            return "interpolate"
+        
+        # Large dimension reduction (>50%) without Matryoshka - use PCA-approximate
+        if dimension_ratio < 0.5 and not (model_name and is_matryoshka_model(model_name)):
+            logger.debug(
+                f"Large dimension reduction detected ({current_dimension} -> {target_dimension}) "
+                "for non-Matryoshka model. Recommending 'pca_approximate' method."
+            )
+            return "pca_approximate"
+        
+        # Moderate dimension reduction - interpolation generally works well
+        if dimension_ratio < 1.0:
+            logger.debug(
+                f"Moderate dimension change detected ({current_dimension} -> {target_dimension}). "
+                "Recommending 'interpolate' method."
+            )
+            return "interpolate"
+    
+    # Default: interpolate for general use (best balance of quality and flexibility)
+    logger.debug("Using default recommendation: 'interpolate' method.")
+    return "interpolate"
+
+
 def normalize_embeddings_batch(
     embeddings: List[List[float]],
     target_dimension: int,
@@ -209,11 +339,11 @@ def get_target_dimension_for_storage(storage_type: str, index_name: str = None) 
     Raises:
         ValueError: If storage_type or index_name is invalid
     """
-    from config.settings import settings
+    from .embeddings_config import embeddings_settings
     
     if storage_type == "postgresql":
         # PostgreSQL uses the dimension from settings
-        return settings.embeddings.embedding_dimension
+        return embeddings_settings.embedding_dimension
     
     elif storage_type == "opensearch":
         # OpenSearch has different dimensions per index based on the schema

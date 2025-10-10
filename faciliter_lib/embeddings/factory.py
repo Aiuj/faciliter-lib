@@ -48,6 +48,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         **kwargs
     ) -> BaseEmbeddingClient:
         """Create an embedding client with the specified provider.
@@ -57,6 +58,7 @@ class EmbeddingFactory:
             model: Model name
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method ('truncate_or_pad', 'interpolate', 'pca_approximate', or None for auto)
             **kwargs: Additional provider-specific parameters
             
         Returns:
@@ -72,6 +74,7 @@ class EmbeddingFactory:
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
+                norm_method=norm_method,
                 **kwargs
             )
         elif provider == "google_genai" or provider == "google" or provider == "gemini":
@@ -79,6 +82,7 @@ class EmbeddingFactory:
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
+                norm_method=norm_method,
                 **kwargs
             )
         elif provider == "ollama":
@@ -86,6 +90,7 @@ class EmbeddingFactory:
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
+                norm_method=norm_method,
                 **kwargs
             )
         elif provider == "local" or provider == "huggingface":
@@ -93,6 +98,7 @@ class EmbeddingFactory:
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
+                norm_method=norm_method,
                 **kwargs
             )
         elif provider == "infinity":
@@ -100,6 +106,7 @@ class EmbeddingFactory:
                 model=model,
                 embedding_dim=embedding_dim,
                 use_l2_norm=use_l2_norm,
+                norm_method=norm_method,
                 **kwargs
             )
         else:
@@ -111,6 +118,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         organization: Optional[str] = None,
@@ -123,6 +131,7 @@ class EmbeddingFactory:
             model: Model name (e.g., 'text-embedding-3-small')
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method (None for auto-detection)
             api_key: OpenAI API key
             base_url: Custom base URL
             organization: OpenAI organization ID
@@ -141,6 +150,7 @@ class EmbeddingFactory:
             model=model,
             embedding_dim=embedding_dim,
             use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
             api_key=api_key,
             base_url=base_url,
             organization=organization,
@@ -154,6 +164,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         api_key: Optional[str] = None,
         task_type: Optional[str] = None,
         title: Optional[str] = None,
@@ -165,6 +176,7 @@ class EmbeddingFactory:
             model: Model name (e.g., 'text-embedding-004')
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method (None for auto-detection)
             api_key: Google API key
             task_type: Task type for embeddings
             title: Optional title for the embedding task
@@ -182,6 +194,7 @@ class EmbeddingFactory:
             model=model,
             embedding_dim=embedding_dim,
             use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
             api_key=api_key,
             task_type=task_type,
             title=title,
@@ -194,6 +207,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         **kwargs
     ) -> BaseEmbeddingClient:
         """Create an Ollama embedding client.
@@ -202,6 +216,7 @@ class EmbeddingFactory:
             model: Model name
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method (None for auto-detection)
             **kwargs: Additional parameters
             
         Returns:
@@ -211,6 +226,7 @@ class EmbeddingFactory:
             model=model,
             embedding_dim=embedding_dim,
             use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
             **kwargs
         )
 
@@ -220,6 +236,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         device: Optional[str] = None,
         cache_dir: Optional[str] = None,
         trust_remote_code: bool = False,
@@ -232,6 +249,7 @@ class EmbeddingFactory:
             model: Model name from HuggingFace
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method (None for auto-detection)
             device: Device to run the model on
             cache_dir: Directory to cache downloaded models
             trust_remote_code: Whether to trust remote code
@@ -251,6 +269,7 @@ class EmbeddingFactory:
             model=model,
             embedding_dim=embedding_dim,
             use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
             device=device,
             cache_dir=cache_dir,
             trust_remote_code=trust_remote_code,
@@ -264,6 +283,7 @@ class EmbeddingFactory:
         model: Optional[str] = None,
         embedding_dim: Optional[int] = None,
         use_l2_norm: bool = True,
+        norm_method: Optional[str] = None,
         base_url: Optional[str] = None,
         timeout: Optional[int] = None,
         **kwargs
@@ -274,6 +294,7 @@ class EmbeddingFactory:
             model: Model name (e.g., 'BAAI/bge-small-en-v1.5')
             embedding_dim: Target embedding dimension
             use_l2_norm: Whether to apply L2 normalization
+            norm_method: Normalization method (None for auto-detection)
             base_url: Base URL of Infinity server (default: http://localhost:7997)
             timeout: Request timeout in seconds
             **kwargs: Additional parameters
@@ -290,6 +311,7 @@ class EmbeddingFactory:
             model=model,
             embedding_dim=embedding_dim,
             use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
             base_url=base_url,
             timeout=timeout,
             **kwargs
@@ -347,7 +369,8 @@ def create_embedding_client(
     provider: Optional[str] = None,
     model: Optional[str] = None,
     embedding_dim: Optional[int] = None,
-    use_l2_norm: bool = True,
+    use_l2_norm: bool = False,
+    norm_method: Optional[str] = None,
     **kwargs
 ) -> BaseEmbeddingClient:
     """Create an embedding client with auto-detection or specified provider.
@@ -357,6 +380,7 @@ def create_embedding_client(
         model: Model name
         embedding_dim: Target embedding dimension
         use_l2_norm: Whether to apply L2 normalization
+        norm_method: Normalization method (None for auto-detection)
         **kwargs: Additional provider-specific parameters
         
     Returns:
@@ -367,6 +391,7 @@ def create_embedding_client(
         model=model,
         embedding_dim=embedding_dim,
         use_l2_norm=use_l2_norm,
+        norm_method=norm_method,
         **kwargs
     )
 

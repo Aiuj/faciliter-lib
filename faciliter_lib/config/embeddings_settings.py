@@ -32,7 +32,7 @@ class EmbeddingsSettings(BaseSettings):
     huggingface_api_key: Optional[str] = None
     
     # Timeout settings (EMBEDDING_TIMEOUT is common default, provider-specific overrides)
-    timeout: Optional[int] = None  # From EMBEDDING_TIMEOUT
+    timeout: int = 10  # Default 10 seconds; from EMBEDDING_TIMEOUT
     
     # Ollama settings
     ollama_host: Optional[str] = None
@@ -67,7 +67,8 @@ class EmbeddingsSettings(BaseSettings):
         
         # Unified base URL and timeout (common defaults for all providers)
         embedding_base_url = EnvParser.get_env("EMBEDDING_BASE_URL")
-        embedding_timeout = EnvParser.get_env("EMBEDDING_TIMEOUT", env_type=int)
+        # Common timeout with 10-second default
+        embedding_timeout = EnvParser.get_env("EMBEDDING_TIMEOUT", env_type=int, default=10)
         
         # Provider-specific URLs with fallback to common EMBEDDING_BASE_URL
         ollama_url = EnvParser.get_env("OLLAMA_URL") or embedding_base_url
@@ -96,9 +97,9 @@ class EmbeddingsSettings(BaseSettings):
             "huggingface_api_key": EnvParser.get_env("HUGGINGFACE_API_KEY"),
             "ollama_host": EnvParser.get_env("OLLAMA_HOST"),
             "ollama_url": ollama_url,
-            "ollama_timeout": EnvParser.get_env("OLLAMA_TIMEOUT", env_type=int) or embedding_timeout,
+            "ollama_timeout": EnvParser.get_env("OLLAMA_TIMEOUT", env_type=int) if EnvParser.get_env("OLLAMA_TIMEOUT") else embedding_timeout,
             "infinity_url": infinity_url,
-            "infinity_timeout": EnvParser.get_env("INFINITY_TIMEOUT", env_type=int) or embedding_timeout,
+            "infinity_timeout": EnvParser.get_env("INFINITY_TIMEOUT", env_type=int) if EnvParser.get_env("INFINITY_TIMEOUT") else embedding_timeout,
             "device": EnvParser.get_env("EMBEDDING_DEVICE", default="auto"),
             "cache_dir": EnvParser.get_env("EMBEDDING_CACHE_DIR"),
             "trust_remote_code": EnvParser.get_env("EMBEDDING_TRUST_REMOTE_CODE", default=False, env_type=bool),

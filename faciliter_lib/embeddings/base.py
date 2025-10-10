@@ -1,5 +1,5 @@
 """Base embedding client interface and helpers."""
-from typing import List, Union, cast
+from typing import List, Union, cast, Optional
 import logging
 import numpy as np
 import hashlib
@@ -7,6 +7,11 @@ import json
 
 from .embeddings_config import embeddings_settings
 from ..cache.cache_manager import cache_get, cache_set
+from .models_database import get_model_dimension, supports_matryoshka
+from .embedding_utils import (
+    normalize_embedding_dimension,
+    get_best_normalization_method,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,15 +26,49 @@ class BaseEmbeddingClient:
 
     Concrete implementations should implement `_generate_embedding_raw` (which takes List[str] and returns List[List[float]]) and may
     override `normalize`, `_l2_normalize`, and `health_check` as needed.
+    
+    Caching behavior:
+        - Cache is enabled by default with cache_duration_seconds > 0
+        - Set cache_duration_seconds to 0 to disable caching entirely
+        - When disabled, all embedding requests bypass the cache
     """
 
-    def __init__(self, model: str | None = None, embedding_dim: int | None = None, use_l2_norm: bool = True, cache_duration_seconds: int | None = None):
+    def __init__(
+        self,
+        model: str | None = None,
+        embedding_dim: int | None = None,
+        use_l2_norm: bool = True,
+        cache_duration_seconds: int | None = None,
+        norm_method: str | None = None,
+    ):
         # Use provided values, otherwise fall back to settings defaults
         self.model = model if model is not None else embeddings_settings.model
         self.embedding_dim = embedding_dim if embedding_dim is not None else embeddings_settings.embedding_dimension
         self.cache_duration_seconds = cache_duration_seconds if cache_duration_seconds is not None else embeddings_settings.cache_duration_seconds
         self.embedding_time_ms = 0
         self.use_l2_norm = use_l2_norm
+        
+        # Get model's native dimension from database
+        self.model_native_dim = get_model_dimension(self.model) if self.model else None
+        
+        # Determine normalization method
+        if norm_method is not None:
+            # User explicitly specified a method
+            self.norm_method = norm_method
+        else:
+            # Auto-detect best method based on model and dimensions
+            self.norm_method = get_best_normalization_method(
+                model_name=self.model,
+                current_dimension=self.model_native_dim,
+                target_dimension=self.embedding_dim,
+            )
+        
+        logger.debug(
+            f"Initialized embedding client: model={self.model}, "
+            f"native_dim={self.model_native_dim}, target_dim={self.embedding_dim}, "
+            f"norm_method={self.norm_method}, use_l2_norm={self.use_l2_norm}, "
+            f"cache_enabled={self.cache_duration_seconds > 0}"
+        )
 
     def _generate_cache_key(self, text: str) -> str:
         """Generate a cache key for the given text and model configuration."""
@@ -38,6 +77,7 @@ class BaseEmbeddingClient:
             "model": self.model,
             "embedding_dim": self.embedding_dim,
             "use_l2_norm": self.use_l2_norm,
+            "norm_method": self.norm_method,
         }
         cache_string = json.dumps(cache_data, sort_keys=True)
         return f"embedding:{hashlib.sha256(cache_string.encode()).hexdigest()}"
@@ -53,24 +93,37 @@ class BaseEmbeddingClient:
 
     def generate_embedding_single(self, text: str) -> List[float]:
         """Generate embedding for a single text string."""
-        # Check cache first
-        cache_key = self._generate_cache_key(text)
-        cached_result = cache_get(cache_key)
-        if cached_result is not None:
-            logger.debug(f"Cache hit for embedding: {cache_key}")
-            return cached_result
+        # Check cache first (only if caching is enabled)
+        if self.cache_duration_seconds > 0:
+            cache_key = self._generate_cache_key(text)
+            cached_result = cache_get(cache_key)
+            if cached_result is not None:
+                logger.debug(f"Cache hit for embedding: {cache_key}")
+                return cached_result
         
         # Generate new embedding
         embeddings = self._generate_embedding_raw([text])
+        
+        # Apply dimension normalization first (before L2 norm)
+        if self.embedding_dim is not None:
+            embeddings = [
+                normalize_embedding_dimension(
+                    emb, self.embedding_dim, method=self.norm_method
+                )
+                for emb in embeddings
+            ]
+        
+        # Then apply L2 normalization if enabled
         if self.use_l2_norm:
-            # _l2_normalize now expects a list of vectors; wrap and unwrap
             embeddings = self._l2_normalize(embeddings)
         
         result = embeddings[0] if embeddings else []
         
-        # Cache the result
-        cache_set(cache_key, result, ttl=self.cache_duration_seconds)
-        logger.debug(f"Cached embedding result: {cache_key}")
+        # Cache the result (only if caching is enabled)
+        if self.cache_duration_seconds > 0:
+            cache_key = self._generate_cache_key(text)
+            cache_set(cache_key, result, ttl=self.cache_duration_seconds)
+            logger.debug(f"Cached embedding result: {cache_key}")
         
         return result
 
@@ -80,28 +133,45 @@ class BaseEmbeddingClient:
         uncached_texts = []
         uncached_indices = []
         
-        # Check cache for each text
-        for i, text in enumerate(texts):
-            cache_key = self._generate_cache_key(text)
-            cached_result = cache_get(cache_key)
-            if cached_result is not None:
-                logger.debug(f"Cache hit for embedding: {cache_key}")
-                results.append((i, cached_result))
-            else:
-                uncached_texts.append(text)
-                uncached_indices.append(i)
+        # Check cache for each text (only if caching is enabled)
+        if self.cache_duration_seconds > 0:
+            for i, text in enumerate(texts):
+                cache_key = self._generate_cache_key(text)
+                cached_result = cache_get(cache_key)
+                if cached_result is not None:
+                    logger.debug(f"Cache hit for embedding: {cache_key}")
+                    results.append((i, cached_result))
+                else:
+                    uncached_texts.append(text)
+                    uncached_indices.append(i)
+        else:
+            # Caching disabled, all texts need to be processed
+            uncached_texts = texts
+            uncached_indices = list(range(len(texts)))
         
         # Generate embeddings for uncached texts
         if uncached_texts:
             embeddings = self._generate_embedding_raw(uncached_texts)
+            
+            # Apply dimension normalization first (before L2 norm)
+            if self.embedding_dim is not None:
+                embeddings = [
+                    normalize_embedding_dimension(
+                        emb, self.embedding_dim, method=self.norm_method
+                    )
+                    for emb in embeddings
+                ]
+            
+            # Then apply L2 normalization if enabled
             if self.use_l2_norm:
                 embeddings = self._l2_normalize(embeddings)
             
             # Cache and collect the new embeddings
             for j, (text, embedding) in enumerate(zip(uncached_texts, embeddings)):
-                cache_key = self._generate_cache_key(text)
-                cache_set(cache_key, embedding, ttl=self.cache_duration_seconds)
-                logger.debug(f"Cached embedding result: {cache_key}")
+                if self.cache_duration_seconds > 0:
+                    cache_key = self._generate_cache_key(text)
+                    cache_set(cache_key, embedding, ttl=self.cache_duration_seconds)
+                    logger.debug(f"Cached embedding result: {cache_key}")
                 results.append((uncached_indices[j], embedding))
         
         # Sort results by original index and return embeddings in order

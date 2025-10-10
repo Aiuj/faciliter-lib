@@ -29,7 +29,18 @@ Example usage:
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .ollama import OllamaEmbeddingClient
 from .embeddings_config import EmbeddingsConfig, embeddings_settings, TaskType
-from .embedding_utils import normalize_embedding_dimension, normalize_embeddings_batch
+from .embedding_utils import (
+    normalize_embedding_dimension,
+    normalize_embeddings_batch,
+    is_matryoshka_model,
+    get_best_normalization_method,
+)
+from .models_database import (
+    get_model_spec,
+    get_model_dimension,
+    get_model_context_size,
+    supports_matryoshka,
+)
 from .factory import (
     EmbeddingFactory,
     create_embedding_client,
@@ -80,6 +91,18 @@ __all__ = [
     "EmbeddingsConfig",
     "embeddings_settings",
     "TaskType",
+    
+    # Embedding utilities
+    "normalize_embedding_dimension",
+    "normalize_embeddings_batch",
+    "is_matryoshka_model",
+    "get_best_normalization_method",
+    
+    # Model database
+    "get_model_spec",
+    "get_model_dimension",
+    "get_model_context_size",
+    "supports_matryoshka",
     
     # Factory and convenience functions
     "EmbeddingFactory",

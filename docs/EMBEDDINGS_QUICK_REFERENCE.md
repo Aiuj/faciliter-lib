@@ -223,6 +223,17 @@ EMBEDDING_TIMEOUT=30
 # INFINITY_TIMEOUT=30
 ```
 
+### Cache Configuration
+```bash
+# Cache duration in seconds (default: 7200 = 2 hours)
+EMBEDDING_CACHE_DURATION_SECONDS=7200
+
+# Disable caching entirely (useful for testing or always-fresh embeddings)
+EMBEDDING_CACHE_DURATION_SECONDS=0
+```
+
+**Note**: Setting `EMBEDDING_CACHE_DURATION_SECONDS=0` completely disables the embedding cache. When disabled, all embedding requests bypass the cache, ensuring fresh embeddings are generated every time without any cache lookup overhead.
+
 **📖 For detailed URL configuration including multi-provider setups, see [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md)**
 ```
 

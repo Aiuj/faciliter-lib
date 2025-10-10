@@ -15,6 +15,8 @@ export EMBEDDING_BASE_URL=http://localhost:7997 # Server URL (works for all prov
 export EMBEDDING_TIMEOUT=30                     # Request timeout in seconds
 export EMBEDDING_DIMENSION=384                  # Optional: embedding dimension
 export EMBEDDING_TASK_TYPE=SEMANTIC_SIMILARITY  # Optional: task type
+export EMBEDDING_CACHE_DURATION_SECONDS=7200    # Cache duration in seconds (default: 7200 = 2 hours)
+                                                # Set to 0 to disable caching entirely
 ```
 
 ### Provider-Specific Configuration (For Multi-Provider Setups)

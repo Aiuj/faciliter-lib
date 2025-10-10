@@ -14,10 +14,23 @@ logger = logging.getLogger(__name__)
 class OllamaEmbeddingClient(BaseEmbeddingClient):
     """Client for generating embeddings using a local Ollama HTTP API."""
 
-    def __init__(self, model: str | None = None, embedding_dim: int | None = None, use_l2_norm: bool = False, base_url: str | None = None, timeout: int | None = None):
+    def __init__(
+        self,
+        model: str | None = None,
+        embedding_dim: int | None = None,
+        use_l2_norm: bool = False,
+        norm_method: str | None = None,
+        base_url: str | None = None,
+        timeout: int | None = None
+    ):
         # If model/embedding_dim are not provided, BaseEmbeddingClient will
         # fall back to values from `settings`.
-        super().__init__(model=model, embedding_dim=embedding_dim, use_l2_norm=use_l2_norm)
+        super().__init__(
+            model=model,
+            embedding_dim=embedding_dim,
+            use_l2_norm=use_l2_norm,
+            norm_method=norm_method,
+        )
         # Priority: explicit param > OLLAMA_URL > EMBEDDING_BASE_URL > default
         self.base_url = base_url or embeddings_settings.ollama_url or "http://localhost:11434"
         # Priority: explicit param > OLLAMA_TIMEOUT > EMBEDDING_TIMEOUT > None
@@ -95,18 +108,8 @@ class OllamaEmbeddingClient(BaseEmbeddingClient):
                 raise EmbeddingGenerationError("Unexpected embedding format from Ollama")
 
             embeddings_list = cast(List[List[float]], embeddings_raw)
-
-            normalized: List[List[float]] = []
-            for emb in embeddings_list:
-                if not isinstance(emb, list) or len(emb) != self.embedding_dim:
-                    logger.debug(
-                        f"Embedding dimension mismatch: expected {self.embedding_dim}, got {len(emb) if hasattr(emb, '__len__') else 'unknown'}"
-                    )
-                normalized.append(self.normalize(emb))
-
-            logger.debug(f"Generated {len(normalized)} embedding(s) using model {embedding_response.model}")
-            return normalized
-
+            return embeddings_list
+        
         except ollama.ResponseError as e:  # Use library's exception
             error_msg = f"Ollama API error: {e}"
             logger.error(error_msg)

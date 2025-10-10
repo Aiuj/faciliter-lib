@@ -56,7 +56,7 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
         super().__init__(model=model, embedding_dim=embedding_dim, use_l2_norm=use_l2_norm)
         
         # Set base URL with sensible defaults
-        # Priority: explicit param > INFINITY_URL > INFINITY_BASE_URL > EMBEDDING_BASE_URL > fallback to localhost
+        # Priority: explicit param > INFINITY_BASE_URL > EMBEDDING_BASE_URL > fallback to localhost
         self.base_url = (
             base_url 
             or embeddings_settings.infinity_url 
@@ -75,11 +75,10 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
         
         # Log which URL source was used for debugging
         url_source = "parameter" if base_url else (
-            "INFINITY_URL" if embeddings_settings.infinity_url else (
+            "INFINITY_BASE_URL" if embeddings_settings.infinity_url else (
                 "EMBEDDING_BASE_URL" if embeddings_settings.base_url else "default"
             )
         )
-        logger.debug(f"Initialized InfinityEmbeddingClient with model={self.model}, base_url={self.base_url} (from {url_source})")
 
     def _generate_embedding_raw(self, texts: List[str]) -> List[List[float]]:
         """Generate raw embeddings using Infinity API.

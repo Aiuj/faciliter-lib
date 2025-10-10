@@ -48,7 +48,7 @@ Infinity is an open-source embedding server that provides:
 
 2. **`faciliter_lib/embeddings/embeddings_config.py`**
    - Added Infinity-specific configuration fields
-   - Added environment variable support (`INFINITY_URL`, `INFINITY_TIMEOUT`)
+   - Added environment variable support (`INFINITY_BASE_URL`, `INFINITY_TIMEOUT`)
    - Updated `from_env()` to read Infinity settings
 
 3. **`faciliter_lib/embeddings/__init__.py`**
@@ -71,7 +71,7 @@ Existing code continues to work. Just set environment variables:
 # In your .env file or environment
 EMBEDDING_PROVIDER=infinity
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-INFINITY_URL=http://localhost:7997
+INFINITY_BASE_URL=http://localhost:7997
 EMBEDDING_DIMENSION=384
 ```
 
@@ -114,8 +114,7 @@ client = EmbeddingFactory.infinity(
 |----------|-------------|---------|
 | `EMBEDDING_PROVIDER` | Set to `infinity` | `openai` |
 | `EMBEDDING_MODEL` | HuggingFace model name | `BAAI/bge-small-en-v1.5` |
-| `INFINITY_URL` | Server URL | `http://localhost:7997` |
-| `EMBEDDING_BASE_URL` | Alias for `INFINITY_URL` | - |
+| `EMBEDDING_BASE_URL` | Server URL | `http://localhost:7997` |
 | `INFINITY_TIMEOUT` | Request timeout (seconds) | `30` |
 | `OLLAMA_TIMEOUT` | Alias for `INFINITY_TIMEOUT` | `30` |
 | `EMBEDDING_DIMENSION` | Target dimension (optional) | Model default |
@@ -179,7 +178,7 @@ The Infinity provider integrates seamlessly with mcp-doc-qa. Simply update `.env
 ```bash
 EMBEDDING_PROVIDER=infinity
 EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
-INFINITY_URL=http://infinity:7997  # or http://localhost:7997 for local dev
+INFINITY_BASE_URL=http://infinity:7997  # or http://localhost:7997 for local dev
 EMBEDDING_DIMENSION=384
 ```
 

@@ -219,7 +219,7 @@ EMBEDDING_BASE_URL=http://localhost:7997
 EMBEDDING_TIMEOUT=30
 
 # Alternative for multi-provider setups
-# INFINITY_URL=http://localhost:7997
+# INFINITY_BASE_URL=http://localhost:7997
 # INFINITY_TIMEOUT=30
 ```
 

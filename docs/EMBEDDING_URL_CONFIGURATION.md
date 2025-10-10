@@ -37,7 +37,6 @@ Each provider follows a specific priority chain for URL and timeout configuratio
 
 #### Infinity Provider
 1. Explicit `base_url` parameter to constructor
-2. `INFINITY_URL` environment variable
 3. `INFINITY_BASE_URL` environment variable
 4. `EMBEDDING_BASE_URL` environment variable (common default)
 5. Default: `http://localhost:7997`
@@ -87,7 +86,7 @@ Running multiple embedding services for redundancy or A/B testing:
 EMBEDDING_BASE_URL=http://localhost:7997  # Default for all providers
 
 # Provider-specific overrides for multi-provider scenarios
-INFINITY_URL=http://infinity-server:7997
+INFINITY_BASE_URL=http://infinity-server:7997
 OLLAMA_URL=http://ollama-server:11434
 OPENAI_BASE_URL=https://api.openai.com/v1
 
@@ -105,7 +104,7 @@ from faciliter_lib.embeddings import (
 )
 
 # Each client uses its provider-specific URL
-infinity_client = create_infinity_client()  # Uses INFINITY_URL
+infinity_client = create_infinity_client()  # Uses INFINITY_BASE_URL
 ollama_client = create_ollama_client()      # Uses OLLAMA_URL
 openai_client = create_openai_client()      # Uses OPENAI_BASE_URL
 
@@ -171,7 +170,7 @@ Test different models on different servers:
 EMBEDDING_BASE_URL=http://localhost:7997  # Default
 
 # Test server URLs
-INFINITY_URL=http://localhost:7997    # bge-small
+INFINITY_BASE_URL=http://localhost:7997    # bge-small
 OLLAMA_URL=http://localhost:7998      # different Infinity with bge-large
 ```
 
@@ -196,44 +195,6 @@ print(f"Small model time: {small_client.get_embedding_time_ms()}ms")
 print(f"Large model time: {large_client.get_embedding_time_ms()}ms")
 ```
 
-## Migration Guide
-
-### From Legacy Provider-Specific Variables
-
-**Old way (still works):**
-```bash
-OLLAMA_URL=http://localhost:11434
-INFINITY_URL=http://localhost:7997
-OPENAI_BASE_URL=https://api.openai.com/v1
-```
-
-**New recommended way (simpler for single provider):**
-```bash
-EMBEDDING_PROVIDER=infinity
-EMBEDDING_BASE_URL=http://localhost:7997
-```
-
-**Benefits:**
-- ✅ Fewer environment variables to manage
-- ✅ Easier to switch providers (just change EMBEDDING_PROVIDER)
-- ✅ Consistent configuration across all providers
-- ✅ Still backward compatible with old variables
-
-### Gradual Migration
-
-You can migrate gradually. The library checks provider-specific variables first:
-
-**Phase 1:** Add `EMBEDDING_BASE_URL` alongside existing variables
-```bash
-OLLAMA_URL=http://localhost:11434
-EMBEDDING_BASE_URL=http://localhost:11434  # Fallback
-```
-
-**Phase 2:** Remove provider-specific variables once confident
-```bash
-EMBEDDING_BASE_URL=http://localhost:11434  # Only this needed
-```
-
 ## Best Practices
 
 ### ✅ DO
@@ -246,7 +207,7 @@ EMBEDDING_BASE_URL=http://localhost:11434  # Only this needed
 
 2. **Use provider-specific URLs for multi-provider scenarios**
    ```bash
-   INFINITY_URL=http://infinity:7997
+   INFINITY_BASE_URL=http://infinity:7997
    OLLAMA_URL=http://ollama:11434
    OPENAI_BASE_URL=https://api.openai.com/v1
    ```
@@ -265,7 +226,7 @@ EMBEDDING_BASE_URL=http://localhost:11434  # Only this needed
    ```bash
    # Confusing: which one is used?
    EMBEDDING_BASE_URL=http://localhost:7997
-   INFINITY_URL=http://different-server:7997
+   INFINITY_BASE_URL=http://different-server:7997
    ```
 
 2. **Don't forget provider-specific URLs take precedence**
@@ -294,7 +255,7 @@ print(f"OpenAI Base URL: {embeddings_settings.base_url}")
 
 ### Issue: Provider-specific URL not being used
 
-**Problem:** Set `INFINITY_URL` but still using `EMBEDDING_BASE_URL`
+**Problem:** Set `INFINITY_BASE_URL` but still using `EMBEDDING_BASE_URL`
 
 **Solution:** Ensure environment variables are loaded before importing:
 ```python
@@ -314,8 +275,7 @@ from faciliter_lib.embeddings import create_infinity_client
 | `EMBEDDING_TIMEOUT` | All | Low | None | Common default timeout in seconds |
 | `OLLAMA_URL` | Ollama | High | `localhost:11434` | Ollama-specific URL |
 | `OLLAMA_TIMEOUT` | Ollama | High | None | Ollama-specific timeout |
-| `INFINITY_URL` | Infinity | High | `localhost:7997` | Infinity-specific URL |
-| `INFINITY_BASE_URL` | Infinity | Medium | `localhost:7997` | Alternative Infinity URL var |
+| `INFINITY_BASE_URL` | Infinity | High | `localhost:7997` | Infinity-specific URL |
 | `INFINITY_TIMEOUT` | Infinity | High | 30 | Infinity-specific timeout |
 | `OPENAI_BASE_URL` | OpenAI | High | None | OpenAI/compatible endpoint |
 | `BASE_URL` | OpenAI | Medium | None | Alternative OpenAI URL var |
@@ -325,7 +285,7 @@ from faciliter_lib.embeddings import create_infinity_client
 ## Summary
 
 - 🎯 **Simple use case:** Use `EMBEDDING_BASE_URL` + `EMBEDDING_TIMEOUT`
-- 🔄 **Multi-provider:** Use provider-specific URLs (OLLAMA_URL, INFINITY_URL, etc.)
+- 🔄 **Multi-provider:** Use provider-specific URLs (OLLAMA_URL, INFINITY_BASE_URL, etc.)
 - ✨ **Backward compatible:** All existing configurations continue to work
 - 🚀 **Flexible:** Mix and match as needed for your use case
 - 📝 **Documented:** Clear priority chains for troubleshooting

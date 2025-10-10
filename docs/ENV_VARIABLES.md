@@ -27,7 +27,7 @@ export EMBEDDING_BASE_URL=http://default-server:7997
 export EMBEDDING_TIMEOUT=30
 
 # Provider-specific overrides (take precedence)
-export INFINITY_URL=http://infinity-server:7997
+export INFINITY_BASE_URL=http://infinity-server:7997
 export INFINITY_TIMEOUT=30
 export OLLAMA_URL=http://ollama-server:11434
 export OLLAMA_TIMEOUT=60
@@ -40,7 +40,7 @@ export GOOGLE_GENAI_API_KEY=your-key
 
 **Priority Chain:**
 - Ollama: `OLLAMA_URL` > `EMBEDDING_BASE_URL` > default
-- Infinity: `INFINITY_URL` > `EMBEDDING_BASE_URL` > default
+- Infinity: `EMBEDDING_BASE_URL` > default
 - OpenAI: `OPENAI_BASE_URL` > `EMBEDDING_BASE_URL` > default
 
 **See:** [EMBEDDING_URL_CONFIGURATION.md](../docs/EMBEDDING_URL_CONFIGURATION.md) for detailed configuration guide

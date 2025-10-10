@@ -72,7 +72,6 @@ class EmbeddingsSettings(BaseSettings):
         # Provider-specific URLs with fallback to common EMBEDDING_BASE_URL
         ollama_url = EnvParser.get_env("OLLAMA_URL") or embedding_base_url
         infinity_url = (
-            EnvParser.get_env("INFINITY_URL") or 
             EnvParser.get_env("INFINITY_BASE_URL") or 
             embedding_base_url
         )

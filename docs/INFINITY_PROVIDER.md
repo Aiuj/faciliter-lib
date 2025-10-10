@@ -47,16 +47,16 @@ EMBEDDING_BASE_URL=http://localhost:7997
 EMBEDDING_TIMEOUT=30
 
 # Option 2: Provider-specific (for multi-provider setups)
-# INFINITY_URL=http://localhost:7997
+# INFINITY_BASE_URL=http://localhost:7997
 # INFINITY_TIMEOUT=30
 
 # Optional: embedding dimension
 EMBEDDING_DIMENSION=384
 ```
 
-**Configuration Guide:** The library supports both unified (`EMBEDDING_BASE_URL`) and provider-specific (`INFINITY_URL`) configuration. 
+**Configuration Guide:** The library supports both unified (`EMBEDDING_BASE_URL`) and provider-specific (`INFINITY_BASE_URL`) configuration. 
 - Use `EMBEDDING_BASE_URL` for simpler single-provider setups
-- Use `INFINITY_URL` when running multiple embedding providers (Infinity + Ollama + OpenAI)
+- Use `INFINITY_BASE_URL` when running multiple embedding providers (Infinity + Ollama + OpenAI)
 - See [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md) for complete details and examples
 
 ### Supported Models

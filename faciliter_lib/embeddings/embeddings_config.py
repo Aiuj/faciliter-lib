@@ -126,9 +126,9 @@ class EmbeddingsConfig(BaseModel):
 
         # Unified base URL configuration
         # EMBEDDING_BASE_URL serves as common default for all providers
-        # Provider-specific URLs (OLLAMA_URL, INFINITY_URL, OPENAI_BASE_URL) override for multi-provider setups
+        # Provider-specific URLs (OLLAMA_URL, EMBEDDING_BASE_URL, OPENAI_BASE_URL) override for multi-provider setups
         embedding_base_url = getenv("EMBEDDING_BASE_URL")
-        infinity_url = getenv("INFINITY_URL") or getenv("INFINITY_BASE_URL") or embedding_base_url
+        infinity_url = getenv("INFINITY_BASE_URL") or embedding_base_url
         ollama_url = getenv("OLLAMA_URL") or embedding_base_url
         openai_base_url = getenv("OPENAI_BASE_URL") or getenv("BASE_URL") or embedding_base_url
 

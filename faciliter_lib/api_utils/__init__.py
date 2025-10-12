@@ -11,6 +11,7 @@ from .time_based_auth import (
     TimeBasedAuthError,
 )
 from .auth_settings import AuthSettings
+from .api_client import APIClient
 
 # Optional FastAPI integration (only if fastapi is installed)
 try:
@@ -48,6 +49,7 @@ __all__ = [
     "verify_time_key", 
     "TimeBasedAuthError",
     "AuthSettings",
+    "APIClient",
     
     # FastMCP integration
     "create_auth_middleware",

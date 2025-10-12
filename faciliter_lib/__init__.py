@@ -36,7 +36,8 @@ from .config import (
 # API utilities for time-based authentication
 from .api_utils import (
     generate_time_key, verify_time_key, TimeBasedAuthError,
-    verify_mcp_auth, get_auth_headers, get_auth_env_vars, MCPAuthError
+    verify_mcp_auth, get_auth_headers, get_auth_env_vars, MCPAuthError,
+    APIClient
 )
 
 __all__ = [
@@ -124,6 +125,7 @@ __all__ = [
     "get_auth_headers",
     "get_auth_env_vars",
     "MCPAuthError",
+    "APIClient",
     
     "__version__",
 ]

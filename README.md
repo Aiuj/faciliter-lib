@@ -9,6 +9,8 @@
 - Reusable utility functions
 - Redis-based caching system with configurable TTL
 - **🆕 Redis-based job queue system** with background worker support
+- **🆕 Time-based authentication** - Secure HMAC-based auth for FastAPI/MCP servers
+- **🆕 FastAPI OpenAPI utilities** - Add API key auth to Swagger UI with one function call
 - MCP (Model Context Protocol) utilities
 - LLM client with support for multiple providers (OpenAI, Gemini, Ollama)
 - Excel file processing and markdown conversion
@@ -255,6 +257,70 @@ worker.start()  # Blocks and processes jobs
 
 See **[Job Queue Documentation](docs/JOB_QUEUE_QUICK_REFERENCE.md)** for complete guide.
 
+### Time-based Authentication (New!)
+
+Secure HMAC-based authentication for FastAPI and MCP servers without centralized key management:
+
+```python
+# Server setup (FastAPI)
+from fastapi import FastAPI
+from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from faciliter_lib.config import AuthSettings
+
+app = FastAPI()
+settings = AuthSettings.from_env()  # AUTH_ENABLED=true, AUTH_PRIVATE_KEY=...
+
+app.add_middleware(TimeBasedAuthMiddleware, settings=settings)
+
+# Client setup
+from faciliter_lib.api_utils import generate_time_key
+
+auth_key = generate_time_key(settings.auth_private_key)
+headers = {settings.auth_key_header_name: auth_key}
+```
+
+**Key Features:**
+- **3-hour validity window** - Keys valid for previous, current, and next hour
+- **No disruptions** - Smooth transitions at hour boundaries
+- **HMAC-SHA256** - Cryptographically secure with constant-time comparison
+- **Simple config** - Just set `AUTH_PRIVATE_KEY` environment variable
+- **FastAPI & MCP support** - Ready-to-use middleware and helpers
+
+See **[API Authentication Documentation](docs/API_AUTH_QUICK_REFERENCE.md)** for complete guide.
+
+### FastAPI OpenAPI Utilities (New!)
+
+Add API key authentication to Swagger UI with a single function call:
+
+```python
+from fastapi import FastAPI
+from faciliter_lib.api_utils.fastapi_openapi import configure_api_key_auth
+from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from faciliter_lib.config import AuthSettings
+
+app = FastAPI(title="My API", version="1.0.0")
+settings = AuthSettings.from_env()
+
+# Add "Authorize" button to Swagger UI
+configure_api_key_auth(
+    app,
+    header_name=settings.auth_key_header_name,
+    description="Time-based HMAC authentication key"
+)
+
+# Add authentication middleware
+app.add_middleware(TimeBasedAuthMiddleware, settings=settings)
+```
+
+**Features:**
+- **One function call** - No manual OpenAPI schema manipulation
+- **Swagger UI integration** - "Authorize" button appears automatically
+- **Persistent auth** - API key saved across page refreshes
+- **Flexible** - Supports API key, Bearer, OAuth2, and custom schemes
+- **Customizable** - Configure excluded paths, header names, descriptions
+
+See **[FastAPI OpenAPI Documentation](docs/FASTAPI_OPENAPI_QUICK_REFERENCE.md)** for complete guide and advanced examples.
+
 #### Cache API
 
 - `set_cache(name="faciliter", config=None, ttl=None, time_out=None)`:  
@@ -436,6 +502,7 @@ confidence = result['score']  # 0.168...
 Detailed documentation is available in the `docs/` directory:
 
 - **[Settings Management](docs/settings.md)** - 🆕 Unified configuration system guide
+- **[API Authentication](docs/API_AUTH_QUICK_REFERENCE.md)** - 🆕 Time-based HMAC authentication for FastAPI/MCP
 - **[Excel Manager](docs/excel_manager.md)** - Complete guide for Excel file processing
 - **[Cache System](docs/cache.md)** - Redis caching configuration and usage
 - **[LLM Integration](docs/llm.md)** - Multi-provider LLM client documentation

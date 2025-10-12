@@ -29,8 +29,14 @@ from .tools import ExcelManager
 from .config import (
     StandardSettings, BaseSettings, LLMSettings, EmbeddingsSettings,
     CacheSettings, TracingSettings, DatabaseSettings, SettingsManager, settings_manager,
-    SettingsError, EnvironmentVariableError,
+    SettingsError, EnvironmentVariableError, AuthSettings,
     DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES
+)
+
+# API utilities for time-based authentication
+from .api_utils import (
+    generate_time_key, verify_time_key, TimeBasedAuthError,
+    verify_mcp_auth, get_auth_headers, get_auth_env_vars, MCPAuthError
 )
 
 __all__ = [
@@ -101,6 +107,7 @@ __all__ = [
     "CacheSettings",
     "TracingSettings",
     "DatabaseSettings",
+    "AuthSettings",
     "SettingsManager",
     "settings_manager",
     "SettingsError",
@@ -108,6 +115,15 @@ __all__ = [
     "DOC_CATEGORIES",
     "DOC_CATEGORIES_BY_KEY",
     "DOC_CATEGORY_CHOICES",
+    
+    # API utilities for authentication
+    "generate_time_key",
+    "verify_time_key",
+    "TimeBasedAuthError",
+    "verify_mcp_auth",
+    "get_auth_headers",
+    "get_auth_env_vars",
+    "MCPAuthError",
     
     "__version__",
 ]

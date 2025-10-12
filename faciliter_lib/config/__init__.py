@@ -31,6 +31,9 @@ from .settings_singleton import (
     get_settings_safe,
 )
 
+# Import AuthSettings from api_utils
+from ..api_utils.auth_settings import AuthSettings
+
 __all__ = [
     # Legacy doc categories
     "DOC_CATEGORIES", 
@@ -54,6 +57,7 @@ __all__ = [
     "MCPServerSettings",
     "FastAPIServerSettings",
     "StandardSettings",
+    "AuthSettings",
     
     # Settings singleton
     "SettingsSingletonManager",

@@ -128,20 +128,6 @@ EMBEDDING_MODELS_DATABASE: Dict[str, ModelSpec] = {
     },
     
     # Mixedbread AI Models
-    "mixedbread-ai/mxbai-embed-large-v1": {
-        "dimensions": 1024,
-        "context_size": 512,
-        "supports_matryoshka": True,
-        "provider": "mixedbread",
-        "notes": "High-quality embeddings with MRL.",
-    },
-    "mxbai-embed-large-v1": {
-        "dimensions": 1024,
-        "context_size": 512,
-        "supports_matryoshka": True,
-        "provider": "mixedbread",
-        "notes": "High-quality embeddings with MRL.",
-    },
     "mxbai-embed-large": {
         "dimensions": 1024,
         "context_size": 512,
@@ -328,6 +314,15 @@ EMBEDDING_MODELS_DATABASE: Dict[str, ModelSpec] = {
         "supports_matryoshka": False,
         "provider": "microsoft",
         "notes": "Multilingual E5 large model.",
+    },
+    
+    # IBM Granite Models
+    "granite-embedding": {
+        "dimensions": 384,
+        "context_size": 512,
+        "supports_matryoshka": False,
+        "provider": "ibm",
+        "notes": "30M parameter dense bi-encoder. Optimized for enterprise use cases. Apache 2.0 license.",
     },
 }
 

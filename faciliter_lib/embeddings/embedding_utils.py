@@ -350,13 +350,13 @@ def get_target_dimension_for_storage(storage_type: str, index_name: str = None) 
         if index_name == "qa_pairs":
             # From opensearch_qa_pairs_enhanced_mapping.json
             return 512
-        elif index_name == "contextual_chunks":
-            # From opensearch_contextual_chunks_mapping.json
+        elif index_name == "document_chunks":
+            # From opensearch_document_chunks_mapping.json
             return 1024
         else:
             raise ValueError(
                 f"Unknown OpenSearch index name: {index_name}. "
-                "Valid options: 'qa_pairs', 'contextual_chunks'"
+                "Valid options: 'qa_pairs', 'document_chunks'"
             )
     
     else:

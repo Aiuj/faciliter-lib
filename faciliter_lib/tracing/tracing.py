@@ -35,18 +35,45 @@ class LangfuseTracingProvider(TracingProvider):
         self._client = langfuse_client
     
     def add_metadata(self, metadata: Any) -> None:
-        """Add metadata to the current trace. Accepts dict or JSON string."""
+        """Add metadata to the current trace. Accepts dict or JSON string.
+        
+        Args:
+            metadata: Metadata to add. Can be:
+                - None: no-op
+                - dict: used directly
+                - str: parsed as JSON
+                - Any other type: ignored
+        """
+        if metadata is None:
+            return
+        
         from faciliter_lib.mcp_utils import parse_from
+        
+        # Convert to dict if needed
         if isinstance(metadata, str):
-            metadata = parse_from(metadata)
-        self._client.update_current_span(metadata=metadata)
+            try:
+                metadata = parse_from(metadata)
+            except Exception:
+                # Invalid JSON string, ignore
+                return
+        elif not isinstance(metadata, dict):
+            # Not a dict or string, ignore
+            return
+        
+        # Only update if we have a valid dict
+        if metadata:
+            self._client.update_current_span(metadata=metadata)
 
 
 class NoOpTracingProvider(TracingProvider):
     """No-operation tracing provider for when tracing is disabled."""
     
     def add_metadata(self, metadata: Any) -> None:
-        """No-op implementation of add_metadata."""
+        """No-op implementation of add_metadata.
+        
+        Args:
+            metadata: Ignored in no-op implementation.
+        """
         pass
 
 

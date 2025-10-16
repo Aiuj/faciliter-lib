@@ -2,9 +2,13 @@
 
 ## Changes done
 
+### 0.2.11
+
+- "from" description for API parameters in tracing (observability)
+- Implemented a dynamic api key authentication mechanism
+
 ### 0.2.10
 
-- Implemented a dynamic api key authentication mechanism
 - Added infinity server provider for embeddings
 - Better settings singleton management
 - Basic job queue implementation using Redis/Valkey

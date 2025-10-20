@@ -147,6 +147,17 @@ class GoogleGenAIProvider(BaseProvider):
             # google.api_core might not be available in all setups
             pass
 
+        # Add google.genai specific errors (503 ServerError, etc.)
+        try:
+            from google.genai import errors as genai_errors
+            retryable_exceptions.extend([
+                genai_errors.ServerError,             # 503 server overloaded, 500 internal errors
+                genai_errors.ClientError,             # 429 rate limits and other 4xx retryable errors
+            ])
+        except ImportError:
+            # google.genai might not be available
+            pass
+
         # Add common network-level exceptions
         retryable_exceptions.extend([
             ConnectionError,
@@ -347,7 +358,14 @@ class GoogleGenAIProvider(BaseProvider):
                 thinking_enabled=thinking_enabled,
             )
         except Exception as e:  # pragma: no cover - network errors
-            logger.exception("genai.chat failed")
+            # Log error without full traceback for retryable errors (retries already logged)
+            # For non-retryable errors, include traceback for debugging
+            is_retryable = isinstance(e, self._retry_config.retry_on_exceptions)
+            if is_retryable:
+                logger.error(f"genai.chat failed after all retries: {type(e).__name__}: {e}")
+            else:
+                logger.exception("genai.chat failed with non-retryable error")
+            
             return {
                 "error": str(e),
                 "content": None,

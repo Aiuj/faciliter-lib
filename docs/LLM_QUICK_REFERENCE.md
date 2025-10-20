@@ -155,7 +155,7 @@ resp = client.chat(messages)
     - Tools: passes the provided functions list through
     - Search grounding: when `use_search_grounding=True`, enables Google Search tool and tool_config per official docs
     - **Rate limiting**: Model-specific RPM limits (Gemini 2.5 Pro: 5 RPM, Flash: 10 RPM, Flash-Lite: 15 RPM, Gemma 3: 30 RPM, Embedding: 100 RPM)
-    - **Retry logic**: Automatic retry on rate limits (429), server errors (500/503), network failures with exponential backoff (3 retries, 1-30s delays)
+    - **Retry logic**: Automatic retry on rate limits (429), server errors (500/503 including "model is overloaded"), network failures with exponential backoff (3 retries, 1-30s delays with jitter)
 
 - Ollama (ollama):
     - Uses `ollama.chat()` with OpenAI-style messages
@@ -199,8 +199,9 @@ resp = client.chat(messages)
 
 ### Automatic Retry Logic (Gemini)
 - **Exponential backoff**: 1s → 2s → 4s delays with 50% jitter
-- **Retryable errors**: Network failures, rate limits (429), server errors (500/503)
+- **Retryable errors**: Network failures, rate limits (429), server errors (500/503 including "model is overloaded"), timeouts
 - **Max 3 retries**: Prevents infinite loops while providing resilience
+- **Clean error logging**: Retryable errors log warnings during retry, only non-retryable errors show full tracebacks
 - **Error preservation**: Final error is returned if all retries fail
 
 ### Circuit Breaker Pattern

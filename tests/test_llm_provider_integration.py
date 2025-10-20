@@ -202,6 +202,71 @@ class TestGoogleGenAIProviderRetry:
             # Should have slept twice (for the two retries)
             assert mock_sleep.call_count == 2
 
+    def test_retry_on_server_error_503(self):
+        """Test retry behavior on Google GenAI ServerError (503 server overloaded)."""
+        config = GeminiConfig(api_key="test-key", model="gemini-2.5-flash")
+        
+        with patch('google.genai.Client') as mock_client_class, \
+             patch('openinference.instrumentation.google_genai.GoogleGenAIInstrumentor'):
+            
+            provider = GoogleGenAIProvider(config)
+            provider._retry_config.base_delay = 0.01  # Fast test
+            
+            # Create a mock ServerError similar to the real one
+            class MockServerError(Exception):
+                """Mock google.genai.errors.ServerError"""
+                def __init__(self, status_code, error_dict, response):
+                    self.status_code = status_code
+                    self.error_dict = error_dict
+                    self.response = response
+                    super().__init__(f"{status_code} UNAVAILABLE. {error_dict}")
+            
+            # Mock API to fail with ServerError twice, then succeed
+            mock_response = MagicMock()
+            mock_response.text = "Success after server recovered"
+            mock_response.usage_metadata = {}
+            
+            mock_client = mock_client_class.return_value
+            mock_generate = mock_client.models.generate_content
+            
+            call_count = 0
+            def side_effect(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count <= 2:
+                    error_dict = {
+                        'error': {
+                            'code': 503,
+                            'message': 'The model is overloaded. Please try again later.',
+                            'status': 'UNAVAILABLE'
+                        }
+                    }
+                    raise MockServerError(503, error_dict, None)
+                return mock_response
+            
+            mock_generate.side_effect = side_effect
+            
+            # Patch the retry config to include our mock exception
+            original_exceptions = provider._retry_config.retry_on_exceptions
+            provider._retry_config.retry_on_exceptions = original_exceptions + (MockServerError,)
+            
+            with patch.object(provider, '_acquire_rate_limit'), \
+                 patch('time.sleep') as mock_sleep, \
+                 patch('faciliter_lib.llm.providers.google_genai_provider.logger') as mock_logger:
+                
+                messages = [{"role": "user", "content": "Hello"}]
+                result = provider.chat(messages=messages)
+                
+            # Should succeed after retries
+            assert result["content"] == "Success after server recovered"
+            assert mock_generate.call_count == 3
+            
+            # Should have slept twice (for the two retries)
+            assert mock_sleep.call_count == 2
+            
+            # Should have logged warnings about retries
+            assert mock_logger.warning.call_count >= 2
+
     def test_retry_exhaustion_returns_error(self):
         """Test behavior when all retries are exhausted."""
         config = GeminiConfig(api_key="test-key", model="gemini-2.5-flash")

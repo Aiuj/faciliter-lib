@@ -27,8 +27,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 
 from .base_settings import BaseSettings, SettingsError, EnvParser, NullConfig
-from .app_settings import AppSettings
 from .api_settings import ApiSettings
+from .app_settings import AppSettings
 from .llm_settings import LLMSettings
 from .embeddings_settings import EmbeddingsSettings
 from .cache_settings import CacheSettings
@@ -47,18 +47,11 @@ class StandardSettings(ApiSettings):
     Services are automatically configured based on environment variables or can be 
     explicitly enabled/disabled.
     
-    Inherits API-related settings (cache, tracing, mcp_server, fastapi_server) from ApiSettings.
+    Inherits core app settings and API-related settings from ApiSettings.
     
     For easy customization, subclass this class and use the extend_from_env() method
     to add your own configuration fields.
     """
-    
-    # Core app settings (based on AppSettings)
-    app_name: str = "faciliter-app"
-    version: str = "0.2.8"
-    environment: str = "dev"
-    log_level: str = "INFO"
-    project_root: Optional[Path] = None
     
     # Additional optional service configurations (beyond ApiSettings)
     llm: Optional[LLMSettings] = None
@@ -80,16 +73,10 @@ class StandardSettings(ApiSettings):
         """Create standard settings from environment variables and auto-detect services."""
         cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
         
-        # Get core app settings from the dedicated module
-        app_settings = AppSettings.from_env(load_dotenv=False, **{
-            k: v for k, v in overrides.items() 
-            if k in ["app_name", "version", "environment", "log_level", "project_root"]
-        })
-        
-        # Get API settings (cache, tracing, mcp_server, fastapi_server) from parent
+        # Get app and API settings from parent ApiSettings
         api_overrides = {
             k: v for k, v in overrides.items()
-            if k in ["cache", "tracing", "mcp_server", "fastapi_server", 
+            if k in ["app", "cache", "tracing", "mcp_server", "fastapi_server", 
                      "enable_cache", "enable_tracing", "enable_mcp_server", "enable_fastapi_server"]
         }
         api_settings = ApiSettings.from_env(load_dotenv=False, **api_overrides)
@@ -121,14 +108,10 @@ class StandardSettings(ApiSettings):
             except Exception:
                 enable_database = False
         
-        # Build the settings dict, inheriting API settings from parent
+        # Build the settings dict, inheriting app and API settings from parent
         settings_dict = {
-            # App settings
-            "app_name": app_settings.app_name,
-            "version": app_settings.version,
-            "environment": app_settings.environment,
-            "log_level": app_settings.log_level,
-            "project_root": app_settings.project_root,
+            # Core app settings component from ApiSettings
+            "app": api_settings.app,
             # Additional StandardSettings services
             "llm": llm_config,
             "embeddings": embeddings_config,
@@ -429,15 +412,10 @@ class StandardSettings(ApiSettings):
     
     def as_dict(self) -> dict:
         """Convert to dictionary representation."""
-        # Start with API settings from parent
+        # Start with app and API settings from parent
         result = super().as_dict()
-        # Add StandardSettings-specific fields
+        # Add StandardSettings-specific fields only
         result.update({
-            "app_name": self.app_name,
-            "version": self.version,
-            "environment": self.environment,
-            "log_level": self.log_level,
-            "project_root": str(self.project_root) if self.project_root else None,
             "llm": self.llm.as_dict() if self.llm else None,
             "embeddings": self.embeddings.as_dict() if self.embeddings else None,
             "database": self.database.as_dict() if self.database else None,

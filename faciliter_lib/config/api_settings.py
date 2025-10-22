@@ -28,6 +28,7 @@ from .cache_settings import CacheSettings
 from .tracing_settings import TracingSettings
 from .mcp_settings import MCPServerSettings
 from .fastapi_settings import FastAPIServerSettings
+from .app_settings import AppSettings
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,9 @@ class ApiSettings(BaseSettings):
     Use this class when you need to configure an API server without the full
     set of services (LLM, embeddings, database) provided by StandardSettings.
     """
+    
+    # Core app settings component
+    app: AppSettings = field(default_factory=lambda: AppSettings())
     
     # Optional service configurations for API servers
     cache: Optional[CacheSettings] = None
@@ -63,6 +67,30 @@ class ApiSettings(BaseSettings):
     ) -> "ApiSettings":
         """Create API settings from environment variables and auto-detect services."""
         cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
+        
+        # Extract app-level overrides for AppSettings
+        app_overrides = {}
+        for key in ["app_name", "version", "environment", "log_level", "project_root"]:
+            if key in overrides:
+                app_overrides[key] = overrides.pop(key)
+        
+        # Parse core app settings using AppSettings with overrides
+        if app_overrides:
+            # If overrides provided, construct AppSettings manually
+            from ..utils.app_settings import AppSettings as BaseAppSettings
+            base_app = BaseAppSettings(
+                app_name=app_overrides.get("app_name", "faciliter-app"),
+                project_root=app_overrides.get("project_root")
+            )
+            app_settings = AppSettings(
+                app_name=app_overrides.get("app_name", base_app.app_name),
+                version=app_overrides.get("version", base_app.version),
+                environment=app_overrides.get("environment", base_app.environment),
+                log_level=app_overrides.get("log_level", base_app.log_level),
+                project_root=app_overrides.get("project_root", base_app.project_root)
+            )
+        else:
+            app_settings = AppSettings.from_env(load_dotenv=False, dotenv_paths=dotenv_paths)
         
         # Auto-detect services from environment
         enable_cache = cls._should_enable_cache(overrides)
@@ -101,6 +129,9 @@ class ApiSettings(BaseSettings):
         
         # Build the settings dict
         settings_dict = {
+            # Core app settings
+            "app": app_settings,
+            # Service configurations
             "cache": cache_config,
             "tracing": tracing_config,
             "mcp_server": mcp_server_config,
@@ -228,6 +259,32 @@ class ApiSettings(BaseSettings):
             raise SettingsError("FastAPI server not configured")
         return self.fastapi_server
 
+    # Backward-compatible properties for core app fields
+    @property
+    def app_name(self) -> str:
+        """Get app name from app component."""
+        return self.app.app_name
+    
+    @property
+    def version(self) -> str:
+        """Get version from app component."""
+        return self.app.version
+    
+    @property
+    def environment(self) -> str:
+        """Get environment from app component."""
+        return self.app.environment
+    
+    @property
+    def log_level(self) -> str:
+        """Get log level from app component."""
+        return self.app.log_level
+    
+    @property
+    def project_root(self) -> Optional[Path]:
+        """Get project root from app component."""
+        return self.app.project_root
+
     # Null-safe convenience properties for sub-configs
     @property
     def mcp_server_safe(self) -> MCPServerSettings | NullConfig:
@@ -246,8 +303,18 @@ class ApiSettings(BaseSettings):
         return self.tracing if self.tracing is not None else NullConfig()
     
     def as_dict(self) -> dict:
-        """Convert to dictionary representation."""
-        return {
+        """Convert to dictionary representation.
+        
+        Flattens app fields to root level for backward compatibility.
+        """
+        result = {
+            # Flatten app fields to root level
+            "app_name": self.app.app_name,
+            "version": self.app.version,
+            "environment": self.app.environment,
+            "log_level": self.app.log_level,
+            "project_root": str(self.app.project_root) if self.app.project_root else None,
+            # Service configurations
             "cache": self.cache.as_dict() if self.cache else None,
             "tracing": self.tracing.as_dict() if self.tracing else None,
             "mcp_server": self.mcp_server.as_dict() if self.mcp_server else None,
@@ -257,3 +324,4 @@ class ApiSettings(BaseSettings):
             "enable_mcp_server": self.enable_mcp_server,
             "enable_fastapi_server": self.enable_fastapi_server,
         }
+        return result

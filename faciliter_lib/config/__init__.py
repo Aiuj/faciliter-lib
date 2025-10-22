@@ -19,6 +19,7 @@ from .embeddings_settings import EmbeddingsSettings
 from .cache_settings import CacheSettings
 from .tracing_settings import TracingSettings
 from .database_settings import DatabaseSettings
+from .opensearch_settings import OpenSearchSettings
 from .mcp_settings import MCPServerSettings
 from .fastapi_settings import FastAPIServerSettings
 from .standard_settings import StandardSettings
@@ -56,6 +57,7 @@ __all__ = [
     "CacheSettings",
     "TracingSettings",
     "DatabaseSettings",
+    "OpenSearchSettings",
     "MCPServerSettings",
     "FastAPIServerSettings",
     "StandardSettings",

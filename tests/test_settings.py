@@ -645,6 +645,62 @@ class TestDatabaseSettings(unittest.TestCase):
         self.assertEqual(sync_str, expected_sync)
 
 
+class TestStandardSettingsInheritance(unittest.TestCase):
+    """Test StandardSettings inheritance from ApiSettings."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        # Clear all relevant env vars more comprehensively
+        env_vars = [
+            "APP_NAME", "APP_VERSION", "ENVIRONMENT", "LOG_LEVEL",
+            "ENABLE_LLM", "ENABLE_EMBEDDINGS", "ENABLE_CACHE", "ENABLE_TRACING", "ENABLE_DATABASE",
+            "LLM_PROVIDER", "LLM_MODEL", "LLM_TEMPERATURE",
+            "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_TEMPERATURE",
+            "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT",
+            "GEMINI_API_KEY", "GOOGLE_GENAI_API_KEY",
+            "OLLAMA_HOST", "OLLAMA_BASE_URL",
+            "REDIS_HOST", "REDIS_PORT", "VALKEY_HOST",
+            "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
+            "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB", "POSTGRES_USER",
+            "MCP_SERVER_NAME", "MCP_SERVER_PORT", "FASTAPI_HOST"
+        ]
+        for var in env_vars:
+            if var in os.environ:
+                del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_standard_settings_inherits_api_settings(self):
+        """Test that StandardSettings inherits from ApiSettings."""
+        from faciliter_lib.config.api_settings import ApiSettings
+        assert issubclass(StandardSettings, ApiSettings)
+    
+    def test_standard_settings_has_api_settings_attributes(self):
+        """Test StandardSettings has all ApiSettings attributes."""
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        # API settings attributes
+        assert hasattr(settings, 'cache')
+        assert hasattr(settings, 'tracing')
+        assert hasattr(settings, 'mcp_server')
+        assert hasattr(settings, 'fastapi_server')
+        assert hasattr(settings, 'enable_cache')
+        assert hasattr(settings, 'enable_tracing')
+        assert hasattr(settings, 'enable_mcp_server')
+        assert hasattr(settings, 'enable_fastapi_server')
+        
+        # StandardSettings-specific attributes
+        assert hasattr(settings, 'app_name')
+        assert hasattr(settings, 'version')
+        assert hasattr(settings, 'llm')
+        assert hasattr(settings, 'embeddings')
+        assert hasattr(settings, 'database')
+
+
 class TestStandardSettings(unittest.TestCase):
     """Test StandardSettings comprehensive functionality."""
     
@@ -662,7 +718,8 @@ class TestStandardSettings(unittest.TestCase):
             "OLLAMA_HOST", "OLLAMA_BASE_URL",
             "REDIS_HOST", "REDIS_PORT", "VALKEY_HOST",
             "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY",
-            "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB", "POSTGRES_USER"
+            "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB", "POSTGRES_USER",
+            "MCP_SERVER_NAME", "MCP_SERVER_PORT", "FASTAPI_HOST"
         ]
         for var in env_vars:
             if var in os.environ:
@@ -901,6 +958,365 @@ class TestSettingsManager(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual(result["settings1"]["name"], "test1")
         self.assertEqual(result["settings2"]["name"], "test2")
+
+
+class TestStandardSettingsLLMAutoDetection(unittest.TestCase):
+    """Test StandardSettings LLM auto-detection (beyond ApiSettings)."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            if any(x in var for x in ["OPENAI", "AZURE", "GEMINI", "GOOGLE_GENAI", "OLLAMA", "LLM"]):
+                del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_llm_auto_detection_openai(self):
+        """Test LLM auto-enabled when OpenAI key is set."""
+        os.environ["OPENAI_API_KEY"] = "sk-test"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_llm is True
+        assert settings.llm is not None
+        assert settings.llm.provider == "openai"
+    
+    def test_llm_auto_detection_azure(self):
+        """Test LLM auto-enabled when Azure keys are set."""
+        os.environ["AZURE_OPENAI_API_KEY"] = "azure-key"
+        os.environ["AZURE_OPENAI_ENDPOINT"] = "https://test.openai.azure.com"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_llm is True
+        assert settings.llm is not None
+        assert settings.llm.provider == "azure"
+    
+    def test_llm_auto_detection_gemini(self):
+        """Test LLM auto-enabled when Gemini key is set."""
+        os.environ["GEMINI_API_KEY"] = "gemini-key"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_llm is True
+        assert settings.llm is not None
+        assert settings.llm.provider == "gemini"
+    
+    def test_llm_explicit_disable_overrides_env(self):
+        """Test explicit LLM disable overrides auto-detection."""
+        os.environ["OPENAI_API_KEY"] = "sk-test"
+        
+        settings = StandardSettings.from_env(load_dotenv=False, enable_llm=False)
+        
+        assert settings.enable_llm is False
+        assert settings.llm is None
+
+
+class TestStandardSettingsEmbeddingsAutoDetection(unittest.TestCase):
+    """Test StandardSettings embeddings auto-detection."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            if "EMBEDDING" in var or "OPENAI" in var:
+                del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_embeddings_auto_detection_by_provider(self):
+        """Test embeddings auto-enabled when provider is set."""
+        os.environ["EMBEDDING_PROVIDER"] = "openai"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_embeddings is True
+        assert settings.embeddings is not None
+    
+    def test_embeddings_auto_detection_by_model(self):
+        """Test embeddings auto-enabled when model is set."""
+        os.environ["EMBEDDING_MODEL"] = "text-embedding-3-small"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_embeddings is True
+        assert settings.embeddings is not None
+    
+    def test_embeddings_explicit_enable(self):
+        """Test explicit embeddings enablement."""
+        settings = StandardSettings.from_env(load_dotenv=False, enable_embeddings=True)
+        
+        assert settings.enable_embeddings is True
+        assert settings.embeddings is not None
+
+
+class TestStandardSettingsDatabaseAutoDetection(unittest.TestCase):
+    """Test StandardSettings database auto-detection."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            if "POSTGRES" in var or "DATABASE" in var:
+                del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_database_auto_detection_postgres_host(self):
+        """Test database auto-enabled when POSTGRES_HOST is set."""
+        os.environ["POSTGRES_HOST"] = "db.example.com"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_database is True
+        assert settings.database is not None
+        assert settings.database.host == "db.example.com"
+    
+    def test_database_auto_detection_database_host(self):
+        """Test database auto-enabled when DATABASE_HOST is set."""
+        os.environ["DATABASE_HOST"] = "db.example.com"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        assert settings.enable_database is True
+        assert settings.database is not None
+
+
+class TestStandardSettingsNullSafeProperties(unittest.TestCase):
+    """Test StandardSettings null-safe properties for LLM, embeddings, database."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_llm_safe_when_not_configured(self):
+        """Test llm_safe returns NullConfig when LLM not configured."""
+        settings = StandardSettings.from_env(load_dotenv=False)
+        llm_safe = settings.llm_safe
+        
+        assert llm_safe.provider is None
+        assert llm_safe.model is None
+        assert bool(llm_safe) is False
+    
+    def test_llm_safe_when_configured(self):
+        """Test llm_safe returns actual config when configured."""
+        os.environ["OPENAI_API_KEY"] = "sk-test"
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        llm_safe = settings.llm_safe
+        
+        assert llm_safe.provider == "openai"
+        assert bool(llm_safe) is True
+    
+    def test_embeddings_safe_when_not_configured(self):
+        """Test embeddings_safe returns NullConfig when not configured."""
+        settings = StandardSettings.from_env(load_dotenv=False)
+        embeddings_safe = settings.embeddings_safe
+        
+        assert embeddings_safe.provider is None
+        assert bool(embeddings_safe) is False
+    
+    def test_database_safe_when_not_configured(self):
+        """Test database_safe returns NullConfig when not configured."""
+        settings = StandardSettings.from_env(load_dotenv=False)
+        database_safe = settings.database_safe
+        
+        assert database_safe.host is None
+        assert bool(database_safe) is False
+
+
+class TestStandardSettingsExtendFromEnv(unittest.TestCase):
+    """Test StandardSettings.extend_from_env functionality."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_extend_from_env_basic(self):
+        """Test extending StandardSettings with custom fields."""
+        os.environ["CUSTOM_FIELD"] = "custom_value"
+        os.environ["CUSTOM_PORT"] = "8080"
+        
+        custom_config = {
+            "custom_field": {
+                "env_vars": ["CUSTOM_FIELD"],
+                "default": "default_value",
+                "env_type": str
+            },
+            "custom_port": {
+                "env_vars": ["CUSTOM_PORT"],
+                "default": 3000,
+                "env_type": int
+            }
+        }
+        
+        extended = StandardSettings.extend_from_env(
+            custom_config=custom_config,
+            load_dotenv=False
+        )
+        
+        assert hasattr(extended, 'custom_field')
+        assert extended.custom_field == "custom_value"
+        assert hasattr(extended, 'custom_port')
+        assert extended.custom_port == 8080
+    
+    def test_extend_from_env_with_standard_settings(self):
+        """Test extended settings still has StandardSettings attributes."""
+        os.environ["OPENAI_API_KEY"] = "sk-test"
+        os.environ["CUSTOM_FIELD"] = "value"
+        
+        custom_config = {
+            "custom_field": {
+                "env_vars": ["CUSTOM_FIELD"],
+                "default": "default",
+                "env_type": str
+            }
+        }
+        
+        extended = StandardSettings.extend_from_env(
+            custom_config=custom_config,
+            load_dotenv=False
+        )
+        
+        # Should have StandardSettings attributes
+        assert hasattr(extended, 'app_name')
+        assert hasattr(extended, 'llm')
+        assert extended.enable_llm is True
+        
+        # Should have custom attributes
+        assert hasattr(extended, 'custom_field')
+        assert extended.custom_field == "value"
+    
+    def test_extend_from_env_required_field_missing(self):
+        """Test extend_from_env raises when required field is missing."""
+        custom_config = {
+            "required_field": {
+                "env_vars": ["REQUIRED_VAR"],
+                "required": True,
+                "env_type": str
+            }
+        }
+        
+        with pytest.raises(SettingsError, match="Required custom field"):
+            StandardSettings.extend_from_env(
+                custom_config=custom_config,
+                load_dotenv=False
+            )
+    
+    def test_extend_from_env_as_dict(self):
+        """Test extended settings as_dict includes custom fields."""
+        os.environ["CUSTOM_FIELD"] = "value"
+        
+        custom_config = {
+            "custom_field": {
+                "env_vars": ["CUSTOM_FIELD"],
+                "default": "default"
+            }
+        }
+        
+        extended = StandardSettings.extend_from_env(
+            custom_config=custom_config,
+            load_dotenv=False
+        )
+        
+        result = extended.as_dict()
+        assert "custom_field" in result
+        assert result["custom_field"] == "value"
+
+
+class TestStandardSettingsAllServicesIntegration(unittest.TestCase):
+    """Test StandardSettings with all services enabled (full integration)."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.original_env = dict(os.environ)
+        for var in list(os.environ.keys()):
+            del os.environ[var]
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        os.environ.clear()
+        os.environ.update(self.original_env)
+    
+    def test_all_services_auto_detected(self):
+        """Test all services auto-detected from environment."""
+        os.environ.update({
+            "OPENAI_API_KEY": "sk-test",
+            "EMBEDDING_PROVIDER": "openai",
+            "REDIS_HOST": "localhost",
+            "LANGFUSE_PUBLIC_KEY": "pk_test",
+            "LANGFUSE_SECRET_KEY": "sk_test",
+            "POSTGRES_HOST": "db.example.com",
+            "MCP_SERVER_NAME": "test-server",
+            "FASTAPI_HOST": "0.0.0.0"
+        })
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        
+        # StandardSettings-specific services
+        assert settings.enable_llm is True
+        assert settings.llm is not None
+        assert settings.enable_embeddings is True
+        assert settings.embeddings is not None
+        assert settings.enable_database is True
+        assert settings.database is not None
+        
+        # ApiSettings-inherited services
+        assert settings.enable_cache is True
+        assert settings.cache is not None
+        assert settings.enable_tracing is True
+        assert settings.tracing is not None
+        assert settings.enable_mcp_server is True
+        assert settings.mcp_server is not None
+        assert settings.enable_fastapi_server is True
+        assert settings.fastapi_server is not None
+    
+    def test_all_services_as_dict(self):
+        """Test as_dict includes all service configurations."""
+        os.environ.update({
+            "OPENAI_API_KEY": "sk-test",
+            "REDIS_HOST": "localhost",
+            "POSTGRES_HOST": "db.example.com"
+        })
+        
+        settings = StandardSettings.from_env(load_dotenv=False)
+        result = settings.as_dict()
+        
+        # App settings
+        assert "app_name" in result
+        assert "version" in result
+        
+        # StandardSettings services
+        assert "llm" in result
+        assert result["llm"] is not None
+        
+        # ApiSettings services
+        assert "cache" in result
+        assert result["cache"] is not None
 
 
 class TestIntegrationWithExistingClasses(unittest.TestCase):

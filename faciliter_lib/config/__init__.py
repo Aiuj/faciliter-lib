@@ -13,6 +13,7 @@ from .base_settings import (
     DotEnvLoader
 )
 from .app_settings import AppSettings
+from .api_settings import ApiSettings
 from .llm_settings import LLMSettings
 from .embeddings_settings import EmbeddingsSettings
 from .cache_settings import CacheSettings
@@ -49,6 +50,7 @@ __all__ = [
     "EnvParser",
     "DotEnvLoader",
     "AppSettings",
+    "ApiSettings",
     "LLMSettings",
     "EmbeddingsSettings", 
     "CacheSettings",

@@ -28,6 +28,7 @@ from typing import Dict, List, Optional, Union, Any
 
 from .base_settings import BaseSettings, SettingsError, EnvParser, NullConfig
 from .app_settings import AppSettings
+from .api_settings import ApiSettings
 from .llm_settings import LLMSettings
 from .embeddings_settings import EmbeddingsSettings
 from .cache_settings import CacheSettings
@@ -38,13 +39,15 @@ from .fastapi_settings import FastAPIServerSettings
 
 
 @dataclass(frozen=True)
-class StandardSettings(BaseSettings):
+class StandardSettings(ApiSettings):
     """Standard settings that combines app settings with optional provider configurations.
     
     This class provides a unified interface for configuring Faciliter applications
     with support for LLM, embeddings, cache, tracing, database, and MCP server services. 
     Services are automatically configured based on environment variables or can be 
     explicitly enabled/disabled.
+    
+    Inherits API-related settings (cache, tracing, mcp_server, fastapi_server) from ApiSettings.
     
     For easy customization, subclass this class and use the extend_from_env() method
     to add your own configuration fields.
@@ -57,23 +60,15 @@ class StandardSettings(BaseSettings):
     log_level: str = "INFO"
     project_root: Optional[Path] = None
     
-    # Optional service configurations
+    # Additional optional service configurations (beyond ApiSettings)
     llm: Optional[LLMSettings] = None
     embeddings: Optional[EmbeddingsSettings] = None
-    cache: Optional[CacheSettings] = None
-    tracing: Optional[TracingSettings] = None
     database: Optional[DatabaseSettings] = None
-    mcp_server: Optional[MCPServerSettings] = None
-    fastapi_server: Optional[FastAPIServerSettings] = None
     
-    # Service enablement flags
+    # Additional service enablement flags (beyond ApiSettings)
     enable_llm: bool = field(default=True)
     enable_embeddings: bool = field(default=False)
-    enable_cache: bool = field(default=False)
-    enable_tracing: bool = field(default=False)
     enable_database: bool = field(default=False)
-    enable_mcp_server: bool = field(default=False)
-    enable_fastapi_server: bool = field(default=False)
     
     @classmethod
     def from_env(
@@ -91,14 +86,18 @@ class StandardSettings(BaseSettings):
             if k in ["app_name", "version", "environment", "log_level", "project_root"]
         })
         
-        # Auto-detect services from environment
+        # Get API settings (cache, tracing, mcp_server, fastapi_server) from parent
+        api_overrides = {
+            k: v for k, v in overrides.items()
+            if k in ["cache", "tracing", "mcp_server", "fastapi_server", 
+                     "enable_cache", "enable_tracing", "enable_mcp_server", "enable_fastapi_server"]
+        }
+        api_settings = ApiSettings.from_env(load_dotenv=False, **api_overrides)
+        
+        # Auto-detect additional services from environment (beyond API settings)
         enable_llm = cls._should_enable_llm(overrides)
         enable_embeddings = cls._should_enable_embeddings(overrides)
-        enable_cache = cls._should_enable_cache(overrides)
-        enable_tracing = cls._should_enable_tracing(overrides)
         enable_database = cls._should_enable_database(overrides)
-        enable_mcp_server = cls._should_enable_mcp_server(overrides)
-        enable_fastapi_server = cls._should_enable_fastapi_server(overrides)
         
         # Create service configurations if enabled
         llm_config = None
@@ -115,20 +114,6 @@ class StandardSettings(BaseSettings):
             except Exception:
                 enable_embeddings = False
         
-        cache_config = None
-        if enable_cache:
-            try:
-                cache_config = CacheSettings.from_env(load_dotenv=False)
-            except Exception:
-                enable_cache = False
-        
-        tracing_config = None
-        if enable_tracing:
-            try:
-                tracing_config = TracingSettings.from_env(load_dotenv=False)
-            except Exception:
-                enable_tracing = False
-        
         database_config = None
         if enable_database:
             try:
@@ -136,41 +121,31 @@ class StandardSettings(BaseSettings):
             except Exception:
                 enable_database = False
         
-        mcp_server_config = None
-        if enable_mcp_server:
-            try:
-                mcp_server_config = MCPServerSettings.from_env(load_dotenv=False)
-            except Exception:
-                enable_mcp_server = False
-        
-        fastapi_server_config = None
-        if enable_fastapi_server:
-            try:
-                fastapi_server_config = FastAPIServerSettings.from_env(load_dotenv=False)
-            except Exception:
-                enable_fastapi_server = False
-        
-        # Build the settings dict
+        # Build the settings dict, inheriting API settings from parent
         settings_dict = {
+            # App settings
             "app_name": app_settings.app_name,
             "version": app_settings.version,
             "environment": app_settings.environment,
             "log_level": app_settings.log_level,
             "project_root": app_settings.project_root,
+            # Additional StandardSettings services
             "llm": llm_config,
             "embeddings": embeddings_config,
-            "cache": cache_config,
-            "tracing": tracing_config,
             "database": database_config,
-            "mcp_server": mcp_server_config,
-            "fastapi_server": fastapi_server_config,
+            # API settings from parent ApiSettings
+            "cache": api_settings.cache,
+            "tracing": api_settings.tracing,
+            "mcp_server": api_settings.mcp_server,
+            "fastapi_server": api_settings.fastapi_server,
+            # Enablement flags
             "enable_llm": enable_llm,
             "enable_embeddings": enable_embeddings,
-            "enable_cache": enable_cache,
-            "enable_tracing": enable_tracing,
             "enable_database": enable_database,
-            "enable_mcp_server": enable_mcp_server,
-            "enable_fastapi_server": enable_fastapi_server,
+            "enable_cache": api_settings.enable_cache,
+            "enable_tracing": api_settings.enable_tracing,
+            "enable_mcp_server": api_settings.enable_mcp_server,
+            "enable_fastapi_server": api_settings.enable_fastapi_server,
         }
         
         # Apply overrides
@@ -213,37 +188,6 @@ class StandardSettings(BaseSettings):
         ) is not None
     
     @staticmethod
-    def _should_enable_cache(overrides: dict) -> bool:
-        """Check if cache should be enabled based on environment variables."""
-        if "enable_cache" in overrides:
-            return overrides["enable_cache"]
-        
-        if EnvParser.get_env("ENABLE_CACHE", env_type=bool) is not None:
-            return EnvParser.get_env("ENABLE_CACHE", env_type=bool)
-        
-        # Auto-detect based on Redis/Valkey settings
-        return (
-            EnvParser.get_env("REDIS_HOST") or
-            EnvParser.get_env("VALKEY_HOST") or
-            EnvParser.get_env("CACHE_PROVIDER")
-        ) is not None
-    
-    @staticmethod
-    def _should_enable_tracing(overrides: dict) -> bool:
-        """Check if tracing should be enabled based on environment variables."""
-        if "enable_tracing" in overrides:
-            return overrides["enable_tracing"]
-        
-        if EnvParser.get_env("ENABLE_TRACING", env_type=bool) is not None:
-            return EnvParser.get_env("ENABLE_TRACING", env_type=bool)
-        
-        # Auto-detect based on Langfuse settings
-        return (
-            EnvParser.get_env("LANGFUSE_PUBLIC_KEY") and
-            EnvParser.get_env("LANGFUSE_SECRET_KEY")
-        ) is not None
-    
-    @staticmethod
     def _should_enable_database(overrides: dict) -> bool:
         """Check if database should be enabled based on environment variables."""
         if "enable_database" in overrides:
@@ -260,58 +204,18 @@ class StandardSettings(BaseSettings):
             EnvParser.get_env("DATABASE_USER")
         ) is not None
     
-    @staticmethod
-    def _should_enable_mcp_server(overrides: dict) -> bool:
-        """Check if MCP server should be enabled based on environment variables."""
-        if "enable_mcp_server" in overrides:
-            return overrides["enable_mcp_server"]
-        
-        if EnvParser.get_env("ENABLE_MCP_SERVER", env_type=bool) is not None:
-            return EnvParser.get_env("ENABLE_MCP_SERVER", env_type=bool)
-        
-        # Auto-detect based on MCP server settings
-        return (
-            EnvParser.get_env("MCP_SERVER_HOST") or
-            EnvParser.get_env("MCP_SERVER_PORT") or
-            EnvParser.get_env("MCP_SERVER_NAME") or
-            EnvParser.get_env("MCP_TRANSPORT")
-        ) is not None
-
-    @staticmethod
-    def _should_enable_fastapi_server(overrides: dict) -> bool:
-        """Check if FastAPI server should be enabled based on environment variables."""
-        if "enable_fastapi_server" in overrides:
-            return overrides["enable_fastapi_server"]
-        
-        if EnvParser.get_env("ENABLE_FASTAPI_SERVER", env_type=bool) is not None:
-            return EnvParser.get_env("ENABLE_FASTAPI_SERVER", env_type=bool)
-        
-        return (
-            EnvParser.get_env("FASTAPI_HOST") or
-            EnvParser.get_env("FASTAPI_PORT") or
-            EnvParser.get_env("FASTAPI_RELOAD") or
-            EnvParser.get_env("API_AUTH_ENABLED") or
-            EnvParser.get_env("API_KEYS")
-        ) is not None
-    
     def validate(self) -> None:
         """Validate the complete settings configuration."""
-        # Validate individual service configurations
+        # Validate API settings (cache, tracing, mcp_server, fastapi_server) via parent
+        super().validate()
+        
+        # Validate additional service configurations
         if self.llm:
             self.llm.validate()
         if self.embeddings:
             self.embeddings.validate()
-        if self.cache:
-            self.cache.validate()
-        if self.tracing:
-            self.tracing.validate()
         if self.database:
             self.database.validate()
-        if self.mcp_server:
-            if not self.mcp_server.is_valid:
-                raise SettingsError(f"MCP server configuration invalid: {', '.join(self.mcp_server.validate())}")
-        if self.fastapi_server:
-            self.fastapi_server.validate()
     
     @classmethod
     def extend_from_env(
@@ -494,39 +398,11 @@ class StandardSettings(BaseSettings):
             cache_duration_seconds=self._get_attr(self.embeddings, "cache_duration_seconds"),
         )
     
-    def get_redis_config(self):
-        """Get Redis configuration compatible with existing RedisConfig."""
-        if not self.cache:
-            raise SettingsError("Cache not configured")
-        
-        from ..cache.redis_config import RedisConfig
-        return RedisConfig(
-            host=self._get_attr(self.cache, "host"),
-            port=self._get_attr(self.cache, "port"),
-            db=self._get_attr(self.cache, "db"),
-            prefix=self._get_attr(self.cache, "prefix"),
-            ttl=self._get_attr(self.cache, "ttl"),
-            password=self._get_attr(self.cache, "password"),
-            time_out=self._get_attr(self.cache, "timeout"),
-        )
-    
     def get_database_config(self) -> DatabaseSettings:
         """Get database configuration."""
         if not self.database:
             raise SettingsError("Database not configured")
         return self.database
-    
-    def get_mcp_server_config(self) -> MCPServerSettings:
-        """Get MCP server configuration.""" 
-        if not self.mcp_server:
-            raise SettingsError("MCP server not configured")
-        return self.mcp_server
-
-    def get_fastapi_server_config(self) -> FastAPIServerSettings:
-        """Get FastAPI server configuration."""
-        if not self.fastapi_server:
-            raise SettingsError("FastAPI server not configured")
-        return self.fastapi_server
     
     def as_app_settings(self) -> AppSettings:
         """Convert to AppSettings for backward compatibility."""
@@ -538,15 +414,7 @@ class StandardSettings(BaseSettings):
             project_root=self.project_root
         )
 
-    # Null-safe convenience properties for sub-configs
-    @property
-    def mcp_server_safe(self) -> MCPServerSettings | NullConfig:
-        return self.mcp_server if self.mcp_server is not None else NullConfig()
-
-    @property
-    def fastapi_server_safe(self) -> FastAPIServerSettings | NullConfig:
-        return self.fastapi_server if self.fastapi_server is not None else NullConfig()
-
+    # Null-safe convenience properties for additional sub-configs (API configs inherited from parent)
     @property
     def llm_safe(self) -> LLMSettings | NullConfig:
         return self.llm if self.llm is not None else NullConfig()
@@ -556,20 +424,15 @@ class StandardSettings(BaseSettings):
         return self.embeddings if self.embeddings is not None else NullConfig()
 
     @property
-    def cache_safe(self) -> CacheSettings | NullConfig:
-        return self.cache if self.cache is not None else NullConfig()
-
-    @property
-    def tracing_safe(self) -> TracingSettings | NullConfig:
-        return self.tracing if self.tracing is not None else NullConfig()
-
-    @property
     def database_safe(self) -> DatabaseSettings | NullConfig:
         return self.database if self.database is not None else NullConfig()
     
     def as_dict(self) -> dict:
         """Convert to dictionary representation."""
-        return {
+        # Start with API settings from parent
+        result = super().as_dict()
+        # Add StandardSettings-specific fields
+        result.update({
             "app_name": self.app_name,
             "version": self.version,
             "environment": self.environment,
@@ -577,16 +440,9 @@ class StandardSettings(BaseSettings):
             "project_root": str(self.project_root) if self.project_root else None,
             "llm": self.llm.as_dict() if self.llm else None,
             "embeddings": self.embeddings.as_dict() if self.embeddings else None,
-            "cache": self.cache.as_dict() if self.cache else None,
-            "tracing": self.tracing.as_dict() if self.tracing else None,
             "database": self.database.as_dict() if self.database else None,
-            "mcp_server": self.mcp_server.as_dict() if self.mcp_server else None,
-            "fastapi_server": self.fastapi_server.as_dict() if self.fastapi_server else None,
             "enable_llm": self.enable_llm,
             "enable_embeddings": self.enable_embeddings,
-            "enable_cache": self.enable_cache,
-            "enable_tracing": self.enable_tracing,
             "enable_database": self.enable_database,
-            "enable_mcp_server": self.enable_mcp_server,
-            "enable_fastapi_server": self.enable_fastapi_server,
-        }
+        })
+        return result

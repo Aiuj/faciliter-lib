@@ -10,6 +10,8 @@ Capabilities:
  - Optional file logging with rotation (disabled by default) controlled via function params
      or environment variables.
  - Optional OVH Logs Data Platform integration via GELF protocol (lazy-loaded when enabled).
+ - Optional OpenTelemetry Protocol (OTLP) integration for sending logs to OTLP collectors
+     (lazy-loaded when enabled).
 
 Environment variables (used only if explicit params not provided):
  LOG_LEVEL                -> root/application log level (default: INFO)
@@ -20,6 +22,9 @@ Environment variables (used only if explicit params not provided):
  OVH_LDP_ENABLED=true     -> enable OVH LDP integration (default: false)
  OVH_LDP_TOKEN            -> OVH LDP authentication token
  OVH_LDP_ENDPOINT         -> OVH LDP endpoint (e.g., gra1.logs.ovh.com)
+ OTLP_ENABLED=true        -> enable OTLP integration (default: false)
+ OTLP_ENDPOINT            -> OTLP collector endpoint (default: http://localhost:4318/v1/logs)
+ OTLP_HEADERS             -> JSON string of HTTP headers
 
 Notes:
  - Re-calling `setup_logging` with `force=True` allows reconfiguration (e.g. promote from
@@ -166,6 +171,21 @@ def setup_logging(
                 "timeout": getattr(logger_settings, "ovh_ldp_timeout", 10),
                 "compress": getattr(logger_settings, "ovh_ldp_compress", True),
             }
+    
+    # Determine OTLP config from logger_settings
+    otlp_enabled = False
+    otlp_config = {}
+    if logger_settings is not None:
+        otlp_enabled = getattr(logger_settings, "otlp_enabled", False)
+        if otlp_enabled:
+            otlp_config = {
+                "endpoint": getattr(logger_settings, "otlp_endpoint", "http://localhost:4318/v1/logs"),
+                "headers": getattr(logger_settings, "otlp_headers", {}),
+                "timeout": getattr(logger_settings, "otlp_timeout", 10),
+                "insecure": getattr(logger_settings, "otlp_insecure", False),
+                "service_name": getattr(logger_settings, "otlp_service_name", app_name),
+                "service_version": getattr(logger_settings, "otlp_service_version", None),
+            }
 
     new_config = {
         "level": numeric_level,
@@ -176,6 +196,8 @@ def setup_logging(
         "app_name": app_name,
         "ovh_ldp_enabled": ovh_ldp_enabled,
         "ovh_ldp_endpoint": ovh_ldp_config.get("endpoint") if ovh_ldp_enabled else None,
+        "otlp_enabled": otlp_enabled,
+        "otlp_endpoint": otlp_config.get("endpoint") if otlp_enabled else None,
     }
 
     if _logger_initialized and not force:
@@ -232,6 +254,25 @@ def setup_logging(
             except Exception as e:  # pragma: no cover (network edge cases)
                 logging.basicConfig()
                 logging.getLogger(app_name).warning(f"Failed to set up OVH LDP logging: {e}")
+        
+        # Add OTLP handler if enabled (lazy import)
+        if otlp_enabled:
+            try:
+                from .handlers.otlp_handler import OTLPHandler
+                otlp_handler = OTLPHandler(
+                    endpoint=otlp_config["endpoint"],
+                    headers=otlp_config["headers"],
+                    timeout=otlp_config["timeout"],
+                    insecure=otlp_config["insecure"],
+                    service_name=otlp_config["service_name"],
+                    service_version=otlp_config["service_version"],
+                )
+                otlp_handler.setLevel(numeric_level)
+                otlp_handler.start()  # Start background worker
+                handlers.append(otlp_handler)
+            except Exception as e:  # pragma: no cover (network edge cases)
+                logging.basicConfig()
+                logging.getLogger(app_name).warning(f"Failed to set up OTLP logging: {e}")
 
         logging.basicConfig(
             level=numeric_level,

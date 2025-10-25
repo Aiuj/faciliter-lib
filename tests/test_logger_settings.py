@@ -125,6 +125,34 @@ class TestLoggerSettings:
         
         assert settings_dict["ovh_ldp_token"] == "***"
         assert settings_dict["ovh_ldp_endpoint"] == "gra1.logs.ovh.com"
+    
+    def test_logger_settings_otlp_defaults(self):
+        """Test default OTLP settings values."""
+        settings = LoggerSettings()
+        
+        assert settings.otlp_enabled is False
+        assert settings.otlp_endpoint == "http://localhost:4318/v1/logs"
+        assert settings.otlp_timeout == 10
+        assert settings.otlp_insecure is False
+        assert settings.otlp_service_name == "faciliter-lib"
+    
+    def test_logger_settings_otlp_from_env(self, monkeypatch):
+        """Test loading OTLP settings from environment variables."""
+        monkeypatch.setenv("OTLP_ENABLED", "true")
+        monkeypatch.setenv("OTLP_ENDPOINT", "http://otel-collector:4318/v1/logs")
+        monkeypatch.setenv("OTLP_HEADERS", '{"Authorization": "Bearer token123"}')
+        monkeypatch.setenv("OTLP_TIMEOUT", "15")
+        monkeypatch.setenv("OTLP_SERVICE_NAME", "my-service")
+        monkeypatch.setenv("OTLP_SERVICE_VERSION", "1.0.0")
+        
+        settings = LoggerSettings.from_env(load_dotenv=False)
+        
+        assert settings.otlp_enabled is True
+        assert settings.otlp_endpoint == "http://otel-collector:4318/v1/logs"
+        assert settings.otlp_headers == {"Authorization": "Bearer token123"}
+        assert settings.otlp_timeout == 15
+        assert settings.otlp_service_name == "my-service"
+        assert settings.otlp_service_version == "1.0.0"
 
 
 class TestLoggerIntegration:
@@ -198,6 +226,56 @@ class TestLoggerIntegration:
         
         # Logger should be at DEBUG level
         assert logger.level == 10  # DEBUG = 10
+    
+    @patch('faciliter_lib.tracing.handlers.otlp_handler.OTLPHandler')
+    def test_setup_logging_with_otlp(self, mock_otlp_handler):
+        """Test setup_logging with OTLP enabled."""
+        from faciliter_lib.tracing.logger import setup_logging
+        
+        # Create a mock handler instance
+        mock_handler_instance = MagicMock()
+        mock_otlp_handler.return_value = mock_handler_instance
+        
+        logger_settings = LoggerSettings(
+            log_level="INFO",
+            otlp_enabled=True,
+            otlp_endpoint="http://localhost:4318/v1/logs",
+            otlp_service_name="test-service",
+        )
+        
+        logger = setup_logging(
+            app_name="test_app",
+            logger_settings=logger_settings,
+            force=True
+        )
+        
+        # Verify OTLPHandler was created with correct params
+        mock_otlp_handler.assert_called_once()
+        call_kwargs = mock_otlp_handler.call_args[1]
+        assert call_kwargs["endpoint"] == "http://localhost:4318/v1/logs"
+        assert call_kwargs["service_name"] == "test-service"
+        
+        # Verify handler was started
+        mock_handler_instance.start.assert_called_once()
+        mock_handler_instance.setLevel.assert_called_once()
+    
+    def test_setup_logging_without_otlp(self):
+        """Test that OTLP handler is not loaded when disabled."""
+        from faciliter_lib.tracing.logger import setup_logging
+        
+        logger_settings = LoggerSettings(
+            log_level="INFO",
+            otlp_enabled=False,
+        )
+        
+        logger = setup_logging(
+            app_name="test_app",
+            logger_settings=logger_settings,
+            force=True
+        )
+        
+        # Should not raise any errors
+        assert logger is not None
 
 
 class TestStandardSettingsWithLogger:

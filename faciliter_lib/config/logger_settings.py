@@ -23,6 +23,14 @@ Environment Variables:
     OVH_LDP_USE_TLS: Use TLS/SSL encryption (true/false, default: true)
     OVH_LDP_FACILITY: Syslog facility for categorization (default: user)
     OVH_LDP_ADDITIONAL_FIELDS: JSON string of additional fields to include
+    
+    OTLP_ENABLED: Enable OpenTelemetry Protocol (OTLP) logging (true/false)
+    OTLP_ENDPOINT: OTLP collector endpoint (default: http://localhost:4318/v1/logs)
+    OTLP_HEADERS: JSON string of HTTP headers for authentication
+    OTLP_TIMEOUT: Request timeout in seconds (default: 10)
+    OTLP_INSECURE: Skip SSL certificate verification (true/false, default: false)
+    OTLP_SERVICE_NAME: Service name for resource attributes (default: faciliter-lib)
+    OTLP_SERVICE_VERSION: Service version for resource attributes
 """
 
 from __future__ import annotations
@@ -62,6 +70,15 @@ class LoggerSettings(BaseSettings):
     ovh_ldp_timeout: int = 10  # Connection timeout in seconds
     ovh_ldp_compress: bool = True  # Compress GELF messages
     
+    # OpenTelemetry Protocol (OTLP) settings
+    otlp_enabled: bool = False
+    otlp_endpoint: str = "http://localhost:4318/v1/logs"
+    otlp_headers: Dict[str, str] = field(default_factory=dict)
+    otlp_timeout: int = 10
+    otlp_insecure: bool = False  # Skip SSL verification
+    otlp_service_name: str = "faciliter-lib"
+    otlp_service_version: Optional[str] = None
+    
     @classmethod
     def from_env(
         cls,
@@ -80,6 +97,17 @@ class LoggerSettings(BaseSettings):
                 additional_fields = json.loads(additional_fields_raw)
                 if not isinstance(additional_fields, dict):
                     additional_fields = {}
+            except json.JSONDecodeError:
+                pass  # Silently ignore invalid JSON
+        
+        # Parse OTLP headers from JSON if provided
+        otlp_headers_raw = EnvParser.get_env("OTLP_HEADERS")
+        otlp_headers = {}
+        if otlp_headers_raw:
+            try:
+                otlp_headers = json.loads(otlp_headers_raw)
+                if not isinstance(otlp_headers, dict):
+                    otlp_headers = {}
             except json.JSONDecodeError:
                 pass  # Silently ignore invalid JSON
         
@@ -102,6 +130,15 @@ class LoggerSettings(BaseSettings):
             "ovh_ldp_additional_fields": additional_fields,
             "ovh_ldp_timeout": EnvParser.get_env("OVH_LDP_TIMEOUT", default=10, env_type=int),
             "ovh_ldp_compress": EnvParser.get_env("OVH_LDP_COMPRESS", default=True, env_type=bool),
+            
+            # OTLP
+            "otlp_enabled": EnvParser.get_env("OTLP_ENABLED", default=False, env_type=bool),
+            "otlp_endpoint": EnvParser.get_env("OTLP_ENDPOINT", default="http://localhost:4318/v1/logs"),
+            "otlp_headers": otlp_headers,
+            "otlp_timeout": EnvParser.get_env("OTLP_TIMEOUT", default=10, env_type=int),
+            "otlp_insecure": EnvParser.get_env("OTLP_INSECURE", default=False, env_type=bool),
+            "otlp_service_name": EnvParser.get_env("OTLP_SERVICE_NAME", default="faciliter-lib"),
+            "otlp_service_version": EnvParser.get_env("OTLP_SERVICE_VERSION"),
         }
         
         settings_dict.update(overrides)

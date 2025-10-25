@@ -1,0 +1,157 @@
+"""Logger Configuration Settings.
+
+This module contains configuration classes for logging, including
+support for OVH Logs Data Platform (LDP) via GELF protocol.
+
+OVH Logs Data Platform supports multiple protocols:
+- GELF (Graylog Extended Log Format) over TCP/UDP
+- Syslog over TCP/UDP  
+- HTTP/HTTPS endpoints
+
+Environment Variables:
+    LOG_LEVEL: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    LOG_FILE_ENABLED: Enable file logging (true/false)
+    LOG_FILE_PATH: Path to log file (default: logs/<app_name>.log)
+    LOG_FILE_MAX_BYTES: Max file size before rotation (default: 1048576)
+    LOG_FILE_BACKUP_COUNT: Number of backup files (default: 3)
+    
+    OVH_LDP_ENABLED: Enable OVH Logs Data Platform integration (true/false)
+    OVH_LDP_TOKEN: OVH LDP authentication token (required if enabled)
+    OVH_LDP_ENDPOINT: OVH LDP endpoint hostname (e.g., gra1.logs.ovh.com)
+    OVH_LDP_PORT: OVH LDP port (default: 12202 for GELF TCP)
+    OVH_LDP_PROTOCOL: Protocol to use (gelf_tcp, gelf_udp, syslog_tcp, syslog_udp)
+    OVH_LDP_USE_TLS: Use TLS/SSL encryption (true/false, default: true)
+    OVH_LDP_FACILITY: Syslog facility for categorization (default: user)
+    OVH_LDP_ADDITIONAL_FIELDS: JSON string of additional fields to include
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, List, Optional, Union
+
+from .base_settings import BaseSettings, SettingsError, EnvParser
+
+
+@dataclass(frozen=True)
+class LoggerSettings(BaseSettings):
+    """Logger configuration settings with OVH Logs Data Platform support.
+    
+    Supports standard file/console logging plus optional OVH LDP integration
+    via GELF (Graylog Extended Log Format) protocol.
+    """
+    
+    # Standard logging settings
+    log_level: str = "INFO"
+    file_logging: bool = False
+    file_path: Optional[str] = None
+    file_max_bytes: int = 1_048_576  # 1 MB
+    file_backup_count: int = 3
+    
+    # OVH Logs Data Platform settings
+    ovh_ldp_enabled: bool = False
+    ovh_ldp_token: Optional[str] = None
+    ovh_ldp_endpoint: Optional[str] = None
+    ovh_ldp_port: int = 12202  # Default GELF TCP port
+    ovh_ldp_protocol: str = "gelf_tcp"  # gelf_tcp, gelf_udp, syslog_tcp, syslog_udp
+    ovh_ldp_use_tls: bool = True
+    ovh_ldp_facility: str = "user"  # Syslog facility
+    ovh_ldp_additional_fields: Dict[str, str] = field(default_factory=dict)
+    ovh_ldp_timeout: int = 10  # Connection timeout in seconds
+    ovh_ldp_compress: bool = True  # Compress GELF messages
+    
+    @classmethod
+    def from_env(
+        cls,
+        load_dotenv: bool = True,
+        dotenv_paths: Optional[List[Union[str, Path]]] = None,
+        **overrides
+    ) -> "LoggerSettings":
+        """Create logger settings from environment variables."""
+        cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
+        
+        # Parse additional fields from JSON if provided
+        additional_fields_raw = EnvParser.get_env("OVH_LDP_ADDITIONAL_FIELDS")
+        additional_fields = {}
+        if additional_fields_raw:
+            try:
+                additional_fields = json.loads(additional_fields_raw)
+                if not isinstance(additional_fields, dict):
+                    additional_fields = {}
+            except json.JSONDecodeError:
+                pass  # Silently ignore invalid JSON
+        
+        settings_dict = {
+            # Standard logging
+            "log_level": EnvParser.get_env("LOG_LEVEL", default="INFO"),
+            "file_logging": EnvParser.get_env("LOG_FILE_ENABLED", default=False, env_type=bool),
+            "file_path": EnvParser.get_env("LOG_FILE_PATH"),
+            "file_max_bytes": EnvParser.get_env("LOG_FILE_MAX_BYTES", default=1_048_576, env_type=int),
+            "file_backup_count": EnvParser.get_env("LOG_FILE_BACKUP_COUNT", default=3, env_type=int),
+            
+            # OVH LDP
+            "ovh_ldp_enabled": EnvParser.get_env("OVH_LDP_ENABLED", default=False, env_type=bool),
+            "ovh_ldp_token": EnvParser.get_env("OVH_LDP_TOKEN", "OVH_LOGS_TOKEN"),
+            "ovh_ldp_endpoint": EnvParser.get_env("OVH_LDP_ENDPOINT", "OVH_LOGS_ENDPOINT"),
+            "ovh_ldp_port": EnvParser.get_env("OVH_LDP_PORT", default=12202, env_type=int),
+            "ovh_ldp_protocol": EnvParser.get_env("OVH_LDP_PROTOCOL", default="gelf_tcp"),
+            "ovh_ldp_use_tls": EnvParser.get_env("OVH_LDP_USE_TLS", default=True, env_type=bool),
+            "ovh_ldp_facility": EnvParser.get_env("OVH_LDP_FACILITY", default="user"),
+            "ovh_ldp_additional_fields": additional_fields,
+            "ovh_ldp_timeout": EnvParser.get_env("OVH_LDP_TIMEOUT", default=10, env_type=int),
+            "ovh_ldp_compress": EnvParser.get_env("OVH_LDP_COMPRESS", default=True, env_type=bool),
+        }
+        
+        settings_dict.update(overrides)
+        return cls(**settings_dict)
+    
+    def validate(self) -> None:
+        """Validate logger configuration."""
+        # Validate log level
+        valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if self.log_level.upper() not in valid_log_levels:
+            raise SettingsError(
+                f"Invalid log level '{self.log_level}'. Must be one of: {', '.join(valid_log_levels)}"
+            )
+        
+        # Validate OVH LDP settings
+        if self.ovh_ldp_enabled:
+            if not self.ovh_ldp_token:
+                raise SettingsError("OVH LDP enabled but ovh_ldp_token not provided")
+            if not self.ovh_ldp_endpoint:
+                raise SettingsError("OVH LDP enabled but ovh_ldp_endpoint not provided")
+            
+            valid_protocols = ["gelf_tcp", "gelf_udp", "syslog_tcp", "syslog_udp"]
+            if self.ovh_ldp_protocol.lower() not in valid_protocols:
+                raise SettingsError(
+                    f"Invalid OVH LDP protocol '{self.ovh_ldp_protocol}'. "
+                    f"Must be one of: {', '.join(valid_protocols)}"
+                )
+            
+            if self.ovh_ldp_port < 1 or self.ovh_ldp_port > 65535:
+                raise SettingsError(f"Invalid port {self.ovh_ldp_port}. Must be between 1 and 65535")
+            
+            if self.ovh_ldp_timeout < 1:
+                raise SettingsError("OVH LDP timeout must be at least 1 second")
+    
+    def as_dict(self) -> dict:
+        """Convert to dictionary representation."""
+        return {
+            "log_level": self.log_level,
+            "file_logging": self.file_logging,
+            "file_path": self.file_path,
+            "file_max_bytes": self.file_max_bytes,
+            "file_backup_count": self.file_backup_count,
+            "ovh_ldp_enabled": self.ovh_ldp_enabled,
+            "ovh_ldp_token": "***" if self.ovh_ldp_token else None,  # Mask token
+            "ovh_ldp_endpoint": self.ovh_ldp_endpoint,
+            "ovh_ldp_port": self.ovh_ldp_port,
+            "ovh_ldp_protocol": self.ovh_ldp_protocol,
+            "ovh_ldp_use_tls": self.ovh_ldp_use_tls,
+            "ovh_ldp_facility": self.ovh_ldp_facility,
+            "ovh_ldp_additional_fields": self.ovh_ldp_additional_fields,
+            "ovh_ldp_timeout": self.ovh_ldp_timeout,
+            "ovh_ldp_compress": self.ovh_ldp_compress,
+        }

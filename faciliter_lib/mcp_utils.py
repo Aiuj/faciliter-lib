@@ -1,6 +1,6 @@
 import sys
 
-def parse_from(from_: str|dict) -> dict:
+def parse_from(from_: str|dict|None) -> dict:
     """
     Parse the 'from_' JSON string into a dictionary.
     Returns an empty dict if parsing fails.

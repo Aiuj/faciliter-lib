@@ -18,6 +18,7 @@ from .llm_settings import LLMSettings
 from .embeddings_settings import EmbeddingsSettings
 from .cache_settings import CacheSettings
 from .tracing_settings import TracingSettings
+from .logger_settings import LoggerSettings
 from .database_settings import DatabaseSettings
 from .opensearch_settings import OpenSearchSettings
 from .mcp_settings import MCPServerSettings
@@ -52,10 +53,11 @@ __all__ = [
     "DotEnvLoader",
     "AppSettings",
     "ApiSettings",
-    "LLMSettings",
     "EmbeddingsSettings", 
     "CacheSettings",
     "TracingSettings",
+    "LoggerSettings",
+    "DatabaseSettings",
     "DatabaseSettings",
     "OpenSearchSettings",
     "MCPServerSettings",

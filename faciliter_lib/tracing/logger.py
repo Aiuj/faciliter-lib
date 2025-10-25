@@ -9,6 +9,7 @@ Capabilities:
      environment / settings derived values (useful for scripts or ad‑hoc notebooks).
  - Optional file logging with rotation (disabled by default) controlled via function params
      or environment variables.
+ - Optional OVH Logs Data Platform integration via GELF protocol (lazy-loaded when enabled).
 
 Environment variables (used only if explicit params not provided):
  LOG_LEVEL                -> root/application log level (default: INFO)
@@ -16,25 +17,32 @@ Environment variables (used only if explicit params not provided):
  LOG_FILE_PATH=logs/app.log
  LOG_FILE_MAX_BYTES=1048576 (1MB default) 
  LOG_FILE_BACKUP_COUNT=3
+ OVH_LDP_ENABLED=true     -> enable OVH LDP integration (default: false)
+ OVH_LDP_TOKEN            -> OVH LDP authentication token
+ OVH_LDP_ENDPOINT         -> OVH LDP endpoint (e.g., gra1.logs.ovh.com)
 
 Notes:
  - Re-calling `setup_logging` with `force=True` allows reconfiguration (e.g. promote from
      default INFO to DEBUG after parsing CLI flags).
- - We intentionally avoid heavy dependencies; rotation uses `logging.handlers.RotatingFileHandler`.
+ - Handlers are loaded lazily - only imported when their features are enabled for better performance.
  - This module avoids importing application settings at import time to prevent circular imports;
-     pass an `app_settings` object to `setup_logging` if you already loaded configuration.
+     pass an `app_settings` or `logger_settings` object to `setup_logging` if you already loaded configuration.
 """
 
 import logging
 import sys
 import os
-from logging.handlers import RotatingFileHandler
 from typing import Optional, Union, Any
 
 try:  # Optional – settings may not be available yet
     from faciliter_lib.config.app_settings import AppSettings  # type: ignore
 except Exception:  # pragma: no cover - defensive
     AppSettings = Any  # fallback typing only
+
+try:
+    from faciliter_lib.config.logger_settings import LoggerSettings  # type: ignore
+except Exception:  # pragma: no cover - defensive
+    LoggerSettings = Any  # fallback typing only
 
 
 _logger_initialized = False
@@ -48,6 +56,7 @@ def setup_logging(
     name: Optional[str] = None,
     level: Optional[Union[str, int]] = None,
     app_settings: Optional[Any] = None,
+    logger_settings: Optional[Any] = None,
     *,
     file_logging: Optional[bool] = None,
     file_path: Optional[str] = None,
@@ -58,10 +67,12 @@ def setup_logging(
     """Initialize (or reconfigure) global logging and return a module logger.
 
     Precedence for determining log level:
-        explicit `level` arg > `app_settings.log_level` > LOG_LEVEL env > INFO
+        explicit `level` arg > logger_settings.log_level > app_settings.log_level > LOG_LEVEL env > INFO
 
     File logging is enabled when (in precedence order):
-        explicit `file_logging` arg True | env LOG_FILE_ENABLED=true/1 | False
+        explicit `file_logging` arg True | logger_settings.file_logging | env LOG_FILE_ENABLED=true/1 | False
+    
+    OVH Logs Data Platform integration is enabled via logger_settings.ovh_ldp_enabled.
 
     Args:
         app_name: Root application logger namespace. If None, resolved by precedence:
@@ -69,6 +80,7 @@ def setup_logging(
         name: Optional explicit module name (defaults to caller module).
         level: Override log level (str/int). Highest precedence.
         app_settings: Optional AppSettings instance (used for log level and environment detection).
+        logger_settings: Optional LoggerSettings instance with file and OVH LDP configuration.
         file_logging: Explicitly enable/disable file logging (overrides env if not None).
         file_path: Path to log file (default derived: logs/<app_name>.log).
         file_max_bytes: Rotate at this size (default 1MB or env LOG_FILE_MAX_BYTES).
@@ -89,9 +101,11 @@ def setup_logging(
             candidate = os.getenv("APP_NAME")
         app_name = candidate or "faciliter_lib"
 
-    # Determine log level
+    # Determine log level (precedence: level arg > logger_settings > app_settings > env)
     if level is None:
-        if app_settings is not None:
+        if logger_settings is not None:
+            level = getattr(logger_settings, "log_level", None)
+        if level is None and app_settings is not None:
             level = getattr(app_settings, "log_level", None)
         if level is None:
             level = os.getenv("LOG_LEVEL", "INFO")
@@ -103,19 +117,55 @@ def setup_logging(
     else:
         numeric_level = logging.INFO
 
-    # Determine file logging config
+    # Determine file logging config (precedence: explicit args > logger_settings > env)
     if file_logging is None:
-        raw = os.getenv("LOG_FILE_ENABLED", "false").lower()
-        file_logging = raw in {"1", "true", "yes", "on"}
-    file_path = file_path or os.getenv("LOG_FILE_PATH") or os.path.join("logs", f"{app_name}.log")
-    try:
-        file_max_bytes = int(file_max_bytes if file_max_bytes is not None else os.getenv("LOG_FILE_MAX_BYTES", "1048576"))
-    except ValueError:
-        file_max_bytes = 1_048_576
-    try:
-        file_backup_count = int(file_backup_count if file_backup_count is not None else os.getenv("LOG_FILE_BACKUP_COUNT", "3"))
-    except ValueError:
-        file_backup_count = 3
+        if logger_settings is not None:
+            file_logging = getattr(logger_settings, "file_logging", False)
+        else:
+            raw = os.getenv("LOG_FILE_ENABLED", "false").lower()
+            file_logging = raw in {"1", "true", "yes", "on"}
+    
+    if file_path is None:
+        if logger_settings is not None:
+            file_path = getattr(logger_settings, "file_path", None)
+        if file_path is None:
+            file_path = os.getenv("LOG_FILE_PATH") or os.path.join("logs", f"{app_name}.log")
+    
+    if file_max_bytes is None:
+        if logger_settings is not None:
+            file_max_bytes = getattr(logger_settings, "file_max_bytes", 1_048_576)
+        else:
+            try:
+                file_max_bytes = int(os.getenv("LOG_FILE_MAX_BYTES", "1048576"))
+            except ValueError:
+                file_max_bytes = 1_048_576
+    
+    if file_backup_count is None:
+        if logger_settings is not None:
+            file_backup_count = getattr(logger_settings, "file_backup_count", 3)
+        else:
+            try:
+                file_backup_count = int(os.getenv("LOG_FILE_BACKUP_COUNT", "3"))
+            except ValueError:
+                file_backup_count = 3
+    
+    # Determine OVH LDP config from logger_settings
+    ovh_ldp_enabled = False
+    ovh_ldp_config = {}
+    if logger_settings is not None:
+        ovh_ldp_enabled = getattr(logger_settings, "ovh_ldp_enabled", False)
+        if ovh_ldp_enabled:
+            ovh_ldp_config = {
+                "token": getattr(logger_settings, "ovh_ldp_token", None),
+                "endpoint": getattr(logger_settings, "ovh_ldp_endpoint", None),
+                "port": getattr(logger_settings, "ovh_ldp_port", 12202),
+                "protocol": getattr(logger_settings, "ovh_ldp_protocol", "gelf_tcp"),
+                "use_tls": getattr(logger_settings, "ovh_ldp_use_tls", True),
+                "facility": getattr(logger_settings, "ovh_ldp_facility", "user"),
+                "additional_fields": getattr(logger_settings, "ovh_ldp_additional_fields", {}),
+                "timeout": getattr(logger_settings, "ovh_ldp_timeout", 10),
+                "compress": getattr(logger_settings, "ovh_ldp_compress", True),
+            }
 
     new_config = {
         "level": numeric_level,
@@ -124,6 +174,8 @@ def setup_logging(
         "file_max_bytes": file_max_bytes,
         "file_backup_count": file_backup_count,
         "app_name": app_name,
+        "ovh_ldp_enabled": ovh_ldp_enabled,
+        "ovh_ldp_endpoint": ovh_ldp_config.get("endpoint") if ovh_ldp_enabled else None,
     }
 
     if _logger_initialized and not force:
@@ -135,23 +187,51 @@ def setup_logging(
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
+        # Console handler (always enabled)
         handlers = [logging.StreamHandler(sys.stdout)]
+        
+        # Add file handler if enabled (lazy import)
         if file_logging:
-            # Ensure directory exists
             try:
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                file_handler = RotatingFileHandler(
-                    filename=file_path,
-                    maxBytes=file_max_bytes,
-                    backupCount=file_backup_count,
-                    encoding="utf-8",
+                from .handlers.file_handler import create_file_handler
+                file_handler = create_file_handler(
+                    file_path=file_path,
+                    level=numeric_level,
+                    max_bytes=file_max_bytes,
+                    backup_count=file_backup_count,
                 )
-                file_handler.setLevel(numeric_level)
-                handlers.append(file_handler)
+                if file_handler:
+                    handlers.append(file_handler)
             except Exception as e:  # pragma: no cover (IO edge cases)
-                # Fallback silently if file handler creation fails
                 logging.basicConfig()
-                logging.getLogger(app_name).warning(f"Failed to set up file logging at {file_path}: {e}")
+                logging.getLogger(app_name).warning(f"Failed to set up file logging: {e}")
+        
+        # Add OVH LDP handler if enabled (lazy import)
+        if ovh_ldp_enabled:
+            try:
+                protocol = ovh_ldp_config.get("protocol", "gelf_tcp").lower()
+                if protocol == "gelf_tcp":
+                    from .handlers.gelf_handler import GELFTCPHandler
+                    ovh_handler = GELFTCPHandler(
+                        host=ovh_ldp_config["endpoint"],
+                        port=ovh_ldp_config["port"],
+                        token=ovh_ldp_config["token"],
+                        use_tls=ovh_ldp_config["use_tls"],
+                        compress=ovh_ldp_config["compress"],
+                        additional_fields=ovh_ldp_config["additional_fields"],
+                        timeout=ovh_ldp_config["timeout"],
+                    )
+                    ovh_handler.setLevel(numeric_level)
+                    handlers.append(ovh_handler)
+                else:
+                    # Log warning for unsupported protocols
+                    logging.basicConfig()
+                    logging.getLogger(app_name).warning(
+                        f"OVH LDP protocol '{protocol}' not yet supported. Only gelf_tcp is currently implemented."
+                    )
+            except Exception as e:  # pragma: no cover (network edge cases)
+                logging.basicConfig()
+                logging.getLogger(app_name).warning(f"Failed to set up OVH LDP logging: {e}")
 
         logging.basicConfig(
             level=numeric_level,

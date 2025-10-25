@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Union, Any
 from .base_settings import BaseSettings, SettingsError, EnvParser, NullConfig
 from .cache_settings import CacheSettings
 from .tracing_settings import TracingSettings
+from .logger_settings import LoggerSettings
 from .mcp_settings import MCPServerSettings
 from .fastapi_settings import FastAPIServerSettings
 from .app_settings import AppSettings
@@ -49,12 +50,14 @@ class ApiSettings(BaseSettings):
     # Optional service configurations for API servers
     cache: Optional[CacheSettings] = None
     tracing: Optional[TracingSettings] = None
+    logger: Optional[LoggerSettings] = None
     mcp_server: Optional[MCPServerSettings] = None
     fastapi_server: Optional[FastAPIServerSettings] = None
     
     # Service enablement flags
     enable_cache: bool = field(default=False)
     enable_tracing: bool = field(default=False)
+    enable_logger: bool = field(default=False)
     enable_mcp_server: bool = field(default=False)
     enable_fastapi_server: bool = field(default=False)
     
@@ -95,6 +98,7 @@ class ApiSettings(BaseSettings):
         # Auto-detect services from environment
         enable_cache = cls._should_enable_cache(overrides)
         enable_tracing = cls._should_enable_tracing(overrides)
+        enable_logger = cls._should_enable_logger(overrides)
         enable_mcp_server = cls._should_enable_mcp_server(overrides)
         enable_fastapi_server = cls._should_enable_fastapi_server(overrides)
         
@@ -112,6 +116,13 @@ class ApiSettings(BaseSettings):
                 tracing_config = TracingSettings.from_env(load_dotenv=False)
             except Exception:
                 enable_tracing = False
+        
+        logger_config = None
+        if enable_logger:
+            try:
+                logger_config = LoggerSettings.from_env(load_dotenv=False)
+            except Exception:
+                enable_logger = False
         
         mcp_server_config = None
         if enable_mcp_server:
@@ -134,10 +145,12 @@ class ApiSettings(BaseSettings):
             # Service configurations
             "cache": cache_config,
             "tracing": tracing_config,
+            "logger": logger_config,
             "mcp_server": mcp_server_config,
             "fastapi_server": fastapi_server_config,
             "enable_cache": enable_cache,
             "enable_tracing": enable_tracing,
+            "enable_logger": enable_logger,
             "enable_mcp_server": enable_mcp_server,
             "enable_fastapi_server": enable_fastapi_server,
         }
@@ -177,6 +190,21 @@ class ApiSettings(BaseSettings):
             EnvParser.get_env("LANGFUSE_PUBLIC_KEY") and
             EnvParser.get_env("LANGFUSE_SECRET_KEY")
         ) is not None
+    
+    @staticmethod
+    def _should_enable_logger(overrides: dict) -> bool:
+        """Check if advanced logger should be enabled based on environment variables."""
+        if "enable_logger" in overrides:
+            return overrides["enable_logger"]
+        
+        if EnvParser.get_env("ENABLE_LOGGER", env_type=bool) is not None:
+            return EnvParser.get_env("ENABLE_LOGGER", env_type=bool)
+        
+        # Auto-detect based on OVH LDP or file logging settings
+        return (
+            EnvParser.get_env("OVH_LDP_ENABLED", env_type=bool) or
+            EnvParser.get_env("LOG_FILE_ENABLED", env_type=bool)
+        ) or False
     
     @staticmethod
     def _should_enable_mcp_server(overrides: dict) -> bool:
@@ -219,6 +247,8 @@ class ApiSettings(BaseSettings):
             self.cache.validate()
         if self.tracing:
             self.tracing.validate()
+        if self.logger:
+            self.logger.validate()
         if self.mcp_server:
             if not self.mcp_server.is_valid:
                 raise SettingsError(f"MCP server configuration invalid: {', '.join(self.mcp_server.validate())}")
@@ -302,6 +332,10 @@ class ApiSettings(BaseSettings):
     def tracing_safe(self) -> TracingSettings | NullConfig:
         return self.tracing if self.tracing is not None else NullConfig()
     
+    @property
+    def logger_safe(self) -> LoggerSettings | NullConfig:
+        return self.logger if self.logger is not None else NullConfig()
+    
     def as_dict(self) -> dict:
         """Convert to dictionary representation.
         
@@ -317,10 +351,12 @@ class ApiSettings(BaseSettings):
             # Service configurations
             "cache": self.cache.as_dict() if self.cache else None,
             "tracing": self.tracing.as_dict() if self.tracing else None,
+            "logger": self.logger.as_dict() if self.logger else None,
             "mcp_server": self.mcp_server.as_dict() if self.mcp_server else None,
             "fastapi_server": self.fastapi_server.as_dict() if self.fastapi_server else None,
             "enable_cache": self.enable_cache,
             "enable_tracing": self.enable_tracing,
+            "enable_logger": self.enable_logger,
             "enable_mcp_server": self.enable_mcp_server,
             "enable_fastapi_server": self.enable_fastapi_server,
         }

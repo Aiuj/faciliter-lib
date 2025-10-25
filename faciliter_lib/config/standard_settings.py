@@ -76,8 +76,8 @@ class StandardSettings(ApiSettings):
         # Get app and API settings from parent ApiSettings
         api_overrides = {
             k: v for k, v in overrides.items()
-            if k in ["app", "cache", "tracing", "mcp_server", "fastapi_server", 
-                     "enable_cache", "enable_tracing", "enable_mcp_server", "enable_fastapi_server"]
+            if k in ["app", "cache", "tracing", "logger", "mcp_server", "fastapi_server", 
+                     "enable_cache", "enable_tracing", "enable_logger", "enable_mcp_server", "enable_fastapi_server"]
         }
         api_settings = ApiSettings.from_env(load_dotenv=False, **api_overrides)
         
@@ -119,6 +119,7 @@ class StandardSettings(ApiSettings):
             # API settings from parent ApiSettings
             "cache": api_settings.cache,
             "tracing": api_settings.tracing,
+            "logger": api_settings.logger,
             "mcp_server": api_settings.mcp_server,
             "fastapi_server": api_settings.fastapi_server,
             # Enablement flags
@@ -127,6 +128,7 @@ class StandardSettings(ApiSettings):
             "enable_database": enable_database,
             "enable_cache": api_settings.enable_cache,
             "enable_tracing": api_settings.enable_tracing,
+            "enable_logger": api_settings.enable_logger,
             "enable_mcp_server": api_settings.enable_mcp_server,
             "enable_fastapi_server": api_settings.enable_fastapi_server,
         }
@@ -247,7 +249,7 @@ class StandardSettings(ApiSettings):
                 value = default
             
             custom_fields[field_name] = value
-        
+            
         # Convert standard settings to dict and add custom fields
         # Keep nested settings as objects, not dicts, so properties can be accessed
         settings_dict = {
@@ -260,6 +262,7 @@ class StandardSettings(ApiSettings):
             "embeddings": standard_settings.embeddings,
             "cache": standard_settings.cache,
             "tracing": standard_settings.tracing,
+            "logger": standard_settings.logger,
             "database": standard_settings.database,
             "mcp_server": standard_settings.mcp_server,
             "fastapi_server": getattr(standard_settings, 'fastapi_server', None),
@@ -267,6 +270,7 @@ class StandardSettings(ApiSettings):
             "enable_embeddings": standard_settings.enable_embeddings,
             "enable_cache": standard_settings.enable_cache,
             "enable_tracing": standard_settings.enable_tracing,
+            "enable_logger": standard_settings.enable_logger,
             "enable_database": standard_settings.enable_database,
             "enable_mcp_server": standard_settings.enable_mcp_server,
             "enable_fastapi_server": getattr(standard_settings, 'enable_fastapi_server', False),

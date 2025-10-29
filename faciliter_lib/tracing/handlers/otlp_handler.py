@@ -227,7 +227,7 @@ class _OTLPWorkerHandler(logging.Handler):
         self.service_name = service_name
         self.service_version = service_version
         self._batch: list = []
-        self._last_send = time.time()
+        self._last_send = None  # Will be set when first log arrives (not at init)
         self._batch_size = 100  # Send after 100 records
         self._batch_timeout = 5.0  # Or after 5 seconds
     
@@ -238,6 +238,10 @@ class _OTLPWorkerHandler(logging.Handler):
             record: The log record to process
         """
         try:
+            # Initialize timer on first log (not at init, to avoid startup delays)
+            if self._last_send is None:
+                self._last_send = time.time()
+            
             otlp_record = self._convert_to_otlp(record)
             self._batch.append(otlp_record)
             
@@ -276,6 +280,24 @@ class _OTLPWorkerHandler(logging.Handler):
                 {"key": "source.function", "value": {"stringValue": record.funcName or ""}},
             ],
         }
+        
+        # Add trace context if available
+        if hasattr(record, "trace_id") and record.trace_id:
+            otlp_record["traceId"] = record.trace_id
+        if hasattr(record, "span_id") and record.span_id:
+            otlp_record["spanId"] = record.span_id
+        
+        # Add any extra attributes from the record (including LoggingContext metadata)
+        if hasattr(record, "extra_attrs"):
+            for key, value in record.extra_attrs.items():
+                attr_value = {"stringValue": str(value)}
+                if isinstance(value, int):
+                    attr_value = {"intValue": str(value)}
+                elif isinstance(value, float):
+                    attr_value = {"doubleValue": value}
+                elif isinstance(value, bool):
+                    attr_value = {"boolValue": value}
+                otlp_record["attributes"].append({"key": key, "value": attr_value})
         
         return otlp_record
     
@@ -323,10 +345,14 @@ class _OTLPWorkerHandler(logging.Handler):
                     file=sys.stderr,
                 )
             
-            # Clear batch and reset timer
-            self._batch = []
-            self._last_send = time.time()
+            # Clear batch and reset timer only if we actually had logs to send
+            if self._batch:  # This check is now redundant but defensive
+                self._batch = []
+                self._last_send = time.time()
             
+        except requests.exceptions.Timeout:
+            # Silently ignore timeout errors on shutdown
+            self._batch = []
         except Exception as e:
             # Use stderr to avoid logging recursion
             print(f"OTLP send error: {e}", file=sys.stderr)

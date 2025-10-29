@@ -280,6 +280,10 @@ def setup_logging(
             handlers=handlers,
             force=True,  # Python 3.8+: replace handlers
         )
+        # Install logging context filter for request tracing
+        from .logging_context import install_logging_context_filter
+        install_logging_context_filter()
+
 
         # Noise reduction
         for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis"]:
@@ -340,3 +344,4 @@ def get_last_logging_config() -> dict:
     Useful for debugging / tests.
     """
     return dict(_LAST_CONFIG)
+

@@ -7,6 +7,7 @@
 ## 📦 Features
 
 - Reusable utility functions
+- **🆕 Centralized Logging** - Unified logging with console, file, OTLP, and OVH LDP handlers
 - Redis-based caching system with configurable TTL
 - **🆕 Redis-based job queue system** with background worker support
 - **🆕 Time-based authentication** - Secure HMAC-based auth for FastAPI/MCP servers
@@ -54,6 +55,72 @@ if settings.cache:
 - **Multi-environment**: dev/staging/production configurations
 
 See **[Settings Documentation](docs/settings.md)** for complete guide and examples.
+
+---
+
+## 📝 Centralized Logging (New!)
+
+Simple, unified logging system for all your applications with multiple handler support:
+
+```python
+from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+
+# Setup at application startup
+setup_logging(app_name="my-app", level="INFO")
+
+# Use in any module
+logger = get_module_logger()
+logger.info("Application started")
+logger.debug("Debug information")
+```
+
+### Available Handlers:
+- **Console** - Always enabled with colored output
+- **File** - Optional rotating file logging
+- **OTLP** - OpenTelemetry Protocol for observability platforms
+- **OVH LDP** - OVH Logs Data Platform integration
+
+### Key Features:
+- **Simple setup**: One function call at startup
+- **Multiple handlers**: Console, file, OTLP, OVH LDP (all can run simultaneously)
+- **Independent log levels**: DEBUG on console, INFO to OTLP (reduce costs)
+- **Auto-namespacing**: Loggers automatically inherit app name
+- **Environment-driven**: Full .env configuration support
+- **Zero config**: Works out of the box with sensible defaults
+
+### Quick Example with OTLP:
+
+```python
+from faciliter_lib.config.logger_settings import LoggerSettings
+
+settings = LoggerSettings(
+    log_level="DEBUG",           # Console shows DEBUG+
+    otlp_enabled=True,
+    otlp_log_level="INFO",       # OTLP only gets INFO+ (save costs)
+    otlp_endpoint="http://localhost:4318/v1/logs",
+)
+
+setup_logging(app_name="my-app", logger_settings=settings)
+```
+
+### Contextual Logging (Request Metadata):
+
+Add request-specific metadata (user ID, session ID, company ID) to all logs:
+
+```python
+from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION
+from faciliter_lib.mcp_utils import parse_from
+
+@app.post("/endpoint")
+async def endpoint(from_: Optional[str] = Query(None, alias="from", description=FROM_FIELD_DESCRIPTION)):
+    from_dict = parse_from(from_)  # Parse JSON metadata
+    
+    with LoggingContext(from_dict):
+        logger.info("Processing request")
+        # All logs include: session.id, user.id, organization.id, etc.
+```
+
+See **[Centralized Logging Guide](docs/centralized-logging.md)** for FastAPI, MCP, CLI, and web app examples.
 
 ---
 

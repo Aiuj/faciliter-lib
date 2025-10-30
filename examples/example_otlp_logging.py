@@ -220,6 +220,63 @@ def example_otlp_with_standard_settings():
     print("[OK] OTLP integrated with StandardSettings")
 
 
+def example_contextual_logging():
+    """Example: Contextual logging with parse_from for request metadata."""
+    print("\n=== Example 7: Contextual Logging with parse_from ===\n")
+    
+    from faciliter_lib.tracing import LoggingContext
+    from faciliter_lib.mcp_utils import parse_from
+    
+    # Configure OTLP
+    logger_settings = LoggerSettings(
+        log_level="INFO",
+        otlp_enabled=True,
+        otlp_endpoint="http://localhost:4318/v1/logs",
+        otlp_service_name="contextual-logging-service",
+    )
+    
+    logger = setup_logging(
+        app_name="context_example",
+        logger_settings=logger_settings,
+        force=True,
+    )
+    
+    # Simulate a request with 'from' parameter (typically from FastAPI Query)
+    from_json = """{
+        "session_id": "session-abc-123",
+        "user_id": "user-456",
+        "user_name": "john.doe@example.com",
+        "company_id": "company-789",
+        "company_name": "Acme Corp",
+        "app_name": "mobile-app",
+        "app_version": "2.1.0"
+    }"""
+    
+    # Parse the 'from' parameter
+    from_dict = parse_from(from_json)
+    
+    print(f"Request metadata: {from_dict}\n")
+    
+    # Use LoggingContext to inject metadata into all logs
+    with LoggingContext(from_dict):
+        logger.info("Processing API request")
+        logger.info("Looking up user data")
+        logger.warning("Rate limit approaching", extra={"requests_remaining": 10})
+        logger.info("Request completed successfully")
+    
+    # Logs outside context won't have metadata
+    logger.info("Background cleanup task (no context)")
+    
+    time.sleep(2)
+    
+    print("\n[OK] Contextual logs sent with metadata:")
+    print("  - session.id = session-abc-123")
+    print("  - user.id = user-456")
+    print("  - organization.id = company-789")
+    print("  - client.app.name = mobile-app")
+    print("\nIn OpenSearch/Grafana, you can filter by these fields!")
+
+
 def example_docker_compose_setup():
     """Example Docker Compose setup for local testing."""
     print("\n=== Docker Compose Setup for Local Testing ===\n")
@@ -395,10 +452,7 @@ if __name__ == "__main__":
             example_otlp_with_file_logging()
             example_otlp_from_env()
             example_otlp_with_standard_settings()
-            example_otlp_with_authentication()
-            example_otlp_with_file_logging()
-            example_otlp_from_env()
-            example_otlp_with_standard_settings()
+            example_contextual_logging()
             
             print("\n" + "=" * 70)
             print("All examples completed successfully!")

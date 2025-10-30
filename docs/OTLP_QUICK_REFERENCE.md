@@ -106,6 +106,40 @@ export OTLP_LOG_LEVEL=WARNING  # Only send WARNING+ to reduce OTLP ingestion
 - `logger.info("...")` → Console ✓, OTLP ✓ (if OTLP_LOG_LEVEL=INFO)
 - `logger.warning("...")` → Console ✓, OTLP ✓
 
+## Contextual Logging (Request Metadata)
+
+Add request-specific metadata (user_id, session_id, company_id) to all logs:
+
+```python
+from faciliter_lib.tracing import LoggingContext
+from faciliter_lib.mcp_utils import parse_from
+
+@app.post("/endpoint")
+async def endpoint(from_: Optional[str] = Query(None, alias="from")):
+    from_dict = parse_from(from_)  # Parses JSON from 'from' parameter
+    
+    # All logs within this context get metadata automatically
+    with LoggingContext(from_dict):
+        logger.info("Processing request")
+        # OTLP log includes: session.id, user.id, organization.id, etc.
+```
+
+**What gets added:**
+- `session_id` → `session.id` (OpenTelemetry convention)
+- `user_id` → `user.id`
+- `company_id` → `organization.id`
+- `user_name` → `user.name`
+- `app_name` → `client.app.name`
+
+**Filter logs in OpenSearch:**
+```
+user.id: "user-456"
+organization.id: "comp-789"
+session.id: "session-123"
+```
+
+See **[Centralized Logging Guide](centralized-logging.md#contextual-logging-request-metadata)** for detailed examples.
+
 ## Multiple Handlers
 
 ```python

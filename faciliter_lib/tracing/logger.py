@@ -56,6 +56,25 @@ _root_logger: Optional[logging.Logger] = None
 _LAST_CONFIG: dict = {}  # keep track of parameters used to configure logging
 
 
+def _resolve_logger_name(app_name: str, module_name: Optional[str]) -> str:
+    """Return a consistent logger name under the application's root namespace.
+
+    Rules:
+    - If module_name is None/empty, return app_name.
+    - If module_name already starts with "{app_name}.", return module_name (avoid double-prefixing).
+    - If module_name equals app_name, return app_name.
+    - Otherwise, prefix with "{app_name}." preserving full module path (no truncation).
+    """
+    if not module_name:
+        return app_name
+    if module_name == app_name:
+        return app_name
+    prefix = f"{app_name}."
+    if module_name.startswith(prefix):
+        return module_name
+    return f"{app_name}.{module_name}"
+
+
 def setup_logging(
     app_name: Optional[str] = None,
     name: Optional[str] = None,
@@ -292,22 +311,28 @@ def setup_logging(
             except Exception:
                 pass
 
+        # Get the app logger - this is a child of root, inherits handlers via propagation
         _root_logger = logging.getLogger(app_name)
-        _root_logger.setLevel(numeric_level)
+        # Do NOT set level on app logger - let it inherit from root or use NOTSET
+        # Setting level here creates an additional filter that can block propagated logs
+        _root_logger.setLevel(logging.NOTSET)  # NOTSET = inherit from parent (root)
         _logger_initialized = True
         _LAST_CONFIG = new_config
         _root_logger.info(
             "Logging initialized", extra={"config": {k: v for k, v in new_config.items() if k != "level"}, "level_int": numeric_level}
         )
 
-    # Determine caller name if not provided
+    # Determine caller module name if not provided and resolve final logger name consistently
     if name is None:
         import inspect
         frame = inspect.currentframe().f_back
         name = frame.f_globals.get("__name__", "unknown")
 
-    logger = logging.getLogger(f"{app_name}.{name.split('.')[-1]}")
-    logger.setLevel(numeric_level)
+    resolved_name = _resolve_logger_name(app_name, name)
+    logger = logging.getLogger(resolved_name)
+    # Do NOT set level on module loggers - let them inherit from parent chain
+    # Setting level here creates an additional filter that blocks propagated logs
+    logger.setLevel(logging.NOTSET)  # NOTSET = inherit effective level from parent
     return logger
 
 
@@ -330,11 +355,23 @@ def get_module_logger() -> logging.Logger:
     This avoids initializing global logging during module import; call
     `setup_logging()` explicitly from application startup to configure
     handlers and levels.
+    
+    The logger is namespaced under the app logger (if configured) to ensure
+    proper handler inheritance, especially for OTLP and other remote handlers.
     """
     import inspect
 
     frame = inspect.currentframe().f_back
     module_name = frame.f_globals.get("__name__", "unknown")
+    
+    # If we have a configured root logger, namespace under it
+    # This ensures all module loggers inherit handlers (OTLP, file, etc.)
+    if _root_logger is not None:
+        app_name = _root_logger.name
+        # Create logger as child of app logger using consistent naming
+        return logging.getLogger(_resolve_logger_name(app_name, module_name))
+    
+    # Fallback: return module logger directly (before setup_logging is called)
     return logging.getLogger(module_name)
 
 

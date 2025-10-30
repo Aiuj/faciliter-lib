@@ -185,22 +185,29 @@ def clear_logging_context():
 
 # Convenience function to install the filter
 def install_logging_context_filter(logger: Optional[logging.Logger] = None):
-    """Install the logging context filter on a logger.
+    """Install the logging context filter on all handlers.
     
     This is automatically called by setup_logging() if context filtering is enabled.
     
+    IMPORTANT: Filters must be added to HANDLERS, not loggers, to ensure they
+    are applied to all log records from child loggers. Filters on loggers only
+    apply to records from that specific logger, not child loggers.
+    
     Args:
-        logger: Logger to install filter on. If None, installs on root logger.
+        logger: Logger whose handlers will get the filter. If None, uses root logger.
     """
     if logger is None:
         logger = logging.getLogger()
     
-    # Check if filter already installed
-    for f in logger.filters:
-        if isinstance(f, LoggingContextFilter):
-            return  # Already installed
+    # Add filter to all handlers
+    context_filter = LoggingContextFilter()
     
-    logger.addFilter(LoggingContextFilter())
+    for handler in logger.handlers:
+        # Check if filter already installed on this handler
+        if any(isinstance(f, LoggingContextFilter) for f in handler.filters):
+            continue  # Already installed on this handler
+        
+        handler.addFilter(context_filter)
 
 
 __all__ = [

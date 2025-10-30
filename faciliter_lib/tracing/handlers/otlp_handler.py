@@ -18,6 +18,8 @@ from typing import Dict, Any, Optional
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 import sys
+import threading
+import atexit
 
 
 class OTLPHandler(logging.Handler):
@@ -83,9 +85,12 @@ class OTLPHandler(logging.Handler):
             # Put record in queue for background processing
             if not self._queue.full():
                 self._queue.put_nowait(record)
-        except Exception:
-            # Silently fail to avoid recursion
-            pass
+            else:
+                # Queue full - log to stderr to diagnose blocking
+                print(f"OTLP queue full ({self._queue.qsize()}/{self._queue.maxsize}), dropping log", file=sys.stderr)
+        except Exception as e:
+            # Log error to stderr to diagnose issues (avoid logging recursion)
+            print(f"OTLP emit error: {e}", file=sys.stderr)
     
     def _convert_to_otlp(self, record: logging.LogRecord) -> Dict[str, Any]:
         """Convert a Python logging record to OTLP log format.
@@ -184,8 +189,10 @@ class OTLPHandler(logging.Handler):
                 service_name=self.service_name,
                 service_version=self.service_version,
             )
+            # respect_handler_level=False allows all queued records through
+            # Level filtering already happened at the main handler level
             self._listener = QueueListener(
-                self._queue, self._worker_handler, respect_handler_level=True
+                self._queue, self._worker_handler, respect_handler_level=False
             )
             self._listener.start()
     
@@ -230,6 +237,12 @@ class _OTLPWorkerHandler(logging.Handler):
         self._last_send = None  # Will be set when first log arrives (not at init)
         self._batch_size = 100  # Send after 100 records
         self._batch_timeout = 5.0  # Or after 5 seconds
+        self._flush_timer: Optional[threading.Timer] = None
+        self._lock = threading.Lock()  # Protect batch operations
+        self._shutdown = False
+        
+        # Register cleanup on interpreter exit
+        atexit.register(self._atexit_flush)
     
     def emit(self, record: logging.LogRecord) -> None:
         """Process a log record from the queue.
@@ -237,20 +250,26 @@ class _OTLPWorkerHandler(logging.Handler):
         Args:
             record: The log record to process
         """
+        if self._shutdown:
+            return
+            
         try:
-            # Initialize timer on first log (not at init, to avoid startup delays)
-            if self._last_send is None:
-                self._last_send = time.time()
-            
-            otlp_record = self._convert_to_otlp(record)
-            self._batch.append(otlp_record)
-            
-            # Send if batch is full or timeout reached
-            if (
-                len(self._batch) >= self._batch_size
-                or (time.time() - self._last_send) >= self._batch_timeout
-            ):
-                self._send_batch()
+            with self._lock:
+                # Initialize timer on first log (not at init, to avoid startup delays)
+                if self._last_send is None:
+                    self._last_send = time.time()
+                
+                otlp_record = self._convert_to_otlp(record)
+                self._batch.append(otlp_record)
+                
+                # Send if batch is full
+                if len(self._batch) >= self._batch_size:
+                    self._send_batch_locked()
+                    self._cancel_flush_timer()
+                else:
+                    # Schedule a flush if not already scheduled
+                    self._schedule_flush_timer()
+                    
         except Exception as e:
             # Use stderr to avoid logging recursion
             print(f"OTLP handler error: {e}", file=sys.stderr)
@@ -301,11 +320,40 @@ class _OTLPWorkerHandler(logging.Handler):
         
         return otlp_record
     
-    def _send_batch(self) -> None:
-        """Send batched logs to OTLP collector."""
-        if not self._batch:
+    def _schedule_flush_timer(self) -> None:
+        """Schedule a timer to flush batch after timeout."""
+        # Only schedule if not already scheduled and we have items
+        if self._flush_timer is None and self._batch and not self._shutdown:
+            self._flush_timer = threading.Timer(self._batch_timeout, self._flush_on_timer)
+            self._flush_timer.daemon = True
+            self._flush_timer.start()
+    
+    def _cancel_flush_timer(self) -> None:
+        """Cancel pending flush timer."""
+        if self._flush_timer is not None:
+            self._flush_timer.cancel()
+            self._flush_timer = None
+    
+    def _flush_on_timer(self) -> None:
+        """Callback for timer-based flush."""
+        with self._lock:
+            self._flush_timer = None
+            if self._batch and not self._shutdown:
+                self._send_batch_locked()
+                # Reschedule if there are still items (shouldn't happen but defensive)
+                if self._batch:
+                    self._schedule_flush_timer()
+    
+    def _send_batch_locked(self) -> None:
+        """Send batched logs to OTLP collector (must hold lock)."""
+        if not self._batch or self._shutdown:
             return
         
+        batch_to_send = self._batch[:]
+        self._batch = []
+        self._last_send = time.time()
+        
+        # Make network call (safe because we copied the batch)
         try:
             import requests
             
@@ -324,7 +372,7 @@ class _OTLPWorkerHandler(logging.Handler):
                         "scopeLogs": [
                             {
                                 "scope": {"name": "faciliter-lib-logger"},
-                                "logRecords": self._batch,
+                                "logRecords": batch_to_send,
                             }
                         ],
                     }
@@ -345,20 +393,31 @@ class _OTLPWorkerHandler(logging.Handler):
                     file=sys.stderr,
                 )
             
-            # Clear batch and reset timer only if we actually had logs to send
-            if self._batch:  # This check is now redundant but defensive
-                self._batch = []
-                self._last_send = time.time()
-            
         except requests.exceptions.Timeout:
-            # Silently ignore timeout errors on shutdown
-            self._batch = []
+            print(f"OTLP send timeout (logs may be lost)", file=sys.stderr)
         except Exception as e:
             # Use stderr to avoid logging recursion
             print(f"OTLP send error: {e}", file=sys.stderr)
-            self._batch = []  # Clear to avoid memory buildup
+    
+    def _send_batch(self) -> None:
+        """Deprecated: use _send_batch_locked instead (kept for compatibility)."""
+        with self._lock:
+            self._send_batch_locked()
+    
+    def _atexit_flush(self) -> None:
+        """Flush on interpreter exit."""
+        if not self._shutdown:
+            with self._lock:
+                self._shutdown = True
+                self._cancel_flush_timer()
+                if self._batch:
+                    self._send_batch_locked()
     
     def close(self) -> None:
         """Flush remaining logs before closing."""
-        self._send_batch()
+        with self._lock:
+            self._shutdown = True
+            self._cancel_flush_timer()
+            if self._batch:
+                self._send_batch_locked()
         super().close()

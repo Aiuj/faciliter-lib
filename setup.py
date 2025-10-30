@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'fast-langdetect>=1.0.0',
         'fastmcp>=2.10.6',
+        'fastapi>=0.120.2',
         'google-genai>=0.6.0',
         'ollama>=0.3.1',
         'langfuse>=3.2.1',

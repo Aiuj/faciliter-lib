@@ -24,12 +24,18 @@ try:
         configure_api_key_auth,
         add_custom_security_scheme,
     )
+    from .fastapi_middleware import (
+        FromContextMiddleware,
+        inject_from_logging_context,
+    )
     __all_fastapi__ = [
         "TimeBasedAuthMiddleware",
         "create_auth_dependency",
         "verify_auth_dependency",
         "configure_api_key_auth",
         "add_custom_security_scheme",
+        "FromContextMiddleware",
+        "inject_from_logging_context",
     ]
 except ImportError:
     __all_fastapi__ = []

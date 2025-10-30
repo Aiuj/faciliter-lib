@@ -31,6 +31,8 @@ Environment Variables:
     OTLP_INSECURE: Skip SSL certificate verification (true/false, default: false)
     OTLP_SERVICE_NAME: Service name for resource attributes (default: faciliter-lib)
     OTLP_SERVICE_VERSION: Service version for resource attributes
+    OTLP_LOG_LEVEL: Log level for OTLP handler only (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+                    If not set, inherits from LOG_LEVEL
 """
 
 from __future__ import annotations
@@ -78,6 +80,7 @@ class LoggerSettings(BaseSettings):
     otlp_insecure: bool = False  # Skip SSL verification
     otlp_service_name: str = "faciliter-lib"
     otlp_service_version: Optional[str] = None
+    otlp_log_level: Optional[str] = None  # Independent log level for OTLP handler (if None, inherits from log_level)
     
     @classmethod
     def from_env(
@@ -139,6 +142,7 @@ class LoggerSettings(BaseSettings):
             "otlp_insecure": EnvParser.get_env("OTLP_INSECURE", default=False, env_type=bool),
             "otlp_service_name": EnvParser.get_env("OTLP_SERVICE_NAME", default="faciliter-lib"),
             "otlp_service_version": EnvParser.get_env("OTLP_SERVICE_VERSION"),
+            "otlp_log_level": EnvParser.get_env("OTLP_LOG_LEVEL", default="INFO"),  # Optional: independent OTLP log level
         }
         
         settings_dict.update(overrides)
@@ -172,6 +176,14 @@ class LoggerSettings(BaseSettings):
             
             if self.ovh_ldp_timeout < 1:
                 raise SettingsError("OVH LDP timeout must be at least 1 second")
+        
+        # Validate OTLP log level if specified
+        if self.otlp_log_level is not None:
+            valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+            if self.otlp_log_level.upper() not in valid_log_levels:
+                raise SettingsError(
+                    f"Invalid OTLP log level '{self.otlp_log_level}'. Must be one of: {', '.join(valid_log_levels)}"
+                )
     
     def as_dict(self) -> dict:
         """Convert to dictionary representation."""

@@ -1,6 +1,6 @@
-# LLM Environment Variables
+# Environment Variables Reference
 
-This file lists all environment variables that can be used to configure the LLM clients.
+This file lists all environment variables for configuring LLM clients, embeddings, and logging.
 
 ## Embeddings Configuration
 
@@ -110,12 +110,65 @@ OLLAMA_THINKING_ENABLED=true
 # GEMINI_TEMPERATURE=0.3
 ```
 
+## Logging Configuration
+
+### Basic Logging
+
+```bash
+export LOG_LEVEL=INFO                        # Root log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+export LOG_FILE_ENABLED=true                 # Enable file logging
+export LOG_FILE_PATH=logs/app.log            # Log file path
+export LOG_FILE_MAX_BYTES=1048576            # Max file size before rotation (1MB)
+export LOG_FILE_BACKUP_COUNT=3               # Number of backup files
+```
+
+### OTLP (OpenTelemetry) Logging
+
+```bash
+export OTLP_ENABLED=true                                    # Enable OTLP logging
+export OTLP_ENDPOINT=http://localhost:4318/v1/logs          # OTLP collector endpoint
+export OTLP_LOG_LEVEL=INFO                                  # Independent OTLP log level (optional)
+export OTLP_HEADERS='{"Authorization": "Bearer token"}'     # Auth headers (JSON)
+export OTLP_TIMEOUT=10                                      # Request timeout (seconds)
+export OTLP_INSECURE=false                                  # Skip SSL verification
+export OTLP_SERVICE_NAME=my-app                             # Service name in traces
+export OTLP_SERVICE_VERSION=1.0.0                           # Service version
+```
+
+**Independent Log Levels:**
+```bash
+# Example: DEBUG on console, only INFO+ to OTLP
+export LOG_LEVEL=DEBUG
+export OTLP_LOG_LEVEL=INFO
+
+# Example: Reduce OTLP costs - only errors
+export LOG_LEVEL=INFO
+export OTLP_LOG_LEVEL=ERROR
+```
+
+### OVH Logs Data Platform
+
+```bash
+export OVH_LDP_ENABLED=true                  # Enable OVH LDP
+export OVH_LDP_TOKEN=your-token              # Authentication token
+export OVH_LDP_ENDPOINT=gra1.logs.ovh.com    # OVH endpoint
+export OVH_LDP_PORT=12202                    # GELF TCP port
+export OVH_LDP_PROTOCOL=gelf_tcp             # Protocol: gelf_tcp, gelf_udp, syslog_tcp, syslog_udp
+export OVH_LDP_USE_TLS=true                  # Use TLS encryption
+```
+
 ## Usage in Code
 
 ```python
 from faciliter_lib import create_client_from_env
+from faciliter_lib.config.logger_settings import LoggerSettings
+from faciliter_lib.tracing.logger import setup_logging
 
-# Will use environment variables automatically
+# LLM clients use environment variables automatically
 ollama_client = create_client_from_env("ollama")
 gemini_client = create_client_from_env("gemini")
+
+# Logging uses environment variables automatically
+logger_settings = LoggerSettings.from_env()
+logger = setup_logging(logger_settings=logger_settings)
 ```

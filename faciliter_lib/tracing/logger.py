@@ -204,6 +204,7 @@ def setup_logging(
                 "insecure": getattr(logger_settings, "otlp_insecure", False),
                 "service_name": getattr(logger_settings, "otlp_service_name", app_name),
                 "service_version": getattr(logger_settings, "otlp_service_version", None),
+                "log_level": getattr(logger_settings, "otlp_log_level", None),
             }
 
     new_config = {
@@ -217,6 +218,7 @@ def setup_logging(
         "ovh_ldp_endpoint": ovh_ldp_config.get("endpoint") if ovh_ldp_enabled else None,
         "otlp_enabled": otlp_enabled,
         "otlp_endpoint": otlp_config.get("endpoint") if otlp_enabled else None,
+        "otlp_log_level": otlp_config.get("log_level") if otlp_enabled else None,
     }
 
     if _logger_initialized and not force:
@@ -286,7 +288,13 @@ def setup_logging(
                     service_name=otlp_config["service_name"],
                     service_version=otlp_config["service_version"],
                 )
-                otlp_handler.setLevel(numeric_level)
+                # Use OTLP-specific log level if provided, otherwise use global level
+                otlp_level_str = otlp_config.get("log_level") or level
+                if isinstance(otlp_level_str, str):
+                    otlp_numeric_level = getattr(logging, otlp_level_str.upper(), numeric_level)
+                else:
+                    otlp_numeric_level = numeric_level
+                otlp_handler.setLevel(otlp_numeric_level)
                 otlp_handler.start()  # Start background worker
                 handlers.append(otlp_handler)
             except Exception as e:  # pragma: no cover (network edge cases)

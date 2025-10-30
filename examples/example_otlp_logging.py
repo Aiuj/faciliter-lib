@@ -49,7 +49,7 @@ def example_basic_otlp():
     # Give background thread time to send
     time.sleep(2)
     
-    print("✓ Logs sent to OTLP collector at http://localhost:4318/v1/logs")
+    print("[OK] Logs sent to OTLP collector at http://localhost:4318/v1/logs")
 
 
 def example_otlp_with_authentication():
@@ -80,12 +80,53 @@ def example_otlp_with_authentication():
     
     time.sleep(2)
     
-    print("✓ Authenticated logs sent with custom headers")
+    print("[OK] Authenticated logs sent with custom headers")
+
+
+def example_independent_log_levels():
+    """OTLP with independent log level - reduce OTLP costs."""
+    print("\n=== Example 3: Independent Log Levels (DEBUG console, INFO OTLP) ===\n")
+    
+    # Console shows DEBUG+, OTLP only receives INFO+
+    logger_settings = LoggerSettings(
+        log_level="DEBUG",           # Console shows all DEBUG and above
+        otlp_enabled=True,
+        otlp_endpoint="http://localhost:4318/v1/logs",
+        otlp_log_level="INFO",       # OTLP only receives INFO and above
+        otlp_service_name="cost-optimized-service",
+    )
+    
+    logger = setup_logging(
+        app_name="level_example",
+        logger_settings=logger_settings,
+        force=True,
+    )
+    
+    print("Sending logs at different levels:\n")
+    
+    logger.debug("DEBUG: Detailed diagnostic (console only, not OTLP)")
+    print("  ^ DEBUG log sent - appears in CONSOLE only\n")
+    
+    logger.info("INFO: General information (console + OTLP)")
+    print("  ^ INFO log sent - appears in CONSOLE and OTLP\n")
+    
+    logger.warning("WARNING: Warning message (console + OTLP)")
+    print("  ^ WARNING log sent - appears in CONSOLE and OTLP\n")
+    
+    logger.error("ERROR: Error occurred (console + OTLP)")
+    print("  ^ ERROR log sent - appears in CONSOLE and OTLP\n")
+    
+    time.sleep(2)
+    
+    print("[OK] Independent log levels configured:")
+    print("  - Console: DEBUG level (shows all logs)")
+    print("  - OTLP: INFO level (only INFO, WARNING, ERROR sent)")
+    print("  - Result: DEBUG logs saved to OTLP costs while visible locally")
 
 
 def example_otlp_with_file_logging():
     """Combined file and OTLP logging."""
-    print("\n=== Example 3: File + OTLP Logging ===\n")
+    print("\n=== Example 4: File + OTLP Logging ===\n")
     
     # Enable both file and OTLP logging
     logger_settings = LoggerSettings(
@@ -108,22 +149,23 @@ def example_otlp_with_file_logging():
     
     time.sleep(2)
     
-    print("✓ Logs sent to both file (logs/combined.log) and OTLP collector")
+    print("[OK] Logs sent to both file (logs/combined.log) and OTLP collector")
 
 
 def example_otlp_from_env():
     """Configure OTLP via environment variables."""
-    print("\n=== Example 4: OTLP from Environment Variables ===\n")
+    print("\n=== Example 5: OTLP from Environment Variables ===\n")
     
     import os
     
-    # Set environment variables
+    # Set environment variables (including independent log level)
+    os.environ["LOG_LEVEL"] = "DEBUG"
     os.environ["OTLP_ENABLED"] = "true"
     os.environ["OTLP_ENDPOINT"] = "http://localhost:4318/v1/logs"
+    os.environ["OTLP_LOG_LEVEL"] = "WARNING"  # Only WARNING+ to OTLP
     os.environ["OTLP_SERVICE_NAME"] = "env-configured-service"
     os.environ["OTLP_SERVICE_VERSION"] = "2.0.0"
     os.environ["OTLP_HEADERS"] = '{"X-API-Key": "my-api-key"}'
-    os.environ["LOG_LEVEL"] = "DEBUG"
     
     # Load from environment
     logger_settings = LoggerSettings.from_env(load_dotenv=False)
@@ -133,21 +175,23 @@ def example_otlp_from_env():
         logger_settings=logger_settings,
         force=True,
     )
-    
     logger.info("Configured from environment variables")
-    logger.debug("Service info", extra={
+    logger.debug("Service info (console only - OTLP_LOG_LEVEL=WARNING)", extra={
         "service": logger_settings.otlp_service_name,
         "version": logger_settings.otlp_service_version,
+    })
+    logger.warning("Warning message (console + OTLP)", extra={
+        "note": "OTLP receives WARNING and above only"
     })
     
     time.sleep(2)
     
-    print("✓ OTLP configured from environment variables")
+    print("[OK] OTLP configured from environment variables")
 
 
 def example_otlp_with_standard_settings():
     """Use StandardSettings for integrated configuration."""
-    print("\n=== Example 5: OTLP with StandardSettings ===\n")
+    print("\n=== Example 6: OTLP with StandardSettings ===\n")
     
     import os
     from faciliter_lib.config import StandardSettings
@@ -173,7 +217,7 @@ def example_otlp_with_standard_settings():
     
     time.sleep(2)
     
-    print("✓ OTLP integrated with StandardSettings")
+    print("[OK] OTLP integrated with StandardSettings")
 
 
 def example_docker_compose_setup():
@@ -236,7 +280,7 @@ volumes:
 """
     
     print(docker_compose)
-    print("\n✓ Copy the above docker-compose.yml to test locally")
+    print("\n[OK] Copy the above docker-compose.yml to test locally")
 
 
 def example_opensearch_queries():
@@ -324,7 +368,7 @@ GET otel-logs/_search
 """
     
     print(queries)
-    print("\n✓ Use these queries in OpenSearch Dashboards Dev Tools")
+    print("\n[OK] Use these queries in OpenSearch Dashboards Dev Tools")
 
 
 if __name__ == "__main__":
@@ -344,12 +388,13 @@ if __name__ == "__main__":
         print("1. Start OpenTelemetry collector (see Docker Compose example)")
         print("2. Unset SKIP_NETWORK_TESTS")
         print("3. Run: python examples/example_otlp_logging.py\n")
-        
-        example_docker_compose_setup()
-        example_opensearch_queries()
-    else:
         try:
             example_basic_otlp()
+            example_otlp_with_authentication()
+            example_independent_log_levels()
+            example_otlp_with_file_logging()
+            example_otlp_from_env()
+            example_otlp_with_standard_settings()
             example_otlp_with_authentication()
             example_otlp_with_file_logging()
             example_otlp_from_env()
@@ -363,7 +408,8 @@ if __name__ == "__main__":
             example_opensearch_queries()
             
         except Exception as e:
-            print(f"\n❌ Error: {e}")
+            print(f"\n[ERROR] Error: {e}")
             print("\nMake sure OpenTelemetry collector is running:")
             print("  docker run -p 4318:4318 otel/opentelemetry-collector-contrib")
             print("\nOr use Docker Compose (see docker-compose setup above)")
+

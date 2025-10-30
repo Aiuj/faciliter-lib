@@ -59,13 +59,14 @@ print(config.api_key)
 
 #### `initialize_settings()`
 
-Initialize the global settings singleton from environment variables.
+Initialize the global settings singleton from environment variables and optionally configure logging.
 
 **Parameters:**
 - `settings_class: Type[T] = StandardSettings` - The Settings class to instantiate (must extend StandardSettings)
 - `force: bool = False` - If True, reinitialize even if already initialized
 - `load_dotenv: bool = True` - Whether to load .env files
 - `dotenv_paths: Optional[List[Union[str, Path]]] = None` - Custom paths to search for .env files
+- `setup_logging: bool = True` - Whether to automatically configure logging based on settings (default: True)
 - `**overrides` - Direct value overrides passed to `from_env()`
 
 **Returns:** The initialized settings instance
@@ -73,11 +74,15 @@ Initialize the global settings singleton from environment variables.
 **Raises:**
 - `SettingsError` - If initialization fails or attempting to change settings class without `force=True`
 
+**Features:**
+- **Automatic Logging Setup**: When `setup_logging=True` (default), logging is automatically configured based on the settings' `app` and `logger` configurations. This eliminates the need to call `setup_logging()` separately.
+- **Skip Logging**: Set `setup_logging=False` to skip automatic logging setup (useful for tests or when you need custom logging configuration).
+
 **Example:**
 ```python
 from faciliter_lib.config import initialize_settings
 
-# Simple initialization
+# Simple initialization with automatic logging setup
 settings = initialize_settings()
 
 # With overrides
@@ -91,6 +96,11 @@ settings = initialize_settings(
 settings = initialize_settings(
     log_level="INFO",
     force=True
+)
+
+# Skip logging setup (useful for tests)
+settings = initialize_settings(
+    setup_logging=False
 )
 ```
 

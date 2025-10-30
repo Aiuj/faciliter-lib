@@ -108,26 +108,38 @@ class SettingsSingletonManager:
         force: bool = False,
         load_dotenv: bool = True,
         dotenv_paths: Optional[List[Union[str, Path]]] = None,
+        setup_logging: bool = True,
         **overrides: Any
     ) -> T:
-        """Initialize the settings singleton.
+        """Initialize the settings singleton and optionally configure logging.
         
         This method creates a new settings instance using the from_env() method
         of the provided settings class. It uses double-checked locking to ensure
         thread-safe initialization.
+        
+        When setup_logging=True (default), automatically configures logging based
+        on the settings instance (app and logger settings). This eliminates the
+        need to call setup_logging() separately in application code.
         
         Args:
             settings_class: The Settings class to instantiate (must extend StandardSettings)
             force: If True, reinitialize even if already initialized
             load_dotenv: Whether to load .env files
             dotenv_paths: Custom paths to search for .env files
+            setup_logging: Whether to automatically configure logging (default: True)
             **overrides: Direct value overrides passed to from_env()
             
         Returns:
             The initialized settings instance
             
         Example:
+            >>> # Initialize with automatic logging setup
             >>> settings = initialize_settings(enable_cache=True, log_level="DEBUG")
+            >>> 
+            >>> # Initialize without logging setup (for testing or custom logging)
+            >>> settings = initialize_settings(setup_logging=False)
+            >>> 
+            >>> # Custom settings class with logging
             >>> settings = initialize_settings(settings_class=MyCustomSettings)
         """
         # Fast path: already initialized and not forcing
@@ -160,6 +172,23 @@ class SettingsSingletonManager:
                     **overrides
                 )
                 cls._initialized = True
+                
+                # Automatically configure logging based on settings if requested
+                if setup_logging and hasattr(cls._instance, 'app'):
+                    from ..tracing import setup_logging as _setup_logging
+                    
+                    app_settings = getattr(cls._instance, 'app', None)
+                    logger_settings = getattr(cls._instance, 'logger', None)
+                    
+                    if app_settings:
+                        _setup_logging(
+                            app_name=app_settings.app_name,
+                            level=app_settings.log_level,
+                            app_settings=app_settings,
+                            logger_settings=logger_settings,
+                            force=force
+                        )
+                
                 return cls._instance  # type: ignore
             except Exception as e:
                 raise SettingsError(f"Failed to initialize settings: {e}") from e
@@ -204,17 +233,21 @@ def initialize_settings(
     force: bool = False,
     load_dotenv: bool = True,
     dotenv_paths: Optional[List[Union[str, Path]]] = None,
+    setup_logging: bool = True,
     **overrides: Any
 ) -> T:
-    """Initialize the global settings singleton.
+    """Initialize the global settings singleton and optionally configure logging.
     
     This is a convenience function that delegates to SettingsSingletonManager.
+    When setup_logging=True (default), automatically configures logging based
+    on the settings instance, eliminating the need for separate logging setup.
     
     Args:
         settings_class: The Settings class to instantiate (must extend StandardSettings)
         force: If True, reinitialize even if already initialized
         load_dotenv: Whether to load .env files
         dotenv_paths: Custom paths to search for .env files
+        setup_logging: Whether to automatically configure logging (default: True)
         **overrides: Direct value overrides passed to from_env()
         
     Returns:
@@ -222,7 +255,11 @@ def initialize_settings(
         
     Example:
         >>> from faciliter_lib.config import initialize_settings, StandardSettings
+        >>> # Initialize with automatic logging setup
         >>> settings = initialize_settings()
+        
+        >>> # Initialize without logging (for testing)
+        >>> settings = initialize_settings(setup_logging=False)
         
         >>> from dataclasses import dataclass
         >>> @dataclass(frozen=True)
@@ -235,6 +272,7 @@ def initialize_settings(
         force=force,
         load_dotenv=load_dotenv,
         dotenv_paths=dotenv_paths,
+        setup_logging=setup_logging,
         **overrides
     )
 

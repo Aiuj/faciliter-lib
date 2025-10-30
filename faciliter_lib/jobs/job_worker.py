@@ -2,15 +2,15 @@
 
 import time
 import signal
-import logging
 from typing import Callable, Dict, Any, Optional
 from abc import ABC, abstractmethod
 
 from .base_job_queue import BaseJobQueue, JobStatus, Job
 from .job_manager import get_job_queue
+from faciliter_lib.tracing.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 
 class JobHandler(ABC):

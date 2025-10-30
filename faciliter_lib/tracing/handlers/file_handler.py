@@ -38,9 +38,10 @@ def create_file_handler(
             encoding="utf-8",
         )
         file_handler.setLevel(level)
-        return file_handler
+        return handler
     except Exception as e:
-        logging.getLogger(__name__).warning(
-            f"Failed to create file handler at {file_path}: {e}"
+        from faciliter_lib.tracing.logger import get_module_logger
+        get_module_logger().warning(
+            f"Failed to create file handler for {file_path}: {e}"
         )
         return None

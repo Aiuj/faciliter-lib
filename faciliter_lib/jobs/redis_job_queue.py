@@ -2,14 +2,14 @@
 
 import json
 import redis
-import logging
 from typing import Any, Optional, Dict, List
 from datetime import datetime, timedelta
 
 from .base_job_queue import BaseJobQueue, JobConfig, JobStatus, Job
+from faciliter_lib.tracing.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 
 class RedisJobQueue(BaseJobQueue):

@@ -1,12 +1,12 @@
 """Factory helpers to create embedding client instances based on configuration."""
-import logging
 from typing import Optional
 
 from .embeddings_config import embeddings_settings
 from .base import BaseEmbeddingClient
 from .ollama import OllamaEmbeddingClient
+from faciliter_lib.tracing.logger import get_module_logger
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 # Import new providers with optional dependencies
 try:

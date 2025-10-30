@@ -484,6 +484,8 @@ def create_user(name: str):
     logger.info(f"Creating user: {name}")
 ```
 
+**Important:** Always use `get_module_logger()` instead of `logging.getLogger(__name__)` to ensure proper handler inheritance (OTLP, file, etc.) and automatic namespacing under the app logger.
+
 **Use appropriate log levels:**
 - `DEBUG`: Detailed diagnostic information (SQL queries, request payloads)
 - `INFO`: General application flow (user logged in, API called)

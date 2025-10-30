@@ -5,11 +5,11 @@ This module provides functions to normalize embeddings of different dimensions
 to match the expected dimensions defined in database schemas (PostgreSQL and OpenSearch).
 """
 
-import logging
 from typing import List, Optional
 import numpy as np
+from faciliter_lib.tracing.logger import get_module_logger
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 
 # Keywords/patterns that indicate Matryoshka support

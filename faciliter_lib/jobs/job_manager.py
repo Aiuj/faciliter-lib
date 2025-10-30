@@ -1,13 +1,13 @@
 """Job queue manager with singleton pattern."""
 
-import logging
 from typing import Any, Optional, Dict, List
 
 from .base_job_queue import BaseJobQueue, JobStatus, Job
 from .redis_job_queue import RedisJobQueue
+from faciliter_lib.tracing.logger import get_module_logger
 
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 # Global job queue instance
 _job_queue_instance: Optional[BaseJobQueue] = None

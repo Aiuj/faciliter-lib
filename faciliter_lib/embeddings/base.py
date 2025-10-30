@@ -1,6 +1,5 @@
 """Base embedding client interface and helpers."""
 from typing import List, Union, cast, Optional
-import logging
 import numpy as np
 import hashlib
 import json
@@ -12,8 +11,9 @@ from .embedding_utils import (
     normalize_embedding_dimension,
     get_best_normalization_method,
 )
+from faciliter_lib.tracing.logger import get_module_logger
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 
 class EmbeddingGenerationError(Exception):

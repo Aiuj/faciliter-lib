@@ -1,6 +1,5 @@
 """Local embedding client implementation using HuggingFace models."""
 import time
-import logging
 from typing import List, Optional, Union, Dict, Any
 import os
 
@@ -26,8 +25,9 @@ except ImportError:
 from .embeddings_config import embeddings_settings
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .models import EmbeddingResponse
+from faciliter_lib.tracing.logger import get_module_logger
 
-logger = logging.getLogger(__name__)
+logger = get_module_logger()
 
 
 class LocalEmbeddingClient(BaseEmbeddingClient):

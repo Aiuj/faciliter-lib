@@ -305,7 +305,8 @@ class LanguageUtils:
                 candidates = LanguageUtils.detect_languages(s, min_confidence=min_confidence)
             except Exception:
                 # Avoid failing the whole operation for one bad sample
-                logging.getLogger(__name__).warning("Language detection failed for a sample; skipping.")
+                from faciliter_lib.tracing.logger import get_module_logger
+                get_module_logger().warning("Language detection failed for a sample; skipping.")
                 continue
 
             if candidates:

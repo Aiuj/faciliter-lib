@@ -124,16 +124,34 @@ export LOG_FILE_BACKUP_COUNT=3               # Number of backup files
 
 ### OTLP (OpenTelemetry) Logging
 
+**Quick Setup (Auto-Enable):**
 ```bash
-export OTLP_ENABLED=true                                    # Enable OTLP logging
+# Minimal config - OTLP auto-enables with these settings
+export ENABLE_LOGGER=true                                   # Enable logging features
+export OTLP_ENDPOINT=http://localhost:4318/v1/logs          # OTLP collector endpoint
+
+# Optional: customize service identification (auto-detected)
+export APP_NAME=my-app                                      # Auto-used for OTLP_SERVICE_NAME
+# OTLP_SERVICE_VERSION auto-detected from pyproject.toml
+```
+
+**Full Configuration:**
+```bash
+export OTLP_ENABLED=true                                    # Explicit enable (optional if auto-enabled)
 export OTLP_ENDPOINT=http://localhost:4318/v1/logs          # OTLP collector endpoint
 export OTLP_LOG_LEVEL=INFO                                  # Independent OTLP log level (optional)
 export OTLP_HEADERS='{"Authorization": "Bearer token"}'     # Auth headers (JSON)
 export OTLP_TIMEOUT=10                                      # Request timeout (seconds)
 export OTLP_INSECURE=false                                  # Skip SSL verification
-export OTLP_SERVICE_NAME=my-app                             # Service name in traces
-export OTLP_SERVICE_VERSION=1.0.0                           # Service version
+export OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "faciliter-lib")
+export OTLP_SERVICE_VERSION=1.0.0                           # Service version (default: from pyproject.toml)
 ```
+
+**Auto-Enable Logic:**
+OTLP automatically enables when:
+1. `ENABLE_LOGGER=true` (or `LOG_FILE_ENABLED=true`) AND
+2. `OTLP_ENDPOINT` is defined AND
+3. `OTLP_ENABLED` is not explicitly set to `false`
 
 **Independent Log Levels:**
 ```bash

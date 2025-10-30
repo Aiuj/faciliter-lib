@@ -2,7 +2,27 @@
 
 ## Enable OTLP Logging
 
-### Via Code
+### Quick Setup (Auto-Enable - Recommended)
+
+**Minimal Configuration:**
+```bash
+# Only two settings needed - OTLP auto-enables!
+export ENABLE_LOGGER=true
+export OTLP_ENDPOINT=http://localhost:4318/v1/logs
+
+# Optional: Service name defaults to APP_NAME
+export APP_NAME=my-service
+
+# Service version auto-detected from pyproject.toml
+```
+
+**Auto-Enable Logic:**
+- OTLP automatically enables when:
+  1. `ENABLE_LOGGER=true` (or `LOG_FILE_ENABLED=true`) AND
+  2. `OTLP_ENDPOINT` is defined AND
+  3. `OTLP_ENABLED` is not explicitly `false`
+
+### Via Code (Explicit Configuration)
 ```python
 from faciliter_lib.config import LoggerSettings
 from faciliter_lib.tracing.logger import setup_logging
@@ -11,19 +31,20 @@ settings = LoggerSettings(
     log_level="DEBUG",              # Console shows DEBUG+
     otlp_enabled=True,
     otlp_endpoint="http://localhost:4318/v1/logs",
-    otlp_service_name="my-app",
+    otlp_service_name="my-app",     # Default: APP_NAME or "faciliter-lib"
     otlp_log_level="INFO",          # OTLP only receives INFO+ (optional)
 )
 logger = setup_logging(logger_settings=settings)
 ```
 
-### Via Environment
+### Via Environment (Full Control)
 ```bash
 export LOG_LEVEL=DEBUG                # Console level
-export OTLP_ENABLED=true
+export OTLP_ENABLED=true              # Explicit enable (optional with auto-enable)
 export OTLP_ENDPOINT=http://localhost:4318/v1/logs
-export OTLP_SERVICE_NAME=my-app
-export OTLP_LOG_LEVEL=INFO           # OTLP level (optional, defaults to LOG_LEVEL)
+export OTLP_SERVICE_NAME=my-app       # Default: APP_NAME or "faciliter-lib"
+export OTLP_SERVICE_VERSION=1.0.0     # Default: from pyproject.toml
+export OTLP_LOG_LEVEL=INFO            # OTLP level (optional, defaults to LOG_LEVEL)
 ```
 
 ## Configuration Fields

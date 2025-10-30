@@ -25,12 +25,13 @@ Environment Variables:
     OVH_LDP_ADDITIONAL_FIELDS: JSON string of additional fields to include
     
     OTLP_ENABLED: Enable OpenTelemetry Protocol (OTLP) logging (true/false)
+                  Auto-enabled if ENABLE_LOGGER=true and OTLP_ENDPOINT is defined
     OTLP_ENDPOINT: OTLP collector endpoint (default: http://localhost:4318/v1/logs)
     OTLP_HEADERS: JSON string of HTTP headers for authentication
     OTLP_TIMEOUT: Request timeout in seconds (default: 10)
     OTLP_INSECURE: Skip SSL certificate verification (true/false, default: false)
-    OTLP_SERVICE_NAME: Service name for resource attributes (default: faciliter-lib)
-    OTLP_SERVICE_VERSION: Service version for resource attributes
+    OTLP_SERVICE_NAME: Service name for resource attributes (default: APP_NAME or faciliter-lib)
+    OTLP_SERVICE_VERSION: Service version for resource attributes (default: from pyproject.toml)
     OTLP_LOG_LEVEL: Log level for OTLP handler only (DEBUG, INFO, WARNING, ERROR, CRITICAL)
                     If not set, inherits from LOG_LEVEL
 """
@@ -38,11 +39,21 @@ Environment Variables:
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from .base_settings import BaseSettings, SettingsError, EnvParser
+
+# Try to import tomllib (Python 3.11+) or fallback to tomli
+try:
+    import tomllib  # type: ignore[import-not-found]
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+    except ImportError:
+        tomllib = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)
@@ -82,6 +93,34 @@ class LoggerSettings(BaseSettings):
     otlp_service_version: Optional[str] = None
     otlp_log_level: Optional[str] = None  # Independent log level for OTLP handler (if None, inherits from log_level)
     
+    @staticmethod
+    def _read_pyproject_version() -> Optional[str]:
+        """Read version from pyproject.toml in project root.
+        
+        Returns:
+            Version string from pyproject.toml or None if not found/parseable.
+        """
+        if tomllib is None:
+            return None
+        
+        try:
+            # Walk upwards from CWD looking for pyproject.toml
+            cwd = Path(os.getcwd()).resolve()
+            for parent in [cwd, *cwd.parents]:
+                pyproject_path = parent / "pyproject.toml"
+                if pyproject_path.exists():
+                    with pyproject_path.open("rb") as f:
+                        data = tomllib.load(f)
+                    project = data.get("project") or {}
+                    version = project.get("version")
+                    if isinstance(version, str) and version.strip():
+                        return version.strip()
+                    break  # Found pyproject.toml but no version
+        except Exception:
+            pass
+        
+        return None
+    
     @classmethod
     def from_env(
         cls,
@@ -89,7 +128,17 @@ class LoggerSettings(BaseSettings):
         dotenv_paths: Optional[List[Union[str, Path]]] = None,
         **overrides
     ) -> "LoggerSettings":
-        """Create logger settings from environment variables."""
+        """Create logger settings from environment variables.
+        
+        Auto-enables OTLP when:
+        - ENABLE_LOGGER=true (or LOG_FILE_ENABLED=true) AND
+        - OTLP_ENDPOINT is defined AND
+        - OTLP_ENABLED is not explicitly set to false
+        
+        Auto-sets service name/version:
+        - otlp_service_name defaults to APP_NAME env or "faciliter-lib"
+        - otlp_service_version defaults to version from pyproject.toml
+        """
         cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
         
         # Parse additional fields from JSON if provided
@@ -114,6 +163,31 @@ class LoggerSettings(BaseSettings):
             except json.JSONDecodeError:
                 pass  # Silently ignore invalid JSON
         
+        # Auto-detect OTLP enablement
+        # Enable OTLP if:
+        # 1. ENABLE_LOGGER or LOG_FILE_ENABLED is true AND
+        # 2. OTLP_ENDPOINT is defined AND
+        # 3. OTLP_ENABLED is not explicitly false
+        logger_enabled = (
+            EnvParser.get_env("ENABLE_LOGGER", default=False, env_type=bool) or
+            EnvParser.get_env("LOG_FILE_ENABLED", default=False, env_type=bool)
+        )
+        otlp_endpoint_defined = EnvParser.get_env("OTLP_ENDPOINT") is not None
+        otlp_explicitly_disabled = EnvParser.get_env("OTLP_ENABLED") == "false"
+        
+        # Auto-enable if conditions met, unless explicitly disabled
+        auto_enable_otlp = logger_enabled and otlp_endpoint_defined and not otlp_explicitly_disabled
+        
+        # Get explicit OTLP_ENABLED setting (None if not set)
+        otlp_enabled_explicit = EnvParser.get_env("OTLP_ENABLED", env_type=bool) if EnvParser.get_env("OTLP_ENABLED") is not None else None
+        
+        # Use explicit setting if provided, otherwise use auto-detection
+        otlp_enabled = otlp_enabled_explicit if otlp_enabled_explicit is not None else auto_enable_otlp
+        
+        # Get service name and version defaults
+        default_service_name = EnvParser.get_env("APP_NAME", default="faciliter-lib")
+        default_service_version = cls._read_pyproject_version()
+        
         settings_dict = {
             # Standard logging
             "log_level": EnvParser.get_env("LOG_LEVEL", default="INFO"),
@@ -135,14 +209,14 @@ class LoggerSettings(BaseSettings):
             "ovh_ldp_compress": EnvParser.get_env("OVH_LDP_COMPRESS", default=True, env_type=bool),
             
             # OTLP
-            "otlp_enabled": EnvParser.get_env("OTLP_ENABLED", default=False, env_type=bool),
+            "otlp_enabled": otlp_enabled,
             "otlp_endpoint": EnvParser.get_env("OTLP_ENDPOINT", default="http://localhost:4318/v1/logs"),
             "otlp_headers": otlp_headers,
             "otlp_timeout": EnvParser.get_env("OTLP_TIMEOUT", default=10, env_type=int),
             "otlp_insecure": EnvParser.get_env("OTLP_INSECURE", default=False, env_type=bool),
-            "otlp_service_name": EnvParser.get_env("OTLP_SERVICE_NAME", default="faciliter-lib"),
-            "otlp_service_version": EnvParser.get_env("OTLP_SERVICE_VERSION"),
-            "otlp_log_level": EnvParser.get_env("OTLP_LOG_LEVEL", default="INFO"),  # Optional: independent OTLP log level
+            "otlp_service_name": EnvParser.get_env("OTLP_SERVICE_NAME", default=default_service_name),
+            "otlp_service_version": EnvParser.get_env("OTLP_SERVICE_VERSION", default=default_service_version),
+            "otlp_log_level": EnvParser.get_env("OTLP_LOG_LEVEL"),  # Optional: independent OTLP log level
         }
         
         settings_dict.update(overrides)

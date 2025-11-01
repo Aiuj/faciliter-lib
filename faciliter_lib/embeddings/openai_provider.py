@@ -11,6 +11,7 @@ from .embeddings_config import embeddings_settings
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .models import EmbeddingResponse
 from faciliter_lib.tracing.logger import get_module_logger
+from faciliter_lib.tracing.service_usage import log_embedding_usage
 
 logger = get_module_logger()
 
@@ -98,10 +99,40 @@ class OpenAIEmbeddingClient(BaseEmbeddingClient):
             self.embedding_time_ms = (time.time() - start_time) * 1000
             logger.debug(f"Generated {len(embeddings)} embeddings in {self.embedding_time_ms:.2f}ms")
             
+            # Log service usage to OpenTelemetry/OpenSearch
+            try:
+                usage = getattr(response, 'usage', None)
+                input_tokens = getattr(usage, 'total_tokens', None) if usage else None
+                
+                log_embedding_usage(
+                    provider="openai",
+                    model=self.model,
+                    input_tokens=input_tokens,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim or len(embeddings[0]) if embeddings else None,
+                    latency_ms=self.embedding_time_ms,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to log embedding usage: {e}")
+            
             return embeddings
             
         except Exception as e:
             self.embedding_time_ms = (time.time() - start_time) * 1000
+            
+            # Log error to OpenTelemetry/OpenSearch
+            try:
+                log_embedding_usage(
+                    provider="openai",
+                    model=self.model,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim,
+                    latency_ms=self.embedding_time_ms,
+                    error=str(e),
+                )
+            except Exception:
+                pass
+            
             logger.error(f"Error generating embeddings with OpenAI: {e}")
             raise EmbeddingGenerationError(f"OpenAI embedding generation failed: {e}")
 

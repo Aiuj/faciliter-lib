@@ -38,7 +38,7 @@ def create_file_handler(
             encoding="utf-8",
         )
         file_handler.setLevel(level)
-        return handler
+        return file_handler
     except Exception as e:
         from faciliter_lib.tracing.logger import get_module_logger
         get_module_logger().warning(

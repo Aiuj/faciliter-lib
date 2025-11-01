@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from faciliter_lib import get_module_logger
+from faciliter_lib.tracing.service_usage import log_llm_usage
 
 logger = get_module_logger()
 
@@ -166,6 +167,27 @@ class OllamaProvider(BaseProvider):
             content_text = message.get("content", "")
             tool_calls = message.get("tool_calls", []) or []
             usage = resp.get("usage", {}) or {}
+            
+            # Log service usage to OpenTelemetry/OpenSearch
+            try:
+                input_tokens = usage.get("prompt_tokens") or usage.get("prompt_eval_count")
+                output_tokens = usage.get("completion_tokens") or usage.get("eval_count")
+                total_tokens = usage.get("total_tokens")
+                if total_tokens is None and input_tokens and output_tokens:
+                    total_tokens = input_tokens + output_tokens
+                
+                log_llm_usage(
+                    provider="ollama",
+                    model=self.config.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    structured=bool(structured_output),
+                    has_tools=bool(tools),
+                    search_grounding=use_search_grounding,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to log LLM usage: {e}")
 
             # If structured_output requested, attempt to validate
             if resp_format is not None and structured_output is not None:
@@ -197,6 +219,19 @@ class OllamaProvider(BaseProvider):
             }
         except Exception as e:  # pragma: no cover - runtime connectivity
             logger.exception("ollama.chat failed")
+            
+            # Log error to OpenTelemetry/OpenSearch
+            try:
+                log_llm_usage(
+                    provider="ollama",
+                    model=self.config.model,
+                    structured=bool(structured_output),
+                    has_tools=bool(tools),
+                    error=str(e),
+                )
+            except Exception:
+                pass
+            
             return {
                 "error": str(e),
                 "content": None,

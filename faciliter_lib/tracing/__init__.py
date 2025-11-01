@@ -11,6 +11,22 @@ from .logging_context import (
     install_logging_context_filter,
 )
 from .observability_models import FromMetadata, FromMetadataSchema, FROM_FIELD_DESCRIPTION
+from .service_usage import (
+    ServiceType,
+    log_llm_usage,
+    log_embedding_usage,
+    log_ocr_usage,
+    calculate_llm_cost,
+    calculate_embedding_cost,
+)
+from .service_pricing import (
+    LLM_PRICING,
+    EMBEDDING_PRICING,
+    OCR_PRICING,
+    get_llm_pricing,
+    get_embedding_pricing,
+    get_ocr_pricing,
+)
 
 __all__ = [
     "TracingManager",
@@ -29,4 +45,16 @@ __all__ = [
     "FROM_FIELD_DESCRIPTION",
     "FromMetadata",
     "FromMetadataSchema",
+    "ServiceType",
+    "log_llm_usage",
+    "log_embedding_usage",
+    "log_ocr_usage",
+    "calculate_llm_cost",
+    "calculate_embedding_cost",
+    "LLM_PRICING",
+    "EMBEDDING_PRICING",
+    "OCR_PRICING",
+    "get_llm_pricing",
+    "get_embedding_pricing",
+    "get_ocr_pricing",
 ]

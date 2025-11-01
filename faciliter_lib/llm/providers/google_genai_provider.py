@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 from faciliter_lib import get_module_logger
 from faciliter_lib.tracing.tracing import add_trace_metadata
+from faciliter_lib.tracing.service_usage import log_llm_usage
 from faciliter_lib.llm.rate_limiter import RateLimitConfig, RateLimiter
 from faciliter_lib.llm.retry import RetryConfig, retry_handler
 
@@ -447,21 +448,27 @@ class GoogleGenAIProvider(BaseProvider):
                         }
                     )
 
-            # Attach minimal metadata to current trace (provider-agnostic)
+            # Log service usage to OpenTelemetry/OpenSearch (replaces Langfuse tracing)
             try:
-                add_trace_metadata(
-                    {
-                        "llm_provider": "google-gemini",
-                        "model": self.config.model,
-                        "structured": bool(structured_output),
-                        "has_tools": bool(tools),
-                        "single_turn": is_single_turn,
-                        "usage": getattr(resp, "usage_metadata", {}) or {},
-                    }
+                usage_metadata = getattr(resp, "usage_metadata", {}) or {}
+                input_tokens = getattr(usage_metadata, "prompt_token_count", None) or usage_metadata.get("prompt_token_count")
+                output_tokens = getattr(usage_metadata, "candidates_token_count", None) or usage_metadata.get("candidates_token_count")
+                total_tokens = getattr(usage_metadata, "total_token_count", None) or usage_metadata.get("total_token_count")
+                
+                log_llm_usage(
+                    provider="google-gemini",
+                    model=self.config.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    structured=bool(structured_output),
+                    has_tools=bool(tools),
+                    search_grounding=use_search_grounding,
+                    metadata={"single_turn": is_single_turn},
                 )
-            except Exception:
-                # Tracing metadata should never break the call
-                pass
+            except Exception as e:
+                # Service usage logging should never break the call
+                logger.debug(f"Failed to log LLM usage: {e}")
 
             if structured_output is not None:
                 # Prefer SDK-native parsed output, but ensure the return value is JSON-serializable

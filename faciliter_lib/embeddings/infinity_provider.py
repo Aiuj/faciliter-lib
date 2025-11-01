@@ -17,6 +17,7 @@ except ImportError:
 from .embeddings_config import embeddings_settings
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from faciliter_lib.tracing.logger import get_module_logger
+from faciliter_lib.tracing.service_usage import log_embedding_usage
 
 logger = get_module_logger()
 
@@ -120,12 +121,43 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
             self.embedding_time_ms = (time.time() - start_time) * 1000
             logger.debug(f"Generated {len(embeddings)} embeddings in {self.embedding_time_ms:.2f}ms using Infinity")
             
+            # Log service usage to OpenTelemetry/OpenSearch
+            try:
+                # Infinity doesn't return token counts directly, estimate from text length
+                # Rough estimate: ~4 chars per token for English text
+                estimated_tokens = sum(len(text) // 4 for text in texts)
+                
+                log_embedding_usage(
+                    provider="infinity",
+                    model=self.model,
+                    input_tokens=estimated_tokens,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim or len(embeddings[0]) if embeddings else None,
+                    latency_ms=self.embedding_time_ms,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to log embedding usage: {e}")
+            
             return embeddings
             
         except requests.exceptions.Timeout:
             self.embedding_time_ms = (time.time() - start_time) * 1000
             error_msg = f"Infinity request timed out after {self.timeout}s"
             logger.error(error_msg)
+            
+            # Log error to OpenTelemetry/OpenSearch
+            try:
+                log_embedding_usage(
+                    provider="infinity",
+                    model=self.model,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim,
+                    latency_ms=self.embedding_time_ms,
+                    error=error_msg,
+                )
+            except Exception:
+                pass
+            
             raise EmbeddingGenerationError(error_msg)
             
         except requests.exceptions.ConnectionError as e:

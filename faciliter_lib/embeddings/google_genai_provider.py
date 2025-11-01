@@ -13,6 +13,7 @@ from .embeddings_config import embeddings_settings
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .models import EmbeddingResponse
 from faciliter_lib.tracing.logger import get_module_logger
+from faciliter_lib.tracing.service_usage import log_embedding_usage
 
 logger = get_module_logger()
 
@@ -121,10 +122,41 @@ class GoogleGenAIEmbeddingClient(BaseEmbeddingClient):
             self.embedding_time_ms = (time.time() - start_time) * 1000
             logger.debug(f"Generated {len(embeddings)} embeddings in {self.embedding_time_ms:.2f}ms")
             
+            # Log service usage to OpenTelemetry/OpenSearch
+            try:
+                # Google GenAI doesn't provide token counts directly, estimate from text length
+                estimated_tokens = sum(len(text) // 4 for text in texts)
+                
+                log_embedding_usage(
+                    provider="google-genai",
+                    model=self.model,
+                    input_tokens=estimated_tokens,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim or len(embeddings[0]) if embeddings else None,
+                    latency_ms=self.embedding_time_ms,
+                    metadata={"task_type": str(self.task_type) if self.task_type else None},
+                )
+            except Exception as e:
+                logger.debug(f"Failed to log embedding usage: {e}")
+            
             return embeddings
             
         except Exception as e:
             self.embedding_time_ms = (time.time() - start_time) * 1000
+            
+            # Log error to OpenTelemetry/OpenSearch
+            try:
+                log_embedding_usage(
+                    provider="google-genai",
+                    model=self.model,
+                    num_texts=len(texts),
+                    embedding_dim=self.embedding_dim,
+                    latency_ms=self.embedding_time_ms,
+                    error=str(e),
+                )
+            except Exception:
+                pass
+            
             logger.error(f"Error generating embeddings with Google GenAI: {e}")
             raise EmbeddingGenerationError(f"Google GenAI embedding generation failed: {e}")
 

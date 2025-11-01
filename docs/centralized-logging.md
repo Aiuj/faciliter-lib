@@ -591,6 +591,20 @@ setup_logging(level="DEBUG", force=True)  # force=True reconfigures
 3. Verify OTLP_ENABLED=true
 4. Logs are batched - wait 5 seconds or send 100+ logs
 
+### International characters (UTF-8)?
+
+All logging handlers support UTF-8 encoding:
+- **Console**: Automatically configured on Windows (Python 3.7+)
+- **File**: Explicitly uses `encoding="utf-8"`
+- **OTLP**: Uses JSON (UTF-8 by default in Python 3)
+- **GELF**: Explicitly encodes as UTF-8
+
+```python
+logger.info("ログメッセージ: 正常に処理されました")  # Japanese
+logger.info("Mensagem de log: processado com sucesso")  # Portuguese
+logger.info("日志消息：处理成功")  # Chinese
+```
+
 ## Documentation
 
 - **Quick Reference**: `docs/OTLP_QUICK_REFERENCE.md`

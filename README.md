@@ -124,7 +124,73 @@ See **[Centralized Logging Guide](docs/centralized-logging.md)** for FastAPI, MC
 
 ---
 
-## 🔧 Installation
+## � Service Usage Tracking (New!)
+
+Track AI service usage (LLM, embeddings, OCR) automatically with OpenTelemetry/OpenSearch - **no Langfuse span management required!**
+
+### Key Features:
+- ✅ **Automatic tracking** - No manual logging needed
+- ✅ **Cost calculation** - Automatic pricing for OpenAI, Gemini, etc.
+- ✅ **Token metrics** - Input/output tokens, latency, throughput
+- ✅ **User context** - Automatically includes user_id, session_id, company_id
+- ✅ **No span errors** - Uses standard logging, not Langfuse contexts
+- ✅ **OpenSearch ready** - Query and visualize in dashboards
+
+### Quick Start:
+
+```python
+from faciliter_lib.config.logger_settings import LoggerSettings
+from faciliter_lib.tracing import setup_logging, LoggingContext
+from faciliter_lib.llm import create_openai_client
+
+# 1. Enable OTLP logging
+settings = LoggerSettings(
+    otlp_enabled=True,
+    otlp_endpoint="http://localhost:4318/v1/logs",
+)
+setup_logging(logger_settings=settings)
+
+# 2. Use LLM client (tracking is automatic!)
+client = create_openai_client(model="gpt-4o-mini")
+
+# 3. Optional: Add user context
+with LoggingContext({"user_id": "user-123", "session_id": "sess-456"}):
+    response = client.chat(messages=[{"role": "user", "content": "Hello"}])
+    # Automatically logs: tokens, cost, latency, user context!
+```
+
+### What Gets Tracked:
+
+Every LLM/embedding request automatically logs:
+- Service type, provider, model
+- Token usage (input, output, total)
+- **Automatic cost calculation** (OpenAI, Gemini, etc.)
+- Performance metrics (latency, tokens/second)
+- Request context (user_id, session_id, company_id)
+- Feature flags (structured output, tools, search grounding)
+
+### Example OpenSearch Query:
+
+```json
+GET /logs-*/_search
+{
+  "size": 0,
+  "query": {"range": {"@timestamp": {"gte": "now-24h"}}},
+  "aggs": {
+    "total_cost": {"sum": {"field": "attributes.cost_usd"}},
+    "by_service": {
+      "terms": {"field": "attributes.service.type"},
+      "aggs": {"cost": {"sum": {"field": "attributes.cost_usd"}}}
+    }
+  }
+}
+```
+
+See **[Service Usage Tracking Guide](docs/SERVICE_USAGE_TRACKING.md)** for complete documentation, OpenSearch queries, and dashboard examples.
+
+---
+
+## �🔧 Installation
 
 ### From GitHub (recommended for external tools)
 

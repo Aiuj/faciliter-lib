@@ -230,8 +230,15 @@ def setup_logging(
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
-        # Console handler (always enabled)
-        handlers = [logging.StreamHandler(sys.stdout)]
+        # Console handler (always enabled) with UTF-8 encoding
+        console_handler = logging.StreamHandler(sys.stdout)
+        # On Windows, ensure UTF-8 encoding for international characters
+        if hasattr(console_handler.stream, 'reconfigure'):
+            try:
+                console_handler.stream.reconfigure(encoding='utf-8')
+            except Exception:
+                pass  # Fallback if reconfigure not available
+        handlers = [console_handler]
         
         # Add file handler if enabled (lazy import)
         if file_logging:

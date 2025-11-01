@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Optional
 from faciliter_lib import get_module_logger
 from faciliter_lib.tracing.tracing import add_trace_metadata
+from faciliter_lib.tracing.service_usage import log_llm_usage
 
 logger = get_module_logger()
 
@@ -219,20 +220,25 @@ class OpenAIProvider(BaseProvider):
             tool_calls = getattr(message, "tool_calls", None) or (message.get("tool_calls") if isinstance(message, dict) else None) or []
             usage = getattr(completion, "usage", {}) or {}
 
-            # Trace minimal metadata
+            # Log service usage to OpenTelemetry/OpenSearch (replaces Langfuse tracing)
             try:
-                add_trace_metadata(
-                    {
-                        "llm_provider": "openai",
-                        "model": self.config.model,
-                        "structured": bool(structured_output),
-                        "has_tools": bool(tools),
-                        "search_grounding": use_search_grounding,
-                        "usage": usage,
-                    }
+                input_tokens = getattr(usage, "prompt_tokens", None) or (usage.get("prompt_tokens") if isinstance(usage, dict) else None)
+                output_tokens = getattr(usage, "completion_tokens", None) or (usage.get("completion_tokens") if isinstance(usage, dict) else None)
+                total_tokens = getattr(usage, "total_tokens", None) or (usage.get("total_tokens") if isinstance(usage, dict) else None)
+                
+                log_llm_usage(
+                    provider="openai",
+                    model=self.config.model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    structured=bool(structured_output),
+                    has_tools=bool(tools),
+                    search_grounding=use_search_grounding,
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                # Service usage logging should never break the call
+                logger.debug(f"Failed to log LLM usage: {e}")
 
             # If structured_output requested, attempt to validate
             if resp_format is not None and structured_output is not None:

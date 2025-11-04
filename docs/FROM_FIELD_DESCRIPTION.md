@@ -20,21 +20,30 @@ This constant ensures consistent documentation and usage patterns for the `from`
 
 ```python
 from fastapi import FastAPI, Query
-from faciliter_lib import FROM_FIELD_DESCRIPTION, setup_tracing
+from faciliter_lib import FROM_FIELD_DESCRIPTION, INTELLIGENCE_LEVEL_DESCRIPTION, setup_tracing
+from faciliter_lib.api_utils.fastapi_middleware import inject_from_logging_context
 
 app = FastAPI()
 tracing_client = setup_tracing(name="my-app")
 
+# Add middleware to automatically extract from and intelligence_level
+@app.middleware("http")
+async def add_from_context(request, call_next):
+    return await inject_from_logging_context(request, call_next, tracing_client)
+
 @app.post("/v1/some-endpoint")
 async def some_endpoint(
-    from_: Optional[str] = Query(None, alias="from", description=FROM_FIELD_DESCRIPTION)
+    from_: Optional[str] = Query(None, alias="from", description=FROM_FIELD_DESCRIPTION),
+    intelligence_level: int = Query(5, ge=0, le=10, description=INTELLIGENCE_LEVEL_DESCRIPTION)
 ):
-    # Add metadata for tracing
-    tracing_client.add_metadata(metadata=from_)
+    # Middleware automatically adds both from and intelligence_level to logging context
+    # No manual metadata addition needed
     
     # Your endpoint logic here
     pass
 ```
+
+**Note**: When using the `inject_from_logging_context` middleware, both the `from` parameter and `intelligence_level` query parameter are automatically extracted and added to the logging context for all log records within the request scope.
 
 ## Expected Format
 
@@ -53,7 +62,8 @@ The `from` parameter can be either:
     "user_name": "Sarah Mitchell",
     "user_id": "10000000-0000-0000-0000-000000000101",
     "company_name": "TechVision Solutions",
-    "company_id": "10000000-0000-0000-0000-000000000001"
+    "company_id": "10000000-0000-0000-0000-000000000001",
+    "intelligence_level": 7
 }
 ```
 
@@ -69,6 +79,7 @@ All fields are optional:
 - **user_id**: Unique identifier for the user (UUID format recommended)
 - **company_name**: Human-readable name of the organization
 - **company_id**: Unique identifier for the organization (UUID format)
+- **intelligence_level**: Integer 0-10 indicating the intelligence/quality level for LLM responses (also accepted as a separate query parameter)
 
 ## Benefits
 

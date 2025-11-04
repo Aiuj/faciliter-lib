@@ -10,7 +10,7 @@ from .logging_context import (
     clear_logging_context,
     install_logging_context_filter,
 )
-from .observability_models import FromMetadata, FromMetadataSchema, FROM_FIELD_DESCRIPTION
+from .observability_models import FromMetadata, FromMetadataSchema, FROM_FIELD_DESCRIPTION, INTELLIGENCE_LEVEL_DESCRIPTION
 from .service_usage import (
     ServiceType,
     log_llm_usage,
@@ -43,6 +43,7 @@ __all__ = [
     "clear_logging_context",
     "install_logging_context_filter",
     "FROM_FIELD_DESCRIPTION",
+    "INTELLIGENCE_LEVEL_DESCRIPTION",
     "FromMetadata",
     "FromMetadataSchema",
     "ServiceType",

@@ -90,6 +90,9 @@ class LoggingContextFilter(logging.Filter):
             
             if 'model_name' in context and context['model_name']:
                 record.extra_attrs['gen_ai.request.model'] = context['model_name']
+            
+            if 'intelligence_level' in context and context['intelligence_level'] is not None:
+                record.extra_attrs['intelligence.level'] = context['intelligence_level']
         
         return True
 
@@ -120,7 +123,8 @@ class LoggingContext:
             context: Dictionary of metadata to add to logs.
                     Typically parsed from the `from` parameter.
                     Common keys: session_id, user_id, company_id, user_name,
-                               company_name, app_name, app_version, model_name
+                               company_name, app_name, app_version, model_name,
+                               intelligence_level
         """
         self.context = context or {}
         self.token = None

@@ -42,6 +42,29 @@ Example:
 All fields are optional."""
 
 
+# Centralized description for 'intelligence_level' parameter used across applications
+INTELLIGENCE_LEVEL_DESCRIPTION = """Intelligence level (0-10) controlling search depth, quality, and cost.
+
+Higher levels use more sophisticated retrieval and generation techniques:
+
+| Level | Name         | Search Methods           | QA Cache | Query Expansion | Context |
+|-------|--------------|--------------------------|----------|-----------------|----------|
+| 0     | Minimal      | Lexical only             | Yes      | None            | 5 chunks |
+| 1     | Basic        | Lexical + keywords       | Yes      | Keywords        | 8 chunks |
+| 3     | Enhanced     | Lexical + Semantic + KW  | Yes      | Keywords        | 10 chunks|
+| 5     | Standard     | Full hybrid RAG          | Yes      | Keywords        | 15 chunks|
+| 7     | High         | Hybrid + better filtering| Yes      | Hybrid (KW+LLM) | 20 chunks|
+| 8     | Advanced     | Hybrid + reranking       | Context* | Hybrid          | 25 chunks|
+| 9     | Expert       | Advanced + multi-hop     | Context* | LLM             | 30 chunks|
+| 10    | Maximum      | All features enabled     | Context* | LLM             | 40 chunks|
+
+*Levels 8-10 don't use QA cache for direct answers (RAG generation only), but QA pairs are still used as context.
+
+Default: 5 (Standard) - Recommended for most use cases.
+Higher levels = better quality but slower and more expensive.
+Lower levels = faster and cheaper but may miss nuanced information."""
+
+
 class FromMetadataSchema(BaseModel):
     """Schema defining the expected structure of the `from_` metadata.
     
@@ -135,5 +158,5 @@ class FromMetadataSchema(BaseModel):
     )
 
 
-# Re-export FROM_FIELD_DESCRIPTION for backward compatibility
-__all__ = ["FromMetadata", "FromMetadataSchema", "FROM_FIELD_DESCRIPTION"]
+# Re-export constants for backward compatibility
+__all__ = ["FromMetadata", "FromMetadataSchema", "FROM_FIELD_DESCRIPTION", "INTELLIGENCE_LEVEL_DESCRIPTION"]

@@ -319,8 +319,9 @@ def setup_logging(
         install_logging_context_filter()
 
 
-        # Noise reduction
-        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis"]:
+        # Noise reduction - suppress verbose logging from third-party libraries
+        # and infrastructure components (HTTP servers, DB drivers, etc.)
+        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis", "uvicorn", "uvicorn.access", "uvicorn.error"]:
             try:
                 logging.getLogger(noisy).setLevel(logging.WARNING)
             except Exception:

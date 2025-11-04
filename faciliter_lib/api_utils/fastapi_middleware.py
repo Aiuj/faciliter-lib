@@ -58,6 +58,18 @@ class FromContextMiddleware(BaseHTTPMiddleware):
         from_raw = request.query_params.get("from")
         from_dict = parse_from(from_raw)
         
+        # Extract intelligence_level from query params if present
+        intelligence_level_raw = request.query_params.get("intelligence_level")
+        if intelligence_level_raw is not None:
+            try:
+                # Parse as integer and validate range (0-10)
+                intelligence_level = int(intelligence_level_raw)
+                if 0 <= intelligence_level <= 10:
+                    from_dict['intelligence_level'] = intelligence_level
+            except (ValueError, TypeError):
+                # Ignore invalid intelligence_level values
+                pass
+        
         # Attach to request state for downstream usage
         try:
             request.state.from_dict = from_dict  # type: ignore[attr-defined]
@@ -93,6 +105,9 @@ async def inject_from_logging_context(
     request include the fields, and adds it to tracing metadata. Also stores
     it on request.state for handlers that want to reuse it.
     
+    Additionally extracts 'intelligence_level' from query params if present and
+    adds it to the logging context for observability.
+    
     Args:
         request: The incoming request
         call_next: The next middleware/handler in the chain
@@ -117,6 +132,18 @@ async def inject_from_logging_context(
     """
     from_raw = request.query_params.get("from")
     from_dict = parse_from(from_raw)
+    
+    # Extract intelligence_level from query params if present
+    intelligence_level_raw = request.query_params.get("intelligence_level")
+    if intelligence_level_raw is not None:
+        try:
+            # Parse as integer and validate range (0-10)
+            intelligence_level = int(intelligence_level_raw)
+            if 0 <= intelligence_level <= 10:
+                from_dict['intelligence_level'] = intelligence_level
+        except (ValueError, TypeError):
+            # Ignore invalid intelligence_level values
+            pass
     
     # Attach to request state for downstream usage
     try:

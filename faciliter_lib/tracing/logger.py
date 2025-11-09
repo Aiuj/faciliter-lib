@@ -321,11 +321,23 @@ def setup_logging(
 
         # Noise reduction - suppress verbose logging from third-party libraries
         # and infrastructure components (HTTP servers, DB drivers, etc.)
-        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis", "uvicorn", "uvicorn.access", "uvicorn.error"]:
+        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis", "uvicorn", "uvicorn.error"]:
             try:
                 logging.getLogger(noisy).setLevel(logging.WARNING)
             except Exception:
                 pass
+        
+        # Set uvicorn.access to DEBUG to reduce HTTP request log noise
+        try:
+            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
+        except Exception:
+            pass
+        
+        # Set langfuse to ERROR to suppress context warnings
+        try:
+            logging.getLogger("langfuse").setLevel(logging.ERROR)
+        except Exception:
+            pass
 
         # Get the app logger - this is a child of root, inherits handlers via propagation
         _root_logger = logging.getLogger(app_name)
@@ -397,4 +409,25 @@ def get_last_logging_config() -> dict:
     Useful for debugging / tests.
     """
     return dict(_LAST_CONFIG)
+
+
+def flush_logging() -> None:
+    """Flush all logging handlers immediately.
+    
+    This is particularly important for OTLP handlers which batch logs.
+    Call this before application shutdown to ensure all logs are sent.
+    
+    Example:
+        # Django wsgi.py
+        import atexit
+        from faciliter_lib.tracing.logger import flush_logging
+        
+        atexit.register(flush_logging)
+    """
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        try:
+            handler.flush()
+        except Exception:
+            pass  # Ignore flush errors during shutdown
 

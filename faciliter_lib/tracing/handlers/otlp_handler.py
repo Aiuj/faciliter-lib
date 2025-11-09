@@ -14,6 +14,7 @@ References:
 import logging
 import time
 import json
+import requests
 from typing import Dict, Any, Optional
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
@@ -204,6 +205,11 @@ class OTLPHandler(logging.Handler):
         if self._worker_handler is not None:
             self._worker_handler.close()
             self._worker_handler = None
+    
+    def flush(self) -> None:
+        """Flush any pending logs immediately (useful before shutdown)."""
+        if self._worker_handler is not None:
+            self._worker_handler.flush()
     
     def close(self) -> None:
         """Close the handler and release resources."""
@@ -412,6 +418,12 @@ class _OTLPWorkerHandler(logging.Handler):
                 self._cancel_flush_timer()
                 if self._batch:
                     self._send_batch_locked()
+    
+    def flush(self) -> None:
+        """Flush any pending logs immediately."""
+        with self._lock:
+            if self._batch and not self._shutdown:
+                self._send_batch_locked()
     
     def close(self) -> None:
         """Flush remaining logs before closing."""

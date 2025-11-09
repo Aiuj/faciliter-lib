@@ -62,7 +62,12 @@ class LangfuseTracingProvider(TracingProvider):
         
         # Only update if we have a valid dict
         if metadata:
-            self._client.update_current_span(metadata=metadata)
+            try:
+                self._client.update_current_span(metadata=metadata)
+            except Exception:
+                # Silently ignore if no active span context exists
+                # This is expected in some execution contexts (e.g., MCP server)
+                pass
 
 
 class NoOpTracingProvider(TracingProvider):

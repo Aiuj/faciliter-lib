@@ -143,6 +143,8 @@ def index():
     return "Hello World"
 ```
 
+**Django Users**: See the comprehensive [Django Logging Integration Guide](DJANGO_LOGGING_INTEGRATION.md) for proper setup with WSGI/ASGI servers, signal handlers, and OTLP lifecycle management.
+
 ## Available Logging Handlers
 
 ### 1. Console (Always Enabled)

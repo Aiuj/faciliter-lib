@@ -227,8 +227,7 @@ Add request-specific metadata to all logs within a request using `LoggingContext
 
 ```python
 # middleware.py
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 import uuid
 
 class LoggingContextMiddleware:

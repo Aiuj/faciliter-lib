@@ -225,7 +225,7 @@ def example_contextual_logging():
     print("\n=== Example 7: Contextual Logging with parse_from ===\n")
     
     from faciliter_lib.tracing import LoggingContext
-    from faciliter_lib.mcp_utils import parse_from
+    from faciliter_lib.tracing import parse_from
     
     # Configure OTLP
     logger_settings = LoggerSettings(

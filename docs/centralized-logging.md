@@ -233,8 +233,7 @@ The `parse_from()` function extracts metadata from the standard `from` query par
 from fastapi import FastAPI, Query, Depends
 from typing import Optional
 from faciliter_lib.tracing.logger import setup_logging, get_module_logger
-from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
 from faciliter_lib.api_utils import require_api_key
 
 app = FastAPI()
@@ -315,8 +314,7 @@ Combine with tracing metadata for complete observability:
 ```python
 from faciliter_lib.tracing import setup_tracing, add_trace_metadata
 from faciliter_lib.tracing.logger import setup_logging, get_module_logger
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 
 # Setup both tracing and logging
 setup_tracing(service_name="my-api")
@@ -340,6 +338,8 @@ async def endpoint(from_: Optional[str] = Query(None, alias="from")):
 Contexts can be nested - inner contexts extend outer contexts:
 
 ```python
+from faciliter_lib.tracing import LoggingContext
+
 # Outer context: set session/user once for entire request
 with LoggingContext({"session_id": "session-123", "user_id": "user-456"}):
     logger.info("Request started")  # Has session_id, user_id
@@ -394,8 +394,7 @@ Automatically add context to ALL endpoints:
 
 ```python
 from fastapi import FastAPI, Request
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 
 app = FastAPI()
 
@@ -427,8 +426,7 @@ MCP servers can use context for request tracking:
 
 ```python
 from mcp.server import Server
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 
 server = Server("my-mcp-server")
 

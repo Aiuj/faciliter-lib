@@ -28,6 +28,7 @@ The context is stored in thread-local storage and automatically added
 to all log records emitted within the context block.
 """
 
+import json
 import logging
 import threading
 from typing import Dict, Any, Optional
@@ -35,6 +36,46 @@ from contextvars import ContextVar
 
 # Thread-safe context storage using contextvars (works with asyncio)
 _logging_context: ContextVar[Dict[str, Any]] = ContextVar('logging_context', default={})
+
+
+def parse_from(from_: str | dict | None) -> dict:
+    """Parse the 'from' metadata parameter into a dictionary.
+    
+    The 'from' parameter contains request context metadata like user_id,
+    session_id, company_id, etc. It can be:
+    - A JSON string to be parsed
+    - A dictionary (already parsed)
+    - None (returns empty dict)
+    
+    Args:
+        from_: JSON string, dictionary, or None
+        
+    Returns:
+        Dictionary of metadata fields. Empty dict if parsing fails or from_ is None.
+        
+    Example:
+        ```python
+        from_dict = parse_from('{"user_id": "123", "session_id": "abc"}')
+        # Returns: {"user_id": "123", "session_id": "abc"}
+        
+        with LoggingContext(from_dict):
+            logger.info("Request processing")  # Includes user.id and session.id
+        ```
+    """
+    from_dict = None
+    if from_:
+        try:
+            if isinstance(from_, str):
+                # If from_ is a string, try to parse it as JSON
+                from_dict = json.loads(from_)
+            elif isinstance(from_, dict):
+                # If from_ is already a dict, use it directly
+                from_dict = from_
+            else:
+                raise ValueError("from_ must be a JSON string or a dictionary.")
+        except Exception:
+            from_dict = None
+    return from_dict or {}
 
 
 class LoggingContextFilter(logging.Filter):
@@ -221,4 +262,5 @@ __all__ = [
     'set_logging_context',
     'clear_logging_context',
     'install_logging_context_filter',
+    'parse_from',
 ]

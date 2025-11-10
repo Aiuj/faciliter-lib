@@ -4,7 +4,8 @@ import json
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-from faciliter_lib.mcp_utils import parse_from, get_transport_from_args
+from faciliter_lib.tracing import parse_from
+from faciliter_lib.mcp_utils import get_transport_from_args
 
 class TestMcpUtils(unittest.TestCase):
     def test_parse_from_dict(self):

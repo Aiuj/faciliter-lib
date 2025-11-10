@@ -66,8 +66,7 @@ LOG_LEVEL=INFO
 Use `LoggingContext` to automatically add user/session/company metadata:
 
 ```python
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 
 @app.post("/api/chat")
 async def chat_endpoint(from_: Optional[str] = Query(None, alias="from")):

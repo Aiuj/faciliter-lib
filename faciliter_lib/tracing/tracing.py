@@ -47,7 +47,7 @@ class LangfuseTracingProvider(TracingProvider):
         if metadata is None:
             return
         
-        from faciliter_lib.mcp_utils import parse_from
+        from faciliter_lib.tracing import parse_from
         
         # Convert to dict if needed
         if isinstance(metadata, str):

@@ -132,8 +132,7 @@ export OTLP_LOG_LEVEL=WARNING  # Only send WARNING+ to reduce OTLP ingestion
 Add request-specific metadata (user_id, session_id, company_id) to all logs:
 
 ```python
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, parse_from
 
 @app.post("/endpoint")
 async def endpoint(from_: Optional[str] = Query(None, alias="from")):

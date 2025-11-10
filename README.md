@@ -108,8 +108,7 @@ setup_logging(app_name="my-app", logger_settings=settings)
 Add request-specific metadata (user ID, session ID, company ID) to all logs:
 
 ```python
-from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION
-from faciliter_lib.mcp_utils import parse_from
+from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
 
 @app.post("/endpoint")
 async def endpoint(from_: Optional[str] = Query(None, alias="from", description=FROM_FIELD_DESCRIPTION)):

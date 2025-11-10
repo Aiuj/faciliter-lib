@@ -76,9 +76,10 @@ if cache.connected:
 ### MCP Utilities
 
 ```python
-from faciliter_lib import parse_from, get_transport_from_args
+from faciliter_lib import get_transport_from_args
+from faciliter_lib.tracing import parse_from
 
-# Parse JSON strings or dicts
+# Parse JSON strings or dicts (now in tracing module)
 data = parse_from('{"key": "value"}')  # Returns dict
 
 # Get transport from command line

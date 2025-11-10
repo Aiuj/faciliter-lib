@@ -6,7 +6,7 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
 
 ## Architecture at a glance
 - Library, not an app. Python package `faciliter_lib/` with focused modules:
-  - `utils/` and `mcp_utils.py`: parsing helpers and MCP convenience.
+  - `utils/` and `mcp_utils.py`: MCP transport argument parsing.
   - `cache/`: Redis-backed caching via `RedisCache` plus functional facade `set_cache`, `cache_get`, `cache_set`.
   - `llm/`: Provider-agnostic LLM client with native SDK adapters.
     - `llm/providers/base.py`: provider contract (chat with OpenAI-style messages, tools, structured output, optional grounding flag). Return a unified dict: `content`, `structured`, `tool_calls`, `usage`, optional `text` and `content_json` when structured.
@@ -15,7 +15,7 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
     - `llm/providers/openai_provider.py`: OpenAI/Azure/OpenAI-compatible endpoints via official `openai` SDK. Structured outputs via `response_format`, tool calling; can add web/file search tools when `use_search_grounding=True`.
     - `llm/llm_client.py`: entry point selecting provider by config, normalizes messages, forwards flags, and attaches trace metadata before/after calls.
     - `llm/llm_config.py`: config classes (`GeminiConfig`, `OllamaConfig`, `OpenAIConfig`) with `from_env()` to populate from env vars.
-  - `tracing/`: thin wrapper around Langfuse/OpenTelemetry. Use `setup_tracing()` and `add_trace_metadata()`; providers should not import Langfuse directly.
+  - `tracing/`: thin wrapper around Langfuse/OpenTelemetry, plus logging context with `parse_from()`. Use `setup_tracing()` and `add_trace_metadata()`; providers should not import Langfuse directly.
 - Tests live in `tests/` and mock provider classes where possible to avoid network calls.
 
 ## Key patterns and conventions
@@ -64,4 +64,5 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
 - Create from env: `from faciliter_lib.llm import create_client_from_env`
 - Explicit providers: `create_gemini_client`, `create_ollama_client`, `create_openai_client`, `create_azure_openai_client`, `create_openai_compatible_client`.
 - Cache: `set_cache`, `cache_get`, `cache_set`; class: `RedisCache`.
-- MCP utils: `parse_from`, `get_transport_from_args`.
+- Tracing/logging: `parse_from` (from `faciliter_lib.tracing`), `LoggingContext`, `setup_logging`, `setup_tracing`.
+- MCP utils: `get_transport_from_args`.

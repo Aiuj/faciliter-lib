@@ -52,31 +52,62 @@ except Exception:  # pragma: no cover - defensive
 
 _logger_initialized = False
 _root_logger: Optional[logging.Logger] = None
+_app_name: Optional[str] = None
+_app_version: Optional[str] = None
 
 _LAST_CONFIG: dict = {}  # keep track of parameters used to configure logging
 
 
-def _resolve_logger_name(app_name: str, module_name: Optional[str]) -> str:
-    """Return a consistent logger name under the application's root namespace.
+class AppMetadataFilter(logging.Filter):
+    """Logging filter that adds app name and version to log records.
+    
+    This filter adds client.app.name and client.app.version attributes
+    to all log records for observability systems (OTLP, OVH LDP, etc.).
+    This keeps logger names clean while providing app context.
+    """
+    
+    def __init__(self, app_name: str, app_version: Optional[str] = None):
+        super().__init__()
+        self.app_name = app_name
+        self.app_version = app_version
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Add app metadata to the log record.
+        
+        Args:
+            record: The log record to enhance
+            
+        Returns:
+            True (always pass the record through)
+        """
+        # Add app metadata to extra_attrs for OTLP/observability handlers
+        if not hasattr(record, 'extra_attrs'):
+            record.extra_attrs = {}
+        
+        record.extra_attrs['client.app.name'] = self.app_name
+        
+        if self.app_version:
+            record.extra_attrs['client.app.version'] = self.app_version
+        
+        return True
+
+
+def _resolve_logger_name(module_name: Optional[str]) -> str:
+    """Return a clean logger name without app prefix.
 
     Rules:
-    - If module_name is None/empty, return app_name.
-    - If module_name already starts with "{app_name}.", return module_name (avoid double-prefixing).
-    - If module_name equals app_name, return app_name.
-    - Otherwise, prefix with "{app_name}." preserving full module path (no truncation).
+    - If module_name is None/empty, return "root".
+    - Return module_name as-is (no app name prefixing).
+    - App name and version are added via AppMetadataFilter as attributes.
     """
     if not module_name:
-        return app_name
-    if module_name == app_name:
-        return app_name
-    prefix = f"{app_name}."
-    if module_name.startswith(prefix):
-        return module_name
-    return f"{app_name}.{module_name}"
+        return "root"
+    return module_name
 
 
 def setup_logging(
     app_name: Optional[str] = None,
+    app_version: Optional[str] = None,
     name: Optional[str] = None,
     level: Optional[Union[str, int]] = None,
     app_settings: Optional[Any] = None,
@@ -99,8 +130,10 @@ def setup_logging(
     OVH Logs Data Platform integration is enabled via logger_settings.ovh_ldp_enabled.
 
     Args:
-        app_name: Root application logger namespace. If None, resolved by precedence:
-                  explicit arg > app_settings.app_name > APP_NAME env > "faciliter_lib".
+        app_name: Application name for metadata (added to log attributes as client.app.name).
+                  If None, resolved by precedence: explicit arg > app_settings.app_name > APP_NAME env > "faciliter_lib".
+        app_version: Application version for metadata (added to log attributes as client.app.version).
+                     If None, resolved from app_settings.version or APP_VERSION env.
         name: Optional explicit module name (defaults to caller module).
         level: Override log level (str/int). Highest precedence.
         app_settings: Optional AppSettings instance (used for log level and environment detection).
@@ -114,7 +147,7 @@ def setup_logging(
     Returns:
         logging.Logger: A logger instance scoped to the caller / provided name.
     """
-    global _logger_initialized, _root_logger, _LAST_CONFIG
+    global _logger_initialized, _root_logger, _app_name, _app_version, _LAST_CONFIG
 
     # Resolve application name
     if app_name is None:
@@ -124,6 +157,19 @@ def setup_logging(
         if not candidate:
             candidate = os.getenv("APP_NAME")
         app_name = candidate or "faciliter_lib"
+    
+    # Resolve application version
+    if app_version is None:
+        candidate = None
+        if app_settings is not None:
+            candidate = getattr(app_settings, "version", None)
+        if not candidate:
+            candidate = os.getenv("APP_VERSION")
+        app_version = candidate  # May be None, that's OK
+    
+    # Store app metadata globally for get_module_logger
+    _app_name = app_name
+    _app_version = app_version
 
     # Determine log level (precedence: level arg > logger_settings > app_settings > env)
     if level is None:
@@ -314,9 +360,18 @@ def setup_logging(
             handlers=handlers,
             force=True,  # Python 3.8+: replace handlers
         )
+        
         # Install logging context filter for request tracing
         from .logging_context import install_logging_context_filter
         install_logging_context_filter()
+        
+        # Install app metadata filter to add client.app.name and client.app.version
+        root_logger = logging.getLogger()
+        app_metadata_filter = AppMetadataFilter(app_name, app_version)
+        for handler in root_logger.handlers:
+            # Check if filter already installed on this handler
+            if not any(isinstance(f, AppMetadataFilter) for f in handler.filters):
+                handler.addFilter(app_metadata_filter)
 
 
         # Noise reduction - suppress verbose logging from third-party libraries
@@ -339,24 +394,23 @@ def setup_logging(
         except Exception:
             pass
 
-        # Get the app logger - this is a child of root, inherits handlers via propagation
-        _root_logger = logging.getLogger(app_name)
-        # Do NOT set level on app logger - let it inherit from root or use NOTSET
-        # Setting level here creates an additional filter that can block propagated logs
-        _root_logger.setLevel(logging.NOTSET)  # NOTSET = inherit from parent (root)
+        # Use root logger directly instead of creating app-named child
+        # This keeps logger names clean (just module paths)
+        # App name and version are added via AppMetadataFilter as attributes
+        _root_logger = logging.getLogger()
         _logger_initialized = True
         _LAST_CONFIG = new_config
         _root_logger.info(
             "Logging initialized", extra={"config": {k: v for k, v in new_config.items() if k != "level"}, "level_int": numeric_level}
         )
 
-    # Determine caller module name if not provided and resolve final logger name consistently
+    # Determine caller module name if not provided and resolve final logger name
     if name is None:
         import inspect
         frame = inspect.currentframe().f_back
         name = frame.f_globals.get("__name__", "unknown")
 
-    resolved_name = _resolve_logger_name(app_name, name)
+    resolved_name = _resolve_logger_name(name)
     logger = logging.getLogger(resolved_name)
     # Do NOT set level on module loggers - let them inherit from parent chain
     # Setting level here creates an additional filter that blocks propagated logs
@@ -384,23 +438,17 @@ def get_module_logger() -> logging.Logger:
     `setup_logging()` explicitly from application startup to configure
     handlers and levels.
     
-    The logger is namespaced under the app logger (if configured) to ensure
-    proper handler inheritance, especially for OTLP and other remote handlers.
+    Logger names are kept clean (just module paths) while app metadata
+    (client.app.name, client.app.version) is injected via AppMetadataFilter.
     """
     import inspect
 
     frame = inspect.currentframe().f_back
     module_name = frame.f_globals.get("__name__", "unknown")
     
-    # If we have a configured root logger, namespace under it
-    # This ensures all module loggers inherit handlers (OTLP, file, etc.)
-    if _root_logger is not None:
-        app_name = _root_logger.name
-        # Create logger as child of app logger using consistent naming
-        return logging.getLogger(_resolve_logger_name(app_name, module_name))
-    
-    # Fallback: return module logger directly (before setup_logging is called)
-    return logging.getLogger(module_name)
+    # Return logger with clean module name (no app prefix)
+    # App metadata is added by AppMetadataFilter as attributes
+    return logging.getLogger(_resolve_logger_name(module_name))
 
 
 def get_last_logging_config() -> dict:

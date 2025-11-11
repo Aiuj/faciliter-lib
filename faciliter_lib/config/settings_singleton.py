@@ -183,6 +183,7 @@ class SettingsSingletonManager:
                     if app_settings:
                         _setup_logging(
                             app_name=app_settings.app_name,
+                            app_version=app_settings.version,
                             level=app_settings.log_level,
                             app_settings=app_settings,
                             logger_settings=logger_settings,

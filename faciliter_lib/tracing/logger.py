@@ -376,17 +376,11 @@ def setup_logging(
 
         # Noise reduction - suppress verbose logging from third-party libraries
         # and infrastructure components (HTTP servers, DB drivers, etc.)
-        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis", "uvicorn", "uvicorn.error"]:
+        for noisy in ["urllib3", "requests", "opensearch", "psycopg2", "redis", "uvicorn", "uvicorn.error", "uvicorn.access", "google_genai"]:
             try:
                 logging.getLogger(noisy).setLevel(logging.WARNING)
             except Exception:
                 pass
-        
-        # Set uvicorn.access to DEBUG to reduce HTTP request log noise
-        try:
-            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
-        except Exception:
-            pass
         
         # Set langfuse to ERROR to suppress context warnings
         try:

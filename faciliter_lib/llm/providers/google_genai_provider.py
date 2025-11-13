@@ -20,6 +20,7 @@ from faciliter_lib.tracing.tracing import add_trace_metadata
 from faciliter_lib.tracing.service_usage import log_llm_usage
 from faciliter_lib.llm.rate_limiter import RateLimitConfig, RateLimiter
 from faciliter_lib.llm.retry import RetryConfig, retry_handler
+from faciliter_lib.llm.json_parser import parse_structured_output, augment_prompt_for_json
 
 logger = get_module_logger()
 
@@ -100,6 +101,12 @@ class GoogleGenAIProvider(BaseProvider):
         "gemma-3": 30,         # Gemma 3
         "embedding": 100,      # Gemini Embedding models
     }
+    
+    # Models known to NOT support native JSON mode (structured output)
+    # These will automatically use fallback JSON parsing
+    _NO_JSON_MODE_MODELS: List[str] = [
+        "gemma",  # All Gemma models (gemma-2, gemma-3, etc.)
+    ]
 
     def __init__(self, config: GeminiConfig) -> None:  # type: ignore[override]
         super().__init__(config)
@@ -176,7 +183,19 @@ class GoogleGenAIProvider(BaseProvider):
             extra={"max_retries": self._retry_config.max_retries, "retryable_exceptions_count": len(retryable_exceptions)},
         )
 
-    def close(self) -> None:  # type: ignore[override]
+    def _supports_json_mode(self) -> bool:
+        """Check if the current model supports native JSON mode.
+        
+        Returns:
+            True if model supports native structured output, False otherwise
+        """
+        model_lc = (self.config.model or "").lower()
+        for no_json_model in self._NO_JSON_MODE_MODELS:
+            if no_json_model in model_lc:
+                return False
+        return True
+    
+    def close(self) -> None:
         """Close the underlying google-genai client."""
         client = getattr(self, "_client", None)
         if client is None:
@@ -385,10 +404,23 @@ class GoogleGenAIProvider(BaseProvider):
         use_search_grounding: bool = False,
         thinking_enabled: Optional[bool] = None,
     ) -> Dict[str, Any]:
-        """Core API call logic with retry decoration applied."""
+        """Core API call logic with retry decoration applied.
+        
+        Includes fallback for models that don't support native structured output.
+        """
+        
+        # Check if we should use fallback JSON parsing upfront
+        # This avoids wasting retries on known unsupported features
+        use_fallback_json = structured_output is not None and not self._supports_json_mode()
+        if use_fallback_json:
+            logger.info(
+                f"Model {self.config.model} does not support native JSON mode, "
+                "using fallback text-based JSON parsing"
+            )
         
         @retry_handler(self._retry_config)
         def _make_api_call() -> Dict[str, Any]:
+            nonlocal use_fallback_json
             # Minimal debug without leaking content
             logger.debug(
                 "genai.chat start",
@@ -405,10 +437,26 @@ class GoogleGenAIProvider(BaseProvider):
             assistant_messages = [m for m in messages if m.get("role") == "assistant"]
             is_single_turn = len(user_messages) == 1 and len(assistant_messages) == 0 and len(messages) <= 2
 
+            # If using fallback, augment the last user message with JSON schema
+            working_messages = messages
+            if use_fallback_json and structured_output:
+                working_messages = list(messages)
+                for i in range(len(working_messages) - 1, -1, -1):
+                    if working_messages[i].get("role") == "user":
+                        working_messages[i] = {
+                            **working_messages[i],
+                            "content": augment_prompt_for_json(
+                                working_messages[i].get("content", ""),
+                                structured_output
+                            )
+                        }
+                        break
+                user_messages = [m for m in working_messages if m.get("role") == "user"]
+
             if is_single_turn:
                 user_text = user_messages[0].get("content", "")
                 extra = self._build_config(
-                    structured_output=structured_output,
+                    structured_output=structured_output if not use_fallback_json else None,
                     tools=tools,
                     system_message=system_message,
                     use_search_grounding=use_search_grounding,
@@ -420,9 +468,9 @@ class GoogleGenAIProvider(BaseProvider):
                     **extra,
                 )
             else:
-                prompt = self._to_genai_messages(messages)
+                prompt = self._to_genai_messages(working_messages)
                 extra = self._build_config(
-                    structured_output=structured_output,
+                    structured_output=structured_output if not use_fallback_json else None,
                     tools=tools,
                     system_message=system_message,
                     use_search_grounding=use_search_grounding,
@@ -475,22 +523,32 @@ class GoogleGenAIProvider(BaseProvider):
                 # to avoid recursion/serialization issues in callers.
                 content: Any
                 raw_text: str = getattr(resp, "text", "")
-                parsed = getattr(resp, "parsed", None)
-                if parsed is not None:
-                    if isinstance(parsed, BaseModel):
-                        content = parsed.model_dump()
-                    else:
-                        content = parsed
+                
+                if use_fallback_json:
+                    # Use manual JSON parsing when native mode not available
+                    content = parse_structured_output(raw_text, structured_output)
+                    if content is None:
+                        # Parsing failed, return error dict
+                        logger.warning(f"Fallback JSON parsing failed for model {self.config.model}")
+                        content = {}
                 else:
-                    # Fallback for older SDKs: validate from JSON text to a BaseModel, then dump to dict
-                    text = raw_text
-                    try:
-                        data = structured_output.model_validate_json(text)  # type: ignore[attr-defined]
-                        content = data.model_dump()
-                    except Exception:
-                        import json as _json
+                    # Try native structured output
+                    parsed = getattr(resp, "parsed", None)
+                    if parsed is not None:
+                        if isinstance(parsed, BaseModel):
+                            content = parsed.model_dump()
+                        else:
+                            content = parsed
+                    else:
+                        # Fallback for older SDKs: validate from JSON text to a BaseModel, then dump to dict
+                        text = raw_text
+                        try:
+                            data = structured_output.model_validate_json(text)  # type: ignore[attr-defined]
+                            content = data.model_dump()
+                        except Exception:
+                            import json as _json
 
-                        content = _json.loads(text) if text else {}
+                            content = _json.loads(text) if text else {}
                 # Also return text and content_json for convenience
                 import json as _json
                 return {
@@ -510,4 +568,5 @@ class GoogleGenAIProvider(BaseProvider):
                 "usage": usage,
             }
 
+        # Make the API call (fallback already determined above)
         return _make_api_call()

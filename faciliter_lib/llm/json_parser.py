@@ -1,6 +1,9 @@
 from faciliter_lib import get_module_logger
 import json
 import re
+from typing import Dict, Any, Optional, Type
+
+from pydantic import BaseModel, ValidationError
 
 logger = get_module_logger()
 
@@ -119,4 +122,115 @@ def clean_and_parse_json_response(response_str, force_list=False):
 
     logger.warning("No JSON brackets found in response or unable to extract valid items")
     return None
+
+
+def extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
+    """Extract JSON object from text response.
     
+    Tries multiple strategies:
+    1. Parse entire text as JSON
+    2. Find JSON object with regex (first {...})
+    3. Find JSON array with regex (first [...])
+    
+    Args:
+        text: Text response that may contain JSON
+        
+    Returns:
+        Parsed JSON dict/list or None if extraction fails
+    """
+    if not text:
+        return None
+    
+    # Strategy 1: Try parsing entire text as JSON
+    try:
+        result = json.loads(text.strip())
+        if isinstance(result, (dict, list)):
+            return result
+    except (json.JSONDecodeError, ValueError):
+        pass
+    
+    # Strategy 2: Extract first JSON object {...}
+    json_obj_match = re.search(r'\{.*\}', text, re.DOTALL)
+    if json_obj_match:
+        try:
+            result = json.loads(json_obj_match.group())
+            if isinstance(result, dict):
+                return result
+        except (json.JSONDecodeError, ValueError):
+            pass
+    
+    # Strategy 3: Extract first JSON array [...]
+    json_arr_match = re.search(r'\[.*\]', text, re.DOTALL)
+    if json_arr_match:
+        try:
+            result = json.loads(json_arr_match.group())
+            if isinstance(result, list):
+                return result
+        except (json.JSONDecodeError, ValueError):
+            pass
+    
+    return None
+
+
+def parse_structured_output(
+    text: str,
+    schema: Type[BaseModel],
+) -> Optional[Dict[str, Any]]:
+    """Parse text response into structured output matching Pydantic schema.
+    
+    This is a fallback when native structured output is not available.
+    
+    Args:
+        text: LLM text response
+        schema: Pydantic model defining expected structure
+        
+    Returns:
+        Dict matching schema or None if parsing/validation fails
+    """
+    # Extract JSON from text
+    json_data = extract_json_from_text(text)
+    if json_data is None:
+        logger.warning("Could not extract JSON from LLM response for structured output")
+        return None
+    
+    # Validate against Pydantic schema
+    try:
+        validated = schema.model_validate(json_data)
+        return validated.model_dump()
+    except ValidationError as e:
+        logger.warning(
+            f"JSON validation failed against schema {schema.__name__}: {e}",
+            extra={"validation_errors": e.errors()}
+        )
+        return None
+    except Exception as e:
+        logger.warning(f"Unexpected error validating JSON: {e}")
+        return None
+
+
+def augment_prompt_for_json(
+    prompt: str,
+    schema: Type[BaseModel],
+) -> str:
+    """Augment prompt to request JSON output matching schema.
+    
+    Args:
+        prompt: Original user prompt
+        schema: Pydantic model defining expected structure
+        
+    Returns:
+        Enhanced prompt requesting JSON format
+    """
+    # Get schema description
+    schema_json = schema.model_json_schema()
+    
+    # Build JSON format instruction
+    json_instruction = f"""
+Your response MUST be valid JSON matching this exact schema:
+
+{json.dumps(schema_json, indent=2)}
+
+Respond ONLY with the JSON object, no additional text or explanation.
+"""
+    
+    return f"{prompt}\n\n{json_instruction}"

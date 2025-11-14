@@ -10,7 +10,7 @@ from faciliter_lib.llm.json_parser import (
 )
 
 
-class TestSchema(BaseModel):
+class SampleSchema(BaseModel):
     """Test schema for structured output."""
     result: str
     score: float
@@ -63,7 +63,7 @@ class TestParseStructuredOutput:
     def test_parse_valid_structured_output(self):
         """Test parsing valid structured output."""
         text = '{"result": "success", "score": 0.95, "is_valid": true}'
-        result = parse_structured_output(text, TestSchema)
+        result = parse_structured_output(text, SampleSchema)
         
         assert result is not None
         assert result["result"] == "success"
@@ -73,7 +73,7 @@ class TestParseStructuredOutput:
     def test_parse_structured_output_with_text(self):
         """Test parsing structured output embedded in text."""
         text = 'Here is the analysis:\n{"result": "success", "score": 0.95, "is_valid": true}\nEnd of analysis'
-        result = parse_structured_output(text, TestSchema)
+        result = parse_structured_output(text, SampleSchema)
         
         assert result is not None
         assert result["result"] == "success"
@@ -81,14 +81,14 @@ class TestParseStructuredOutput:
     def test_parse_invalid_schema(self):
         """Test parsing with invalid schema."""
         text = '{"wrong_field": "value"}'
-        result = parse_structured_output(text, TestSchema)
+        result = parse_structured_output(text, SampleSchema)
         
         assert result is None
     
     def test_parse_no_json(self):
         """Test parsing when no JSON is present."""
         text = "No JSON here"
-        result = parse_structured_output(text, TestSchema)
+        result = parse_structured_output(text, SampleSchema)
         
         assert result is None
 
@@ -99,7 +99,7 @@ class TestAugmentPromptForJson:
     def test_augment_prompt(self):
         """Test that prompt is augmented with schema."""
         prompt = "Analyze this data"
-        result = augment_prompt_for_json(prompt, TestSchema)
+        result = augment_prompt_for_json(prompt, SampleSchema)
         
         assert "Analyze this data" in result
         assert "JSON" in result
@@ -109,7 +109,7 @@ class TestAugmentPromptForJson:
     
     def test_augment_empty_prompt(self):
         """Test augmenting empty prompt."""
-        result = augment_prompt_for_json("", TestSchema)
+        result = augment_prompt_for_json("", SampleSchema)
         
         assert "JSON" in result
         assert "result" in result

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from faciliter_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
 
 
-class TestSchema(BaseModel):
+class SampleSchema(BaseModel):
     """Test schema for structured output."""
     result: str
     score: float
@@ -60,7 +60,7 @@ class TestGeminiJSONModeFallback:
             # Call with structured output
             result = provider.chat(
                 messages=[{"role": "user", "content": "test"}],
-                structured_output=TestSchema
+                structured_output=SampleSchema
             )
             
             # Should use fallback and parse JSON from text

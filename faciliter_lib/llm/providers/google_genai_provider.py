@@ -24,6 +24,9 @@ from faciliter_lib.llm.json_parser import parse_structured_output, augment_promp
 
 logger = get_module_logger()
 
+# Global flag to ensure instrumentation happens only once
+_instrumentation_initialized = False
+
 
 @dataclass
 class GeminiConfig(LLMConfig):
@@ -118,8 +121,13 @@ class GoogleGenAIProvider(BaseProvider):
         # Gemini Developer API (default). Vertex AI could be added later.
         self._client = genai.Client(api_key=config.api_key)
 
-        from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
-        GoogleGenAIInstrumentor().instrument()
+        # Instrument only once globally to avoid "already instrumented" warnings
+        global _instrumentation_initialized
+        if not _instrumentation_initialized:
+            from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
+            GoogleGenAIInstrumentor().instrument()
+            _instrumentation_initialized = True
+            logger.debug("Initialized Google GenAI instrumentation")
 
         # Initialize a rate limiter based on model RPM. We derive a conservative
         # per-second rate as max(1, RPM/60). If model not found, default to 60 RPM.
@@ -206,6 +214,41 @@ class GoogleGenAIProvider(BaseProvider):
                 close_method()
         except Exception as exc:
             logger.debug("Gemini client close failed", extra={"error": str(exc)})
+
+    def _extract_text_from_response(self, resp: Any) -> str:
+        """Extract text from response, handling non-text parts without warnings.
+        
+        When thinking mode is enabled, responses include thought_signature parts.
+        Accessing resp.text triggers a warning. Instead, we manually extract text
+        from all candidates and parts.
+        
+        Args:
+            resp: Response from generate_content or send_message
+            
+        Returns:
+            Extracted text content, concatenated from all text parts
+        """
+        try:
+            # Try to access candidates directly to avoid .text warning
+            candidates = getattr(resp, "candidates", [])
+            if candidates and len(candidates) > 0:
+                content = getattr(candidates[0], "content", None)
+                if content:
+                    parts = getattr(content, "parts", [])
+                    text_parts = []
+                    for part in parts:
+                        # Extract text from text parts only
+                        part_text = getattr(part, "text", None)
+                        if part_text:
+                            text_parts.append(part_text)
+                    if text_parts:
+                        return "".join(text_parts)
+            # Fallback to .text attribute if candidates approach fails
+            # This may trigger the warning but ensures we always get content
+            return getattr(resp, "text", "")
+        except Exception:
+            # Ultimate fallback
+            return getattr(resp, "text", "")
 
     def _to_genai_messages(self, messages: List[Dict[str, str]]) -> str:
         """Flatten OpenAI-style messages to a single prompt string.
@@ -522,7 +565,8 @@ class GoogleGenAIProvider(BaseProvider):
                 # Prefer SDK-native parsed output, but ensure the return value is JSON-serializable
                 # to avoid recursion/serialization issues in callers.
                 content: Any
-                raw_text: str = getattr(resp, "text", "")
+                # Extract text properly to avoid warnings about non-text parts (e.g., thought_signature)
+                raw_text: str = self._extract_text_from_response(resp)
                 
                 if use_fallback_json:
                     # Use manual JSON parsing when native mode not available
@@ -562,7 +606,7 @@ class GoogleGenAIProvider(BaseProvider):
 
             # Plain text chat
             return {
-                "content": getattr(resp, "text", ""),
+                "content": self._extract_text_from_response(resp),
                 "structured": False,
                 "tool_calls": tool_calls,
                 "usage": usage,

@@ -75,8 +75,8 @@ def test_log_llm_usage_success(mock_logger):
     assert attrs['tokens.output'] == 50
     assert attrs['tokens.total'] == 150
     assert attrs['latency_ms'] == 1500
-    assert attrs['features.structured_output'] is False
-    assert attrs['features.tools'] is True
+    assert attrs['features.structured_output'] == 'false'
+    assert attrs['features.tools'] == 'true'
     assert attrs['status'] == 'success'
     assert 'cost_usd' in attrs
 

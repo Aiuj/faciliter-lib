@@ -196,10 +196,10 @@ def log_llm_usage(
     if cost > 0:
         event["cost_usd"] = round(cost, 6)
     
-    # Feature flags
-    event["features.structured_output"] = structured
-    event["features.tools"] = has_tools
-    event["features.search_grounding"] = search_grounding
+    # Feature flags - convert booleans to strings for OTLP compatibility
+    event["features.structured_output"] = str(structured).lower()
+    event["features.tools"] = str(has_tools).lower()
+    event["features.search_grounding"] = str(search_grounding).lower()
     
     # Add custom metadata
     if metadata:

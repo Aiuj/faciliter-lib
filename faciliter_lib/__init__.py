@@ -30,7 +30,10 @@ from .config import (
     StandardSettings, BaseSettings, LLMSettings, EmbeddingsSettings,
     CacheSettings, TracingSettings, DatabaseSettings, SettingsManager, settings_manager,
     SettingsError, EnvironmentVariableError, AuthSettings,
-    DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES
+    DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES,
+    CONFIDENTIALITY_LEVELS, CONFIDENTIALITY_LEVEL_NAMES, DEFAULT_CONFIDENTIALITY_LEVEL,
+    CONFIDENTIALITY_LEVEL_DESCRIPTION, validate_confidentiality_level,
+    get_confidentiality_level_name, get_confidentiality_level_value
 )
 
 # API utilities for time-based authentication
@@ -119,6 +122,13 @@ __all__ = [
     "DOC_CATEGORIES",
     "DOC_CATEGORIES_BY_KEY",
     "DOC_CATEGORY_CHOICES",
+    "CONFIDENTIALITY_LEVELS",
+    "CONFIDENTIALITY_LEVEL_NAMES",
+    "DEFAULT_CONFIDENTIALITY_LEVEL",
+    "CONFIDENTIALITY_LEVEL_DESCRIPTION",
+    "validate_confidentiality_level",
+    "get_confidentiality_level_name",
+    "get_confidentiality_level_value",
     
     # API utilities for authentication
     "generate_time_key",

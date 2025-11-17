@@ -3,6 +3,15 @@
 Expose configuration classes and category constants for easy import.
 """
 from .doc_categories import DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES
+from .confidentiality_levels import (
+    CONFIDENTIALITY_LEVELS,
+    CONFIDENTIALITY_LEVEL_NAMES,
+    DEFAULT_CONFIDENTIALITY_LEVEL,
+    CONFIDENTIALITY_LEVEL_DESCRIPTION,
+    validate_confidentiality_level,
+    get_confidentiality_level_name,
+    get_confidentiality_level_value,
+)
 from .base_settings import (
     BaseSettings, 
     SettingsError, 
@@ -42,6 +51,15 @@ __all__ = [
     "DOC_CATEGORIES", 
     "DOC_CATEGORIES_BY_KEY", 
     "DOC_CATEGORY_CHOICES",
+    
+    # Confidentiality levels
+    "CONFIDENTIALITY_LEVELS",
+    "CONFIDENTIALITY_LEVEL_NAMES",
+    "DEFAULT_CONFIDENTIALITY_LEVEL",
+    "CONFIDENTIALITY_LEVEL_DESCRIPTION",
+    "validate_confidentiality_level",
+    "get_confidentiality_level_name",
+    "get_confidentiality_level_value",
     
     # New settings system
     "BaseSettings",

@@ -183,8 +183,8 @@ embeddings_settings = EmbeddingsSettings.from_env(
     embedding_dimension=1536
 )
 
-# Get configuration for existing embeddings client
-embeddings_config = settings.get_embeddings_config()  # Returns EmbeddingsConfig
+# Get configuration (returns EmbeddingsSettings, also available as EmbeddingsConfig for compatibility)
+embeddings_config = settings.get_embeddings_config()
 ```
 
 ### Cache Settings  
@@ -1210,12 +1210,54 @@ except SettingsError as e:
 
 ### Embeddings Configuration
 
+**See [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md) for comprehensive embedding configuration including high availability and token authentication.**
+
+#### Unified Configuration (Single Provider)
+
+```bash
+EMBEDDING_PROVIDER=infinity              # Provider: openai|google_genai|ollama|infinity|local
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5  # Model name
+EMBEDDING_BASE_URL=http://localhost:7997 # Server URL (works for all providers)
+EMBEDDING_TIMEOUT=30                     # Request timeout in seconds
+EMBEDDING_DIMENSION=384                  # Optional: embedding dimension
+EMBEDDING_TASK_TYPE=SEMANTIC_SIMILARITY  # Optional: task type
+EMBEDDING_CACHE_DURATION_SECONDS=7200    # Cache duration (default: 2 hours, 0=disabled)
+```
+
+#### Provider-Specific Configuration (Multi-Provider Setups)
+
+```bash
+# Common defaults
+EMBEDDING_BASE_URL=http://default-server:7997
+EMBEDDING_TIMEOUT=30
+
+# Provider-specific overrides (take precedence)
+INFINITY_BASE_URL=http://infinity-server:7997  # Comma-separated for HA
+INFINITY_TOKEN=token123                         # Optional authentication
+INFINITY_TIMEOUT=30
+OLLAMA_URL=http://ollama-server:11434           # Comma-separated for HA
+OLLAMA_TIMEOUT=60
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-your-key
+GOOGLE_GENAI_API_KEY=your-key
+```
+
+**Priority Chain:**
+- Infinity: `INFINITY_BASE_URL` > `EMBEDDING_BASE_URL` > default
+- Ollama: `OLLAMA_URL` > `EMBEDDING_BASE_URL` > default
+- OpenAI: `OPENAI_BASE_URL` > `EMBEDDING_BASE_URL` > default
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `EMBEDDING_PROVIDER` | `"openai"` | Embeddings provider |
-| `EMBEDDING_MODEL` | `"text-embedding-3-small"` | Model name |
+| `EMBEDDING_PROVIDER` | `"infinity"` | Embeddings provider |
+| `EMBEDDING_MODEL` | Provider-specific | Model name |
 | `EMBEDDING_DIMENSION` | Model default | Embedding dimension |
 | `EMBEDDING_TASK_TYPE` | `None` | Task type for Google GenAI |
+| `EMBEDDING_BASE_URL` | Provider default | Generic server URL (all providers) |
+| `INFINITY_BASE_URL` | `http://localhost:7997` | Infinity-specific URL(s) |
+| `INFINITY_TOKEN` | `None` | Infinity authentication token(s) |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama-specific URL(s) |
+| `OPENAI_BASE_URL` | OpenAI API | OpenAI/Azure endpoint |
 
 ### Cache Configuration
 
@@ -1288,3 +1330,241 @@ except SettingsError as e:
 | `ENABLE_TRACING` | Auto-detected | Force enable/disable tracing |
 | `ENABLE_DATABASE` | Auto-detected | Force enable/disable database |
 | `ENABLE_MCP_SERVER` | Auto-detected | Force enable/disable MCP server |
+
+### Ollama-Specific Configuration
+
+```bash
+# Model and basic settings
+OLLAMA_MODEL=llama3.2                    # Model name to use
+
+# For LLM (chat/generation)
+OLLAMA_BASE_URL=http://localhost:11434   # Ollama server URL for LLM
+OLLAMA_TEMPERATURE=0.7                   # Sampling temperature (0.0-2.0)
+OLLAMA_MAX_TOKENS=                       # Maximum tokens to generate (optional)
+OLLAMA_THINKING_ENABLED=false            # Enable step-by-step thinking mode
+
+# For Embeddings (use unified config or provider-specific)
+EMBEDDING_BASE_URL=http://localhost:11434  # Recommended: unified config
+# OR
+OLLAMA_URL=http://localhost:11434          # Alternative: provider-specific
+
+# Timeout settings
+EMBEDDING_TIMEOUT=30                     # Unified timeout for embeddings
+OLLAMA_TIMEOUT=60                        # Timeout for LLM operations
+
+# Advanced Ollama settings
+OLLAMA_NUM_CTX=                          # Context window size (optional)
+OLLAMA_NUM_PREDICT=                      # Max tokens to predict (optional)
+OLLAMA_REPEAT_PENALTY=                   # Repetition penalty (optional)
+OLLAMA_TOP_K=                            # Top-K sampling (optional)
+OLLAMA_TOP_P=                            # Top-P sampling (optional)
+```
+
+### Gemini-Specific Configuration
+
+```bash
+# Required settings
+GEMINI_API_KEY=your-google-api-key       # Google API key (REQUIRED)
+# OR
+GOOGLE_GENAI_API_KEY=your-key            # Alternative key name
+
+# Model and basic settings  
+GEMINI_MODEL=gemini-1.5-flash            # Model name to use
+GEMINI_TEMPERATURE=0.7                   # Sampling temperature (0.0-2.0)
+GEMINI_MAX_TOKENS=                       # Maximum tokens to generate (optional)
+GEMINI_THINKING_ENABLED=false            # Enable step-by-step thinking mode
+
+# Advanced Gemini settings
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com  # API base URL
+```
+
+### Logging Configuration
+
+#### Basic Logging
+
+```bash
+LOG_LEVEL=INFO                        # Root log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_FILE_ENABLED=true                 # Enable file logging
+LOG_FILE_PATH=logs/app.log            # Log file path
+LOG_FILE_MAX_BYTES=1048576            # Max file size before rotation (1MB)
+LOG_FILE_BACKUP_COUNT=3               # Number of backup files
+```
+
+#### OTLP (OpenTelemetry) Logging
+
+**Quick Setup (Auto-Enable):**
+
+```bash
+# Minimal config - OTLP auto-enables with these settings
+ENABLE_LOGGER=true                                   # Enable logging features
+OTLP_ENDPOINT=http://localhost:4318/v1/logs          # OTLP collector endpoint
+
+# Optional: customize service identification (auto-detected)
+APP_NAME=my-app                                      # Auto-used for OTLP_SERVICE_NAME
+# OTLP_SERVICE_VERSION auto-detected from pyproject.toml
+```
+
+**Full Configuration:**
+
+```bash
+OTLP_ENABLED=true                                    # Explicit enable (optional if auto-enabled)
+OTLP_ENDPOINT=http://localhost:4318/v1/logs          # OTLP collector endpoint
+OTLP_LOG_LEVEL=INFO                                  # Independent OTLP log level (optional)
+OTLP_HEADERS='{"Authorization": "Bearer token"}'     # Auth headers (JSON)
+OTLP_TIMEOUT=10                                      # Request timeout (seconds)
+OTLP_INSECURE=false                                  # Skip SSL verification
+OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "faciliter-lib")
+OTLP_SERVICE_VERSION=1.0.0                           # Service version (default: from pyproject.toml)
+```
+
+**Auto-Enable Logic:**  
+OTLP automatically enables when:
+1. `ENABLE_LOGGER=true` (or `LOG_FILE_ENABLED=true`) AND
+2. `OTLP_ENDPOINT` is defined AND
+3. `OTLP_ENABLED` is not explicitly set to `false`
+
+**Independent Log Levels:**
+
+```bash
+# Example: DEBUG on console, only INFO+ to OTLP
+LOG_LEVEL=DEBUG
+OTLP_LOG_LEVEL=INFO
+
+# Example: Reduce OTLP costs - only errors
+LOG_LEVEL=INFO
+OTLP_LOG_LEVEL=ERROR
+```
+
+#### OVH Logs Data Platform
+
+```bash
+OVH_LDP_ENABLED=true                  # Enable OVH LDP
+OVH_LDP_TOKEN=your-token              # Authentication token
+OVH_LDP_ENDPOINT=gra1.logs.ovh.com    # OVH endpoint
+OVH_LDP_PORT=12202                    # GELF TCP port
+OVH_LDP_PROTOCOL=gelf_tcp             # Protocol: gelf_tcp, gelf_udp, syslog_tcp, syslog_udp
+OVH_LDP_USE_TLS=true                  # Use TLS encryption
+```
+
+## Example .env Files
+
+### Development Environment
+
+```bash
+# App settings
+APP_NAME=my-app
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+
+# LLM (local Ollama)
+OLLAMA_MODEL=llama3.2
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_TEMPERATURE=0.7
+OLLAMA_THINKING_ENABLED=true
+
+# Embeddings (local Infinity)
+EMBEDDING_PROVIDER=infinity
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+
+# Cache (local Redis)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Staging Environment
+
+```bash
+# App settings
+APP_NAME=my-app
+ENVIRONMENT=staging
+LOG_LEVEL=INFO
+
+# LLM (cloud Gemini)
+GEMINI_API_KEY=your-staging-api-key
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_TEMPERATURE=0.3
+
+# Embeddings (HA Infinity cluster)
+EMBEDDING_PROVIDER=infinity
+INFINITY_BASE_URL=http://staging-h1:7997,http://staging-h2:7997
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+
+# Cache (HA Redis cluster)
+REDIS_HOST=redis-staging.example.com
+REDIS_PASSWORD=staging-password
+REDIS_PREFIX=staging:
+```
+
+### Production Environment
+
+```bash
+# App settings
+APP_NAME=my-app
+ENVIRONMENT=production
+LOG_LEVEL=INFO
+
+# LLM (OpenAI)
+OPENAI_API_KEY=sk-prod-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=0.3
+
+# Embeddings (HA Infinity with auth)
+EMBEDDING_PROVIDER=infinity
+INFINITY_BASE_URL=http://prod-h1:7997,http://prod-h2:7997,http://prod-h3:7997
+INFINITY_TOKEN=token1,token2,token3
+EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
+EMBEDDING_DIMENSION=1024
+EMBEDDING_CACHE_DURATION_SECONDS=7200
+
+# Cache (HA Redis with auth)
+REDIS_HOST=redis-prod.example.com
+REDIS_PASSWORD=prod-secret-password
+REDIS_PREFIX=prod:
+REDIS_CACHE_TTL=3600
+
+# Database
+POSTGRES_HOST=db-prod.example.com
+POSTGRES_PORT=5432
+POSTGRES_DB=production_db
+POSTGRES_USER=prod_user
+POSTGRES_PASSWORD=prod-db-password
+POSTGRES_SSLMODE=require
+
+# Tracing
+ENABLE_TRACING=true
+LANGFUSE_PUBLIC_KEY=pk_prod_key
+LANGFUSE_SECRET_KEY=sk_prod_key
+LANGFUSE_HOST=https://cloud.langfuse.com
+
+# MCP Server
+MCP_SERVER_NAME=prod-mcp-server
+MCP_SERVER_PORT=8204
+MCP_SERVER_HOST=0.0.0.0
+MCP_TRANSPORT=streamable-http
+
+# OTLP Logging
+ENABLE_LOGGER=true
+OTLP_ENDPOINT=https://otlp.example.com/v1/logs
+OTLP_LOG_LEVEL=WARNING
+OTLP_SERVICE_NAME=my-app-production
+```
+
+## Running Scripts
+
+Use `uv run` to execute scripts with the proper environment:
+
+```bash
+# Run Python scripts
+uv run python your_script.py
+
+# Run examples
+uv run python examples/example_embeddings_usage.py
+uv run python examples/example_llm_usage.py
+
+# Run tests
+uv run pytest -q
+
+# Run with specific .env file
+uv run --env-file .env.production python your_script.py
+```

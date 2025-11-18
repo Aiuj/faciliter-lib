@@ -45,7 +45,7 @@ export GOOGLE_GENAI_API_KEY=your-key
 - Infinity: `EMBEDDING_BASE_URL` > default
 - OpenAI: `OPENAI_BASE_URL` > `EMBEDDING_BASE_URL` > default
 
-**See:** [EMBEDDING_URL_CONFIGURATION.md](../docs/EMBEDDING_URL_CONFIGURATION.md) for detailed configuration guide
+**See:** [EMBEDDINGS_GUIDE.md](../docs/EMBEDDINGS_GUIDE.md) for detailed configuration guide
 
 ## Ollama Configuration
 
@@ -189,4 +189,20 @@ gemini_client = create_client_from_env("gemini")
 # Logging uses environment variables automatically
 logger_settings = LoggerSettings.from_env()
 logger = setup_logging(logger_settings=logger_settings)
+```
+
+## Running Scripts
+
+Use `uv run` to execute scripts with the proper environment:
+
+```bash
+# Run Python scripts
+uv run python your_script.py
+
+# Run examples
+uv run python examples/example_embeddings_usage.py
+uv run python examples/example_llm_usage.py
+
+# Run tests
+uv run pytest -q
 ```

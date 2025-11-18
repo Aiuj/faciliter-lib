@@ -215,10 +215,13 @@ class ApiSettings(BaseSettings):
         if EnvParser.get_env("ENABLE_MCP_SERVER", env_type=bool) is not None:
             return EnvParser.get_env("ENABLE_MCP_SERVER", env_type=bool)
         
-        # Auto-detect based on MCP server settings
+        # Auto-detect based on MCP server settings (including SERVER_HOST/SERVER_PORT)
         return (
             EnvParser.get_env("MCP_SERVER_HOST") or
             EnvParser.get_env("MCP_SERVER_PORT") or
+            EnvParser.get_env("MCP_PORT") or
+            EnvParser.get_env("SERVER_HOST") or
+            EnvParser.get_env("SERVER_PORT") or
             EnvParser.get_env("MCP_SERVER_NAME") or
             EnvParser.get_env("MCP_TRANSPORT")
         ) is not None
@@ -232,9 +235,12 @@ class ApiSettings(BaseSettings):
         if EnvParser.get_env("ENABLE_FASTAPI_SERVER", env_type=bool) is not None:
             return EnvParser.get_env("ENABLE_FASTAPI_SERVER", env_type=bool)
         
+        # Auto-detect based on FastAPI server settings (including SERVER_HOST/SERVER_PORT)
         return (
             EnvParser.get_env("FASTAPI_HOST") or
             EnvParser.get_env("FASTAPI_PORT") or
+            EnvParser.get_env("SERVER_HOST") or
+            EnvParser.get_env("SERVER_PORT") or
             EnvParser.get_env("FASTAPI_RELOAD") or
             EnvParser.get_env("API_AUTH_ENABLED") or
             EnvParser.get_env("API_KEYS")

@@ -64,13 +64,13 @@ class MCPServerSettings(BaseSettings):
                 "description": "Version of the MCP server"
             },
             "host": {
-                "env_vars": ["MCP_SERVER_HOST"],
+                "env_vars": ["MCP_SERVER_HOST", "SERVER_HOST"],
                 "default": "0.0.0.0",
                 "env_type": str,
                 "description": "Host address to bind the server to"
             },
             "port": {
-                "env_vars": ["MCP_SERVER_PORT"],
+                "env_vars": ["MCP_SERVER_PORT", "MCP_PORT", "SERVER_PORT"],
                 "default": 8204,
                 "env_type": int,
                 "description": "Port number for the server"

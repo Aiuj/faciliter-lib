@@ -40,8 +40,10 @@ class FastAPIServerSettings(BaseSettings):
         """Create FastAPI server settings from environment variables."""
         cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
 
-        host = EnvParser.get_env("FASTAPI_HOST", default="0.0.0.0")
-        port = EnvParser.get_env("FASTAPI_PORT", default=8096, env_type=int)
+        # Try SERVER_HOST first, then FASTAPI_HOST for backward compatibility
+        host = EnvParser.get_env("FASTAPI_HOST") or EnvParser.get_env("SERVER_HOST", default="0.0.0.0")
+        # Try FASTAPI_PORT first, then FASTAPI_PORT (short), then SERVER_PORT
+        port = EnvParser.get_env("FASTAPI_PORT", env_type=int) or EnvParser.get_env("SERVER_PORT", default=8096, env_type=int)
         reload = EnvParser.get_env("FASTAPI_RELOAD", default=False, env_type=bool)
         url = EnvParser.get_env("FASTAPI_URL", default=None)
 

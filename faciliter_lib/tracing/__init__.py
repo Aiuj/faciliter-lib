@@ -1,6 +1,6 @@
 """Tracing module for OpenTelemetry and Langfuse configuration."""
 
-from .tracing import TracingManager, TracingProvider, setup_tracing
+from .tracing import TracingManager, TracingProvider, setup_tracing, suppress_otel_exporter_logs
 from .logger import setup_logging, get_logger, get_module_logger, get_last_logging_config
 from .logging_context import (
     LoggingContext,
@@ -33,6 +33,7 @@ __all__ = [
     "TracingManager",
     "TracingProvider",
     "setup_tracing",
+    "suppress_otel_exporter_logs",
     "setup_logging",
     "get_logger",
     "get_module_logger",

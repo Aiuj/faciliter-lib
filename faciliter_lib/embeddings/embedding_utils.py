@@ -331,7 +331,7 @@ def get_target_dimension_for_storage(storage_type: str, index_name: str = None) 
     
     Args:
         storage_type: Either "postgresql" or "opensearch"
-        index_name: For OpenSearch, specify the index name (e.g., "qa_pairs", "contextual_chunks")
+        index_name: For OpenSearch, specify the index name (e.g., "qa_pairs", "document_chunks")
     
     Returns:
         int: Target dimension for the storage system

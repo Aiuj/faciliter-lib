@@ -6,7 +6,8 @@ for time-based HMAC authentication, legacy API key authentication, and no auth.
 """
 
 import httpx
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple, BinaryIO, Union
+from pathlib import Path
 from .time_based_auth import generate_time_key
 
 try:
@@ -216,3 +217,381 @@ class APIClient:
             timeout=timeout or self.timeout,
             verify=self.verify_ssl
         )
+    
+    def _build_url(self, endpoint: str) -> str:
+        """
+        Build full URL from endpoint.
+        
+        Args:
+            endpoint: API endpoint (with or without leading slash)
+        
+        Returns:
+            Full URL
+        """
+        endpoint = endpoint.lstrip('/')
+        return f"{self.base_url}/{endpoint}"
+    
+    def _extract_error_message(self, response: httpx.Response) -> str:
+        """
+        Extract error message from response.
+        
+        Args:
+            response: Response object
+        
+        Returns:
+            Error message string
+        """
+        try:
+            error_data = response.json()
+            # Try common error message fields
+            if isinstance(error_data, dict):
+                return (error_data.get('message') or 
+                       error_data.get('error') or 
+                       error_data.get('detail') or 
+                       str(error_data))
+            return str(error_data)
+        except Exception:
+            return response.text or f"HTTP {response.status_code}"
+    
+    def get(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
+        expect_json: bool = True
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        """
+        Make a GET request.
+        
+        Args:
+            endpoint: API endpoint
+            params: Optional query parameters
+            headers: Optional additional headers
+            timeout: Optional timeout override
+            expect_json: Whether to parse response as JSON (default: True)
+        
+        Returns:
+            Tuple of (success: bool, data: Any or None, error_message: str or None)
+        """
+        url = self._build_url(endpoint)
+        request_headers = self._prepare_headers(headers)
+        
+        logger.info(f"API Request: GET {url}")
+        if params:
+            logger.debug(f"Query params: {params}")
+        
+        try:
+            with self._create_client(timeout) as client:
+                response = client.get(url, params=params, headers=request_headers)
+                response.raise_for_status()
+                
+                logger.debug(f"API Response: {response.status_code} from {response.url}")
+                
+                if expect_json:
+                    return True, response.json(), None
+                else:
+                    return True, response.content, None
+                    
+        except httpx.HTTPStatusError as e:
+            error_msg = f"HTTP {e.response.status_code}: {self._extract_error_message(e.response)}"
+            logger.error(f"API error: {error_msg}")
+            return False, None, error_msg
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out after {timeout or self.timeout}s: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except httpx.RequestError as e:
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except Exception as e:
+            error_msg = f"Unexpected error during request: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+    
+    def post(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        data: Optional[Any] = None,
+        files: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
+        expect_json: bool = True
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        """
+        Make a POST request.
+        
+        Args:
+            endpoint: API endpoint
+            params: Optional query parameters
+            json_data: Optional JSON payload
+            data: Optional form data
+            files: Optional files to upload (dict of {field_name: file_data})
+            headers: Optional additional headers
+            timeout: Optional timeout override
+            expect_json: Whether to parse response as JSON (default: True)
+        
+        Returns:
+            Tuple of (success: bool, data: Any or None, error_message: str or None)
+        """
+        url = self._build_url(endpoint)
+        request_headers = self._prepare_headers(headers)
+        
+        # Remove Content-Type header if uploading files (httpx will set it)
+        if files:
+            request_headers.pop('Content-Type', None)
+        
+        logger.info(f"API Request: POST {url}")
+        if params:
+            logger.debug(f"Query params: {params}")
+        if json_data:
+            logger.debug(f"JSON payload: {json_data}")
+        
+        try:
+            with self._create_client(timeout) as client:
+                response = client.post(
+                    url,
+                    params=params,
+                    json=json_data,
+                    data=data,
+                    files=files,
+                    headers=request_headers
+                )
+                response.raise_for_status()
+                
+                logger.debug(f"API Response: {response.status_code} from {response.url}")
+                
+                if expect_json:
+                    return True, response.json(), None
+                else:
+                    return True, response.content, None
+                    
+        except httpx.HTTPStatusError as e:
+            error_msg = f"HTTP {e.response.status_code}: {self._extract_error_message(e.response)}"
+            logger.error(f"API error: {error_msg}")
+            return False, None, error_msg
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out after {timeout or self.timeout}s: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except httpx.RequestError as e:
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except Exception as e:
+            error_msg = f"Unexpected error during request: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+    
+    def put(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
+        expect_json: bool = True
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        """
+        Make a PUT request.
+        
+        Args:
+            endpoint: API endpoint
+            params: Optional query parameters
+            json_data: Optional JSON payload
+            headers: Optional additional headers
+            timeout: Optional timeout override
+            expect_json: Whether to parse response as JSON (default: True)
+        
+        Returns:
+            Tuple of (success: bool, data: Any or None, error_message: str or None)
+        """
+        url = self._build_url(endpoint)
+        request_headers = self._prepare_headers(headers)
+        
+        logger.info(f"API Request: PUT {url}")
+        if params:
+            logger.debug(f"Query params: {params}")
+        if json_data:
+            logger.debug(f"JSON payload: {json_data}")
+        
+        try:
+            with self._create_client(timeout) as client:
+                response = client.put(
+                    url,
+                    params=params,
+                    json=json_data,
+                    headers=request_headers
+                )
+                response.raise_for_status()
+                
+                logger.debug(f"API Response: {response.status_code} from {response.url}")
+                
+                if expect_json:
+                    return True, response.json(), None
+                else:
+                    return True, response.content, None
+                    
+        except httpx.HTTPStatusError as e:
+            error_msg = f"HTTP {e.response.status_code}: {self._extract_error_message(e.response)}"
+            logger.error(f"API error: {error_msg}")
+            return False, None, error_msg
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out after {timeout or self.timeout}s: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except httpx.RequestError as e:
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except Exception as e:
+            error_msg = f"Unexpected error during request: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+    
+    def delete(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
+        expect_json: bool = True
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        """
+        Make a DELETE request.
+        
+        Args:
+            endpoint: API endpoint
+            params: Optional query parameters
+            json_data: Optional JSON payload
+            headers: Optional additional headers
+            timeout: Optional timeout override
+            expect_json: Whether to parse response as JSON (default: True)
+        
+        Returns:
+            Tuple of (success: bool, data: Any or None, error_message: str or None)
+        """
+        url = self._build_url(endpoint)
+        request_headers = self._prepare_headers(headers)
+        
+        logger.info(f"API Request: DELETE {url}")
+        if params:
+            logger.debug(f"Query params: {params}")
+        if json_data:
+            logger.debug(f"JSON payload: {json_data}")
+        
+        try:
+            with self._create_client(timeout) as client:
+                response = client.delete(
+                    url,
+                    params=params,
+                    json=json_data,
+                    headers=request_headers
+                )
+                response.raise_for_status()
+                
+                logger.debug(f"API Response: {response.status_code} from {response.url}")
+                
+                if expect_json:
+                    return True, response.json(), None
+                else:
+                    return True, response.content, None
+                    
+        except httpx.HTTPStatusError as e:
+            error_msg = f"HTTP {e.response.status_code}: {self._extract_error_message(e.response)}"
+            logger.error(f"API error: {error_msg}")
+            return False, None, error_msg
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out after {timeout or self.timeout}s: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except httpx.RequestError as e:
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+        except Exception as e:
+            error_msg = f"Unexpected error during request: {str(e)}"
+            logger.error(error_msg)
+            return False, None, error_msg
+    
+    def download_file(
+        self,
+        endpoint: str,
+        output_path: Union[str, Path],
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = None,
+        chunk_size: int = 8192
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Download a file from the API and save it to disk.
+        
+        Args:
+            endpoint: API endpoint
+            output_path: Path where to save the downloaded file
+            params: Optional query parameters
+            headers: Optional additional headers
+            timeout: Optional timeout override
+            chunk_size: Size of chunks to read when streaming (default: 8192 bytes)
+        
+        Returns:
+            Tuple of (success: bool, error_message: str or None)
+        """
+        url = self._build_url(endpoint)
+        request_headers = self._prepare_headers(headers)
+        
+        logger.info(f"API Request: GET {url} (downloading to {output_path})")
+        if params:
+            logger.debug(f"Query params: {params}")
+        
+        try:
+            with self._create_client(timeout) as client:
+                with client.stream("GET", url, params=params, headers=request_headers) as response:
+                    response.raise_for_status()
+                    
+                    # Save the file
+                    output_file = Path(output_path)
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    with open(output_file, 'wb') as f:
+                        for chunk in response.iter_bytes(chunk_size=chunk_size):
+                            if chunk:
+                                f.write(chunk)
+                
+                logger.info(f"Successfully downloaded file to {output_path}")
+                return True, None
+                
+        except httpx.HTTPStatusError as e:
+            error_msg = f"HTTP {e.response.status_code}: {self._extract_error_message(e.response)}"
+            logger.error(f"API error: {error_msg}")
+            return False, error_msg
+        except httpx.TimeoutException as e:
+            error_msg = f"Request timed out after {timeout or self.timeout}s: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+        except httpx.RequestError as e:
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+        except Exception as e:
+            error_msg = f"Error downloading file: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
+    
+    def close(self):
+        """Close any resources. For compatibility with context manager pattern."""
+        # httpx.Client is already closed by context manager in each method
+        # This method exists for compatibility with requests.Session pattern
+        pass
+    
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()

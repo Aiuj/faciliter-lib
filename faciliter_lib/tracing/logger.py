@@ -387,6 +387,14 @@ def setup_logging(
             logging.getLogger("langfuse").setLevel(logging.ERROR)
         except Exception:
             pass
+        
+        # Suppress OpenTelemetry exporter retry/error logs to prevent noise from transient failures
+        try:
+            logging.getLogger("opentelemetry.exporter.otlp.proto.http.trace_exporter").setLevel(logging.ERROR)
+            logging.getLogger("opentelemetry.exporter.otlp.proto.http").setLevel(logging.ERROR)
+            logging.getLogger("opentelemetry.sdk.trace").setLevel(logging.ERROR)
+        except Exception:
+            pass
 
         # Use root logger directly instead of creating app-named child
         # This keeps logger names clean (just module paths)

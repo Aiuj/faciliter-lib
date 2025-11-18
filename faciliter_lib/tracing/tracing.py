@@ -188,6 +188,23 @@ def add_trace_metadata(metadata: Any, settings: Optional["TracingSettings"] = No
         # Never fail application flow due to tracing
         pass
 
+def suppress_otel_exporter_logs() -> None:
+    """Suppress noisy OpenTelemetry exporter logs.
+    
+    This should be called after tracing is initialized to prevent retry warnings
+    and transient error messages from cluttering application logs.
+    """
+    import logging
+    
+    try:
+        logging.getLogger("opentelemetry.exporter.otlp.proto.http.trace_exporter").setLevel(logging.CRITICAL)
+        logging.getLogger("opentelemetry.exporter.otlp.proto.http").setLevel(logging.CRITICAL)
+        logging.getLogger("opentelemetry.sdk.trace").setLevel(logging.CRITICAL)
+        logging.getLogger("opentelemetry.sdk.trace.export").setLevel(logging.CRITICAL)
+    except Exception:
+        pass
+
+
 def setup_tracing(name: Optional[str] = None, settings: Optional["TracingSettings"] = None) -> TracingProvider:
     """Configure tracing and return the tracing provider.
     
@@ -198,4 +215,9 @@ def setup_tracing(name: Optional[str] = None, settings: Optional["TracingSetting
     This function maintains backward compatibility with the original API.
     """
     manager = TracingManager(service_name=name, settings=settings)
-    return manager.setup()
+    provider = manager.setup()
+    
+    # Suppress noisy OTel exporter logs after initialization
+    suppress_otel_exporter_logs()
+    
+    return provider

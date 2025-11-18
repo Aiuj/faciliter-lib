@@ -42,6 +42,7 @@ class EmbeddingsSettings(BaseSettings):
     # Infinity settings
     infinity_url: Optional[str] = None
     infinity_timeout: Optional[int] = None
+    infinity_token: Optional[str] = None  # Authentication token(s), comma-separated
     
     # Local model settings
     device: str = "auto"
@@ -76,6 +77,7 @@ class EmbeddingsSettings(BaseSettings):
             EnvParser.get_env("INFINITY_BASE_URL") or 
             embedding_base_url
         )
+        infinity_token = EnvParser.get_env("INFINITY_TOKEN") or EnvParser.get_env("EMBEDDING_TOKEN")
         openai_base_url = (
             EnvParser.get_env("OPENAI_BASE_URL") or 
             EnvParser.get_env("BASE_URL") or 
@@ -100,6 +102,7 @@ class EmbeddingsSettings(BaseSettings):
             "ollama_timeout": EnvParser.get_env("OLLAMA_TIMEOUT", env_type=int) if EnvParser.get_env("OLLAMA_TIMEOUT") else embedding_timeout,
             "infinity_url": infinity_url,
             "infinity_timeout": EnvParser.get_env("INFINITY_TIMEOUT", env_type=int) if EnvParser.get_env("INFINITY_TIMEOUT") else embedding_timeout,
+            "infinity_token": infinity_token,
             "device": EnvParser.get_env("EMBEDDING_DEVICE", default="auto"),
             "cache_dir": EnvParser.get_env("EMBEDDING_CACHE_DIR"),
             "trust_remote_code": EnvParser.get_env("EMBEDDING_TRUST_REMOTE_CODE", default=False, env_type=bool),
@@ -130,6 +133,7 @@ class EmbeddingsSettings(BaseSettings):
             "ollama_timeout": self.ollama_timeout,
             "infinity_url": self.infinity_url,
             "infinity_timeout": self.infinity_timeout,
+            "infinity_token": self.infinity_token,
             "device": self.device,
             "cache_dir": self.cache_dir,
             "trust_remote_code": self.trust_remote_code,

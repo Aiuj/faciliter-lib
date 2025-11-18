@@ -15,10 +15,10 @@ Infinity is a REST API server for serving embeddings with an OpenAI-compatible i
 ### 1. Install Infinity Server
 
 ```bash
-# Using pip
-pip install infinity-emb[all]
+# Using uv (recommended)
+uv pip install infinity-emb[all]
 
-# Using Docker
+# Using Docker (recommended for production)
 docker run -p 7997:7997 michaelf34/infinity:latest
 ```
 
@@ -27,7 +27,11 @@ docker run -p 7997:7997 michaelf34/infinity:latest
 The Infinity provider in faciliter-lib only requires `requests`:
 
 ```bash
-pip install requests
+# Install with uv
+uv pip install requests
+
+# Or add to your project dependencies
+uv add requests
 ```
 
 ## Configuration
@@ -57,7 +61,7 @@ EMBEDDING_DIMENSION=384
 **Configuration Guide:** The library supports both unified (`EMBEDDING_BASE_URL`) and provider-specific (`INFINITY_BASE_URL`) configuration. 
 - Use `EMBEDDING_BASE_URL` for simpler single-provider setups
 - Use `INFINITY_BASE_URL` when running multiple embedding providers (Infinity + Ollama + OpenAI)
-- See [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md) for complete details and examples
+- See [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md) for complete configuration details
 
 ### Supported Models
 
@@ -143,19 +147,19 @@ docker run -d \
   --model-name-or-path intfloat/e5-base-v2
 ```
 
-### Option 2: Python Package
+### Option 2: Python Package with uv
 
 ```bash
-# Install
-pip install infinity-emb[all]
+# Install with uv
+uv pip install infinity-emb[all]
 
-# Run server
-infinity_emb \
+# Run server using uv
+uv run infinity_emb \
   --model-name-or-path BAAI/bge-small-en-v1.5 \
   --port 7997
 
 # With GPU support
-infinity_emb \
+uv run infinity_emb \
   --model-name-or-path BAAI/bge-small-en-v1.5 \
   --device cuda \
   --port 7997
@@ -213,7 +217,7 @@ print(f"Model info: {info}")
 
 4. **GPU Acceleration**: Run Infinity with GPU for significant speedup
    ```bash
-   infinity_emb --model-name-or-path BAAI/bge-base-en-v1.5 --device cuda
+   uv run infinity_emb --model-name-or-path BAAI/bge-base-en-v1.5 --device cuda
    ```
 
 ## Error Handling

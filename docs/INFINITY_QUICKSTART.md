@@ -37,7 +37,7 @@ EMBEDDING_TIMEOUT=30                       # Optional timeout
 EMBEDDING_DIMENSION=384
 ```
 
-**Note:** You can also use `INFINITY_URL` instead of `EMBEDDING_BASE_URL` if you need to run multiple embedding providers simultaneously. See [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md) for details.
+**Note:** You can also use `INFINITY_BASE_URL` instead of `EMBEDDING_BASE_URL` if you need to run multiple embedding providers simultaneously. See [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md) for details.
 
 ### 3. Use It!
 
@@ -113,7 +113,7 @@ Run the example script:
 
 ```bash
 cd faciliter-lib
-python examples/example_infinity_embeddings.py
+uv run examples/example_infinity_embeddings.py
 ```
 
 ## Documentation

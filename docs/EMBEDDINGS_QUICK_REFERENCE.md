@@ -1,398 +1,259 @@
 # Embeddings Quick Reference
 
+Get started with embeddings in `faciliter-lib` in minutes. **For comprehensive documentation, see [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md).**
+
 ## Installation
 
-The Embeddings module is included in `faciliter-lib` and requires Python 3.12+.
+```bash
+# Recommended: Install with all embedding providers
+uv pip install "faciliter-lib[all]"
 
-Optional dependencies for different providers:
-- `openai` (for OpenAI embeddings)
-- `google-genai` (for Google GenAI embeddings with task types)
-- `sentence-transformers` (for local HuggingFace models)
-- `transformers` + `torch` (alternative for local models)
-- `ollama` (for local Ollama embeddings)
-- `requests` (for Infinity server embeddings)
+# Or install specific providers
+uv pip install "faciliter-lib[embeddings]"  # Core only
+uv pip install "faciliter-lib[infinity]"    # + Infinity
+uv pip install "faciliter-lib[openai]"      # + OpenAI
+```
 
 ## Quick Start
 
+### Development (Single Host)
+
+```bash
+# .env
+EMBEDDING_PROVIDER=infinity
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+```
+
 ```python
 from faciliter_lib.embeddings import create_embedding_client
 
-# Auto-detect from environment
 client = create_embedding_client()
-embedding = client.generate_embedding("Hello world")
-embeddings = client.generate_embedding(["Text 1", "Text 2"])
-
-# Provider-specific
-from faciliter_lib.embeddings import create_openai_client, create_google_genai_client
-
-# OpenAI embeddings
-client = create_openai_client(model="text-embedding-3-small")
-embedding = client.generate_embedding("Your text here")
-
-# Google GenAI with task types
-from faciliter_lib.embeddings import TaskType
-client = create_google_genai_client(
-    model="text-embedding-004",
-    task_type=TaskType.SEMANTIC_SIMILARITY
-)
+embedding = client.generate_embedding("Hello, world!")
 ```
+
+### Production (High Availability)
+
+```bash
+# .env - Comma-separated URLs = automatic failover
+EMBEDDING_PROVIDER=infinity
+INFINITY_BASE_URL=http://h1:7997,http://h2:7997,http://h3:7997
+INFINITY_TOKEN=token1,token2,token3
+EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
+```
+
+```python
+from faciliter_lib.embeddings import create_embedding_client
+
+# Automatically creates FallbackEmbeddingClient with 3 providers
+client = create_embedding_client()
+embedding = client.generate_embedding("Production text")
+```
+
+**That's it!** Automatic failover with zero configuration changes.
 
 ## Key Features
 
-✅ Unified interface across all providers  
-✅ Multiple providers: OpenAI, Google GenAI, Local (HuggingFace), Ollama, Infinity  
-✅ Task type support (SEMANTIC_SIMILARITY, CLASSIFICATION, CLUSTERING, etc.)  
-✅ Environment configuration with auto-detection  
-✅ Local model inference (privacy-friendly)  
-✅ High-throughput local server (Infinity)  
-✅ Custom embedding dimensions (where supported)  
-✅ L2 normalization support  
-✅ Batch processing for efficiency  
-✅ Health checks and performance monitoring
+✅ **Zero-Config HA**: Comma-separated URLs trigger automatic fallback  
+✅ **Token Authentication**: Secure your embedding servers  
+✅ **Multiple Providers**: Infinity, OpenAI, Google GenAI, Ollama, Local  
+✅ **Task-Specific**: Optimize for similarity, clustering, classification  
+✅ **Caching**: Automatic deduplication and result caching  
+✅ **Health Checks**: Monitor provider availability  
 
-## Supported Providers
+## Recommended Setup
 
-### OpenAI
+### Why Infinity?
 
-- **Models**: `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002`
-- **Features**: Custom dimensions, Azure OpenAI support
-- **API Key**: `OPENAI_API_KEY`
+- ✅ Local deployment (privacy, no API costs)
+- ✅ High throughput (GPU acceleration)
+- ✅ Any HuggingFace model
+- ✅ OpenAI-compatible API
 
-### Google GenAI
-
-- **Models**: `text-embedding-004` and others
-- **Features**: Task types, grounding context, title parameter
-- **API Key**: `GOOGLE_GENAI_API_KEY` or `GEMINI_API_KEY`
-
-### Infinity (NEW)
-
-- **Models**: Any HuggingFace embedding model
-- **Features**: High-throughput local server, OpenAI-compatible API, GPU support
-- **Setup**: Requires Infinity server running (Docker or pip)
-- **Popular**: `BAAI/bge-small-en-v1.5`, `BAAI/bge-base-en-v1.5`, `intfloat/e5-base-v2`
-- **Documentation**: See [INFINITY_PROVIDER.md](./INFINITY_PROVIDER.md)
-
-### Local (HuggingFace)
-
-- **Models**: Any sentence-transformers or transformers model
-- **Features**: No API calls, GPU/CPU support, model caching
-- **Popular**: `sentence-transformers/all-MiniLM-L6-v2`, `BAAI/bge-base-en-v1.5`
-
-### Ollama
-
-- **Models**: Local Ollama embedding models
-- **Features**: Local inference, model management via Ollama
-- **Setup**: Requires local Ollama installation
-
-## Task Types
-
-```python
-from faciliter_lib.embeddings import TaskType
-
-TaskType.SEMANTIC_SIMILARITY    # Default for similarity search
-TaskType.CLASSIFICATION         # For text classification tasks  
-TaskType.CLUSTERING            # For grouping similar texts
-TaskType.RETRIEVAL_DOCUMENT    # For indexing documents (official Google GenAI)
-TaskType.RETRIEVAL_QUERY       # For search queries (official Google GenAI)
-TaskType.CODE_RETRIEVAL_QUERY  # For code search queries
-TaskType.QUESTION_ANSWERING    # For Q&A systems
-TaskType.FACT_VERIFICATION     # For fact-checking applications
-```
-
-## Configuration Methods
-
-### 1. Direct Creation
-
-```python
-from faciliter_lib.embeddings import create_openai_client, create_google_genai_client
-
-# OpenAI with custom settings
-client = create_openai_client(
-    model="text-embedding-3-small",
-    embedding_dim=512,  # Custom dimensions
-    api_key="your-key"
-)
-
-# Google GenAI with task type
-client = create_google_genai_client(
-    model="text-embedding-004",
-    task_type="SEMANTIC_SIMILARITY",
-    title="Document Similarity Search"
-)
-```
-
-### 2. Factory Pattern
-
-```python
-from faciliter_lib.embeddings import EmbeddingFactory
-
-# Auto-detect from environment
-client = EmbeddingFactory.create()
-
-# Explicit provider
-client = EmbeddingFactory.create(
-    provider="openai",
-    model="text-embedding-3-large"
-)
-
-# Provider-specific methods
-client = EmbeddingFactory.openai(model="text-embedding-3-small")
-client = EmbeddingFactory.google_genai(task_type="CLASSIFICATION")
-client = EmbeddingFactory.local(model="sentence-transformers/all-MiniLM-L6-v2")
-```
-
-### 3. From Environment
-
-```python
-from faciliter_lib.embeddings import create_client_from_env
-
-# Uses environment variables for configuration
-client = create_client_from_env()
-```
-
-### 4. Configuration Objects
-
-```python
-from faciliter_lib.embeddings import EmbeddingsConfig, EmbeddingFactory
-
-config = EmbeddingsConfig(
-    provider="openai",
-    model="text-embedding-3-small",
-    api_key="your-key",
-    task_type="SEMANTIC_SIMILARITY"
-)
-client = EmbeddingFactory.from_config(config)
-```
-
-## Environment Variables
-
-### Provider Selection
+### Start Infinity Server
 
 ```bash
-EMBEDDING_PROVIDER=openai|google_genai|ollama|local
-EMBEDDING_MODEL=text-embedding-3-small
-EMBEDDING_DIMENSION=1536
-EMBEDDING_TASK_TYPE=SEMANTIC_SIMILARITY
-EMBEDDING_TITLE="My Embedding Task"
+# Docker (recommended)
+docker run -p 7997:7997 michaelf34/infinity:latest --model-name-or-path BAAI/bge-small-en-v1.5
+
+# Or install locally
+uv pip install infinity-emb[all]
+infinity_emb v2 --model-name-or-path BAAI/bge-small-en-v1.5
 ```
 
-### OpenAI Configuration
+## Common Patterns
 
-```bash
-OPENAI_API_KEY=your-openai-key
-# For custom endpoints (Azure, etc.) - use EMBEDDING_BASE_URL or OPENAI_BASE_URL
-EMBEDDING_BASE_URL=https://api.openai.com/v1  # Recommended for single provider
-# OPENAI_BASE_URL=https://api.openai.com/v1  # Alternative for multi-provider setups
-OPENAI_ORGANIZATION=org-id
-OPENAI_PROJECT=project-id
-```
+### Single Embedding
 
-### Google GenAI Configuration
-```bash
-GOOGLE_GENAI_API_KEY=your-google-key
-GEMINI_API_KEY=your-google-key  # Alternative
-```
-
-### Local Model Configuration
-```bash
-EMBEDDING_DEVICE=cpu|cuda|auto
-EMBEDDING_CACHE_DIR=/path/to/model/cache
-EMBEDDING_TRUST_REMOTE_CODE=true|false
-EMBEDDING_USE_SENTENCE_TRANSFORMERS=true|false
-```
-
-### Ollama Configuration
-```bash
-# Recommended for single provider
-EMBEDDING_BASE_URL=http://localhost:11434
-EMBEDDING_TIMEOUT=30
-
-# Alternative for multi-provider setups
-# OLLAMA_URL=http://localhost:11434
-# OLLAMA_TIMEOUT=30
-```
-
-### Infinity Configuration
-```bash
-# Recommended for single provider
-EMBEDDING_BASE_URL=http://localhost:7997
-EMBEDDING_TIMEOUT=30
-
-# Alternative for multi-provider setups
-# INFINITY_BASE_URL=http://localhost:7997
-# INFINITY_TIMEOUT=30
-```
-
-### Cache Configuration
-```bash
-# Cache duration in seconds (default: 7200 = 2 hours)
-EMBEDDING_CACHE_DURATION_SECONDS=7200
-
-# Disable caching entirely (useful for testing or always-fresh embeddings)
-EMBEDDING_CACHE_DURATION_SECONDS=0
-```
-
-**Note**: Setting `EMBEDDING_CACHE_DURATION_SECONDS=0` completely disables the embedding cache. When disabled, all embedding requests bypass the cache, ensuring fresh embeddings are generated every time without any cache lookup overhead.
-
-**📖 For detailed URL configuration including multi-provider setups, see [EMBEDDING_URL_CONFIGURATION.md](./EMBEDDING_URL_CONFIGURATION.md)**
-```
-
-## Usage Patterns
-
-### Basic Embedding Generation
 ```python
 from faciliter_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
-
-# Single text
 embedding = client.generate_embedding("Your text here")
-print(f"Embedding dimension: {len(embedding)}")
-
-# Batch processing
-texts = ["Text 1", "Text 2", "Text 3"]
-embeddings = client.generate_embedding(texts)
-print(f"Generated {len(embeddings)} embeddings")
+print(f"Dimension: {len(embedding)}")
 ```
 
-### Task-Specific Embeddings
+### Batch Embeddings
+
 ```python
-from faciliter_lib.embeddings import create_google_genai_client, TaskType
+# More efficient than individual calls
+embeddings = client.generate_embeddings([
+    "First document",
+    "Second document",
+    "Third document"
+])
 
-# For similarity search
-similarity_client = create_google_genai_client(
-    task_type=TaskType.SEMANTIC_SIMILARITY
-)
-
-# For classification
-classification_client = create_google_genai_client(
-    task_type=TaskType.CLASSIFICATION,
-    title="Sentiment Analysis"
-)
-
-# For clustering
-clustering_client = create_google_genai_client(
-    task_type=TaskType.CLUSTERING
-)
+for i, emb in enumerate(embeddings):
+    print(f"Document {i+1}: {len(emb)} dimensions")
 ```
 
-### Local Model Usage
+### With Task Type
+
 ```python
-from faciliter_lib.embeddings import create_local_client
+from faciliter_lib.embeddings import create_embedding_client, TaskType
 
-# CPU inference
-client = create_local_client(
-    model="sentence-transformers/all-MiniLM-L6-v2",
-    device="cpu"
+client = create_embedding_client()
+embedding = client.generate_embedding(
+    "Search query",
+    task_type=TaskType.RETRIEVAL_QUERY
 )
-
-# GPU inference (if available)
-gpu_client = create_local_client(
-    model="BAAI/bge-large-en-v1.5",
-    device="cuda"
-)
-
-# Get model information
-info = client.get_model_info()
-print(f"Model: {info['model_name']}, Device: {info['device']}")
 ```
 
-### Normalization and Dimensions
+### Custom Dimensions
+
 ```python
 from faciliter_lib.embeddings import create_openai_client
 
-# With L2 normalization (default)
-client = create_openai_client(use_l2_norm=True)
-
-# Without normalization
-client = create_openai_client(use_l2_norm=False)
-
-# Custom dimensions (for supported models)
+# Reduce token usage for OpenAI
 client = create_openai_client(
     model="text-embedding-3-small",
-    embedding_dim=512  # Reduce from default 1536
+    embedding_dim=512  # Default is 1536
 )
 ```
 
-## Health Checks and Monitoring
+## Essential Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `EMBEDDING_PROVIDER` | Provider type | `infinity`, `openai` |
+| `EMBEDDING_MODEL` | Model name | `BAAI/bge-small-en-v1.5` |
+| `INFINITY_BASE_URL` | Infinity server URL(s) | `http://localhost:7997` or<br>`http://h1:7997,http://h2:7997` |
+| `INFINITY_TOKEN` | Auth token(s) | `token123` or<br>`token1,token2,token3` |
+| `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
+
+**For complete configuration reference, see [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md).**
+
+## Quick Examples
+
+### Development
+
+```bash
+# .env
+EMBEDDING_PROVIDER=infinity
+EMBEDDING_BASE_URL=http://localhost:7997
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+```
+
+### Staging (HA without Auth)
+
+```bash
+# .env
+EMBEDDING_PROVIDER=infinity
+INFINITY_BASE_URL=http://staging-h1:7997,http://staging-h2:7997
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+```
+
+### Production (HA with Auth)
+
+```bash
+# .env
+EMBEDDING_PROVIDER=infinity
+INFINITY_BASE_URL=http://prod-h1:7997,http://prod-h2:7997,http://prod-h3:7997
+INFINITY_TOKEN=token1,token2,token3
+EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
+EMBEDDING_DIMENSION=1024
+EMBEDDING_CACHE_DURATION_SECONDS=7200
+```
+
+## Providers at a Glance
+
+| Provider | Best For | Configuration |
+|----------|----------|---------------|
+| **Infinity** | Production (local, fast) | `INFINITY_BASE_URL`, `INFINITY_TOKEN` |
+| **OpenAI** | Cloud, latest models | `OPENAI_API_KEY` |
+| **Google GenAI** | Task-specific embeddings | `GOOGLE_GENAI_API_KEY` |
+| **Ollama** | Local experimentation | `OLLAMA_URL` |
+| **Local** | Offline, privacy | `EMBEDDING_MODEL` (HuggingFace) |
+
+## Health Checks
 
 ```python
-# Check if provider is accessible
+# Check provider availability
 if client.health_check():
-    print("Provider is healthy")
-
-# Get timing information
-embedding = client.generate_embedding("test")
-time_ms = client.get_embedding_time_ms()
-print(f"Generation took {time_ms:.2f}ms")
-
-# Provider-specific information
-if hasattr(client, 'get_model_info'):
-    info = client.get_model_info()
-    print(f"Model info: {info}")
+    print("✓ Provider is healthy")
 ```
 
-## Error Handling
+## Common Task Types
 
 ```python
-from faciliter_lib.embeddings import EmbeddingGenerationError
+from faciliter_lib.embeddings import TaskType
 
-try:
-    client = create_embedding_client(provider="openai")
-    embedding = client.generate_embedding("Your text")
-except ImportError as e:
-    print(f"Missing dependency: {e}")
-    # Install required package: pip install openai
-except EmbeddingGenerationError as e:
-    print(f"Embedding generation failed: {e}")
-except ValueError as e:
-    print(f"Configuration error: {e}")
+# Most common
+TaskType.SEMANTIC_SIMILARITY  # Default - similarity search
+TaskType.RETRIEVAL_QUERY      # Search queries
+TaskType.RETRIEVAL_DOCUMENT   # Document indexing
+TaskType.CLASSIFICATION       # Text classification
+TaskType.CLUSTERING           # Grouping similar texts
 ```
 
-## Provider Comparison
+## Popular Models
 
-| Provider | Local | API Key | Custom Dims | Task Types | Batch |
-|----------|-------|---------|-------------|------------|-------|
-| OpenAI | ❌ | ✅ | ✅ | ❌ | ✅ |
-| Google GenAI | ❌ | ✅ | ❌ | ✅ | ✅ |
-| Local (HF) | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Ollama | ✅ | ❌ | ❌ | ❌ | ✅ |
+### Infinity (HuggingFace Models)
 
-## Best Practices
+```bash
+# Fast, good quality (384 dims)
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 
-1. **Provider Selection**:
-   - Use OpenAI for production with custom dimensions
-   - Use Google GenAI for task-specific embeddings
-   - Use Local models for privacy or offline usage
-   - Use Ollama for local experimentation
+# Balanced (768 dims)
+EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
 
-2. **Performance**:
-   - Batch multiple texts together for efficiency
-   - Enable L2 normalization for similarity tasks
-   - Use GPU for local models when available
+# Best quality (1024 dims)
+EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
 
-3. **Configuration**:
-   - Set environment variables for easy switching
-   - Use task types for specialized use cases
-   - Cache local models to avoid redownloading
-
-4. **Error Handling**:
-   - Always wrap embedding calls in try-catch
-   - Check health status before heavy usage
-   - Have fallback providers configured
-
-## Migration from Legacy
-
-If migrating from the old singleton pattern:
-
-```python
-# Old way
-from faciliter_lib.embeddings import get_embedding_client
-client = get_embedding_client()  # Still works!
-
-# New recommended way
-from faciliter_lib.embeddings import create_embedding_client
-client = create_embedding_client()  # Enhanced auto-detection
+# Multilingual (768 dims)
+EMBEDDING_MODEL=intfloat/e5-base-v2
 ```
 
-The legacy API remains fully compatible while the new API provides enhanced capabilities and multiple provider support.
+### OpenAI
+
+```bash
+# Cost-effective (1536 dims, can reduce)
+EMBEDDING_MODEL=text-embedding-3-small
+
+# Best performance (3072 dims, can reduce)
+EMBEDDING_MODEL=text-embedding-3-large
+
+# Legacy (1536 dims)
+EMBEDDING_MODEL=text-embedding-ada-002
+```
+
+## Performance Tips
+
+1. **Use batching** for multiple texts (more efficient)
+2. **Enable caching** to avoid redundant API calls
+3. **Use Infinity** for high throughput (local GPU)
+4. **Reduce dimensions** for OpenAI to save costs
+5. **Set appropriate timeouts** (30s default)
+
+## Next Steps
+
+- 📖 **Comprehensive Guide**: [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md)
+- 🚀 **Infinity Setup**: [INFINITY_QUICKSTART.md](./INFINITY_QUICKSTART.md)
+- 🔧 **Infinity Provider**: [INFINITY_PROVIDER.md](./INFINITY_PROVIDER.md)
+
+## Support
+
+For issues or questions:
+- Check [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md) troubleshooting section
+- Review examples in `examples/example_embeddings_usage.py`
+- See test cases in `tests/test_embeddings.py`

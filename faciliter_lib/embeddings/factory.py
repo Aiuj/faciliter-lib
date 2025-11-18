@@ -375,6 +375,9 @@ def create_embedding_client(
 ) -> BaseEmbeddingClient:
     """Create an embedding client with auto-detection or specified provider.
     
+    Automatically uses FallbackEmbeddingClient when comma-separated URLs are detected
+    in environment variables for high availability.
+    
     Args:
         provider: Provider name (if None, auto-detect from environment)
         model: Model name
@@ -384,8 +387,31 @@ def create_embedding_client(
         **kwargs: Additional provider-specific parameters
         
     Returns:
-        Configured embedding client instance
+        Configured embedding client instance (FallbackEmbeddingClient if multiple URLs detected)
     """
+    import os
+    
+    # Detect if we should use fallback client (comma-separated URLs)
+    provider_name = provider or embeddings_settings.provider.lower()
+    
+    # Check for comma-separated URLs based on provider
+    url_to_check = None
+    if provider_name == "infinity":
+        url_to_check = os.getenv("INFINITY_BASE_URL") or os.getenv("EMBEDDING_BASE_URL")
+    elif provider_name == "ollama":
+        url_to_check = os.getenv("OLLAMA_URL") or os.getenv("EMBEDDING_BASE_URL")
+    elif provider_name == "openai":
+        url_to_check = os.getenv("OPENAI_BASE_URL") or os.getenv("EMBEDDING_BASE_URL")
+    else:
+        url_to_check = os.getenv("EMBEDDING_BASE_URL")
+    
+    # If comma-separated URLs detected, use FallbackEmbeddingClient
+    if url_to_check and "," in url_to_check:
+        from .fallback_client import FallbackEmbeddingClient
+        logger.info(f"Detected comma-separated URLs for provider '{provider_name}', using FallbackEmbeddingClient for HA")
+        return FallbackEmbeddingClient.from_env(provider=provider_name)
+    
+    # Otherwise use single provider
     return EmbeddingFactory.create(
         provider=provider,
         model=model,

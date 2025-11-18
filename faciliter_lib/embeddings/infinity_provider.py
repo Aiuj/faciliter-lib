@@ -36,6 +36,7 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
         use_l2_norm: bool = True,
         base_url: Optional[str] = None,
         timeout: Optional[int] = None,
+        token: Optional[str] = None,
         **kwargs
     ):
         """Initialize Infinity embedding client.
@@ -46,6 +47,7 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
             use_l2_norm: Whether to apply L2 normalization
             base_url: Base URL of the Infinity server (default: http://localhost:7997)
             timeout: Request timeout in seconds (default: 30)
+            token: Authentication token for secured Infinity servers
             **kwargs: Additional parameters
         """
         if requests is None:
@@ -65,6 +67,13 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
             or "http://localhost:7997"
         )
         self.base_url = self.base_url.rstrip('/')
+        
+        # Set token for authentication
+        # Priority: explicit param > INFINITY_TOKEN > EMBEDDING_TOKEN
+        self.token = (
+            token
+            or embeddings_settings.infinity_token
+        )
         
         # Set timeout
         # Priority: explicit param > INFINITY_TIMEOUT > EMBEDDING_TIMEOUT > OLLAMA_TIMEOUT > default 30s
@@ -100,11 +109,16 @@ class InfinityEmbeddingClient(BaseEmbeddingClient):
             if self.embedding_dim:
                 request_body['dimensions'] = self.embedding_dim
             
+            # Prepare headers
+            headers = {'Content-Type': 'application/json'}
+            if self.token:
+                headers['Authorization'] = f'Bearer {self.token}'
+            
             # Make request to Infinity server
             response = requests.post(
                 f"{self.base_url}/embeddings",
                 json=request_body,
-                headers={'Content-Type': 'application/json'},
+                headers=headers,
                 timeout=self.timeout
             )
             

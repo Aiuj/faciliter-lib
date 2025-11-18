@@ -29,6 +29,7 @@ Example usage:
 from .base import BaseEmbeddingClient, EmbeddingGenerationError
 from .ollama import OllamaEmbeddingClient
 from .embeddings_config import EmbeddingsConfig, embeddings_settings, TaskType
+from .fallback_client import FallbackEmbeddingClient
 from .embedding_utils import (
     normalize_embedding_dimension,
     normalize_embeddings_batch,
@@ -86,6 +87,9 @@ __all__ = [
     
     # Always available providers
     "OllamaEmbeddingClient",
+    
+    # Fallback client for high availability
+    "FallbackEmbeddingClient",
     
     # Configuration
     "EmbeddingsConfig",

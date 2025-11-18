@@ -633,11 +633,17 @@ confidence = result['score']  # 0.168...
 
 Detailed documentation is available in the `docs/` directory:
 
+- **[Version Management](docs/VERSION_MANAGEMENT.md)** - 🆕 Automatic version from pyproject.toml
 - **[Settings Management](docs/settings.md)** - 🆕 Unified configuration system guide
+- **[Settings Singleton](docs/SETTINGS_SINGLETON_QUICK_REF.md)** - Global settings management
 - **[API Authentication](docs/API_AUTH_QUICK_REFERENCE.md)** - 🆕 Time-based HMAC authentication for FastAPI/MCP
+- **[Service Usage Tracking](docs/SERVICE_USAGE_TRACKING.md)** - 🆕 AI service cost and usage tracking
+- **[Job Queue System](docs/JOB_QUEUE_QUICK_REFERENCE.md)** - 🆕 Async job processing with Redis
 - **[Excel Manager](docs/excel_manager.md)** - Complete guide for Excel file processing
 - **[Cache System](docs/cache.md)** - Redis caching configuration and usage
 - **[LLM Integration](docs/llm.md)** - Multi-provider LLM client documentation
+- **[Centralized Logging](docs/centralized-logging.md)** - OTLP, OVH LDP, and structured logging
+- **[OTLP Quick Reference](docs/OTLP_QUICK_REFERENCE.md)** - OpenTelemetry logging setup
 - **[Language Utils](docs/language_utils.md)** - Language detection and utilities
 - **[MCP Utils](docs/mcp_utils.md)** - Model Context Protocol helpers
 - **[Environment Variables](docs/ENV_VARIABLES.md)** - Configuration reference

@@ -10,7 +10,7 @@ Features demonstrated:
 - Monitoring and statistics
 """
 
-from faciliter_lib.embeddings import FallbackEmbeddingClient, EmbeddingGenerationError
+from core_lib.embeddings import FallbackEmbeddingClient, EmbeddingGenerationError
 import time
 
 

@@ -23,8 +23,8 @@ def example_fastapi_middleware():
     """Example: Protect all FastAPI routes with authentication middleware."""
     try:
         from fastapi import FastAPI
-        from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-        from faciliter_lib.config import AuthSettings
+        from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+        from core_lib.config import AuthSettings
         
         # Create FastAPI app
         app = FastAPI()
@@ -64,8 +64,8 @@ def example_fastapi_dependency():
     """Example: Protect specific FastAPI routes with dependencies."""
     try:
         from fastapi import FastAPI, Depends
-        from faciliter_lib.api_utils.fastapi_auth import create_auth_dependency
-        from faciliter_lib.config import AuthSettings
+        from core_lib.api_utils.fastapi_auth import create_auth_dependency
+        from core_lib.config import AuthSettings
         
         app = FastAPI()
         settings = AuthSettings.from_env()
@@ -100,8 +100,8 @@ def example_fastmcp_server():
     """Example: Protect FastMCP v2 server with authentication."""
     try:
         from mcp import FastMCP
-        from faciliter_lib.api_utils.fastmcp_auth import create_auth_middleware
-        from faciliter_lib.config import AuthSettings
+        from core_lib.api_utils.fastmcp_auth import create_auth_middleware
+        from core_lib.config import AuthSettings
         
         # Create MCP server
         mcp = FastMCP("Authenticated MCP Server")
@@ -134,8 +134,8 @@ def example_client_fastapi():
     """Example: Make authenticated requests to FastAPI server."""
     try:
         import httpx
-        from faciliter_lib.api_utils import generate_time_key
-        from faciliter_lib.config import AuthSettings
+        from core_lib.api_utils import generate_time_key
+        from core_lib.config import AuthSettings
         
         # Load settings (must have same AUTH_PRIVATE_KEY as server)
         settings = AuthSettings.from_env()
@@ -175,8 +175,8 @@ def example_client_fastapi():
 
 def example_client_mcp():
     """Example: Connect to MCP server with authentication."""
-    from faciliter_lib.api_utils import get_auth_headers, get_auth_env_vars
-    from faciliter_lib.config import AuthSettings
+    from core_lib.api_utils import get_auth_headers, get_auth_env_vars
+    from core_lib.config import AuthSettings
     
     settings = AuthSettings.from_env()
     
@@ -199,8 +199,8 @@ def example_client_mcp():
 
 def example_manual_verification():
     """Example: Manually verify authentication keys."""
-    from faciliter_lib.api_utils import generate_time_key, verify_time_key
-    from faciliter_lib.config import AuthSettings
+    from core_lib.api_utils import generate_time_key, verify_time_key
+    from core_lib.config import AuthSettings
     
     settings = AuthSettings.from_env(
         auth_enabled=True,
@@ -228,7 +228,7 @@ def example_manual_verification():
 def example_hour_transitions():
     """Example: Demonstrate that keys work across hour boundaries."""
     from datetime import datetime, timedelta, timezone
-    from faciliter_lib.api_utils import generate_time_key, verify_time_key
+    from core_lib.api_utils import generate_time_key, verify_time_key
     
     private_key = "my-super-secret-key-for-testing-12345"
     

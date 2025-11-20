@@ -17,9 +17,9 @@ Environment variables for connection pooling:
 
 import time
 import logging
-from faciliter_lib.cache import RedisCache, ValkeyCache
-from faciliter_lib.cache.redis_config import RedisConfig
-from faciliter_lib.cache.valkey_config import ValkeyConfig
+from core_lib.cache import RedisCache, ValkeyCache
+from core_lib.cache.redis_config import RedisConfig
+from core_lib.cache.valkey_config import ValkeyConfig
 
 # Setup logging to see pool management messages
 logging.basicConfig(level=logging.INFO)

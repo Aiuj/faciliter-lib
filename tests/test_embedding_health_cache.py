@@ -9,8 +9,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import time
 
-from faciliter_lib.embeddings.fallback_client import FallbackEmbeddingClient
-from faciliter_lib.embeddings.base import EmbeddingGenerationError
+from core_lib.embeddings.fallback_client import FallbackEmbeddingClient
+from core_lib.embeddings.base import EmbeddingGenerationError
 
 
 class MockCache:
@@ -65,7 +65,7 @@ def test_health_cache_remembers_successful_provider():
     provider2 = create_mock_provider("provider2", should_succeed=True)
     provider3 = create_mock_provider("provider3", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2, provider3],
             use_health_cache=True,
@@ -104,7 +104,7 @@ def test_health_cache_skips_known_failed_providers():
     provider2 = create_mock_provider("provider2", should_succeed=False)
     provider3 = create_mock_provider("provider3", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2, provider3],
             use_health_cache=True,
@@ -149,7 +149,7 @@ def test_all_providers_fail_gracefully():
     provider2 = create_mock_provider("provider2", should_succeed=False)
     provider3 = create_mock_provider("provider3", should_succeed=False)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         # Test with fail_on_all_providers=True (default)
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2, provider3],
@@ -176,7 +176,7 @@ def test_all_providers_fail_returns_none():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=False)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,
@@ -194,7 +194,7 @@ def test_no_infinite_loop_on_all_failures():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=False)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,
@@ -216,7 +216,7 @@ def test_health_check_interval_respected():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,
@@ -253,7 +253,7 @@ def test_without_cache_works_normally():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=None):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=None):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,  # Enabled but cache not available
@@ -273,7 +273,7 @@ def test_health_cache_disabled():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=False,  # Explicitly disabled
@@ -294,7 +294,7 @@ def test_force_provider():
     provider2 = create_mock_provider("provider2", should_succeed=True)
     provider3 = create_mock_provider("provider3", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2, provider3],
             use_health_cache=True,
@@ -322,7 +322,7 @@ def test_reset_failures_clears_cache():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,
@@ -350,7 +350,7 @@ def test_get_provider_stats_includes_health():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,
@@ -385,7 +385,7 @@ def test_provider_recovery_after_failure():
     provider1 = create_mock_provider("provider1", should_succeed=False)
     provider2 = create_mock_provider("provider2", should_succeed=True)
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient(
             providers=[provider1, provider2],
             use_health_cache=True,

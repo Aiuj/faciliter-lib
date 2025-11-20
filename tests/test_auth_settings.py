@@ -8,8 +8,8 @@ import pytest
 import os
 from unittest.mock import patch
 
-from faciliter_lib.api_utils.auth_settings import AuthSettings
-from faciliter_lib.config.base_settings import SettingsError
+from core_lib.api_utils.auth_settings import AuthSettings
+from core_lib.config.base_settings import SettingsError
 
 
 class TestAuthSettings:

@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from pydantic import BaseModel
 
-from faciliter_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
+from core_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
 
 
 class SampleSchema(BaseModel):
@@ -20,7 +20,7 @@ class TestGeminiJSONModeFallback:
         """Test that Gemma models are detected as not supporting JSON mode."""
         config = GeminiConfig(api_key="test-key", model="gemma-3-4b-it")
         
-        with patch('faciliter_lib.llm.providers.google_genai_provider.genai'):
+        with patch('core_lib.llm.providers.google_genai_provider.genai'):
             provider = GoogleGenAIProvider(config)
             assert not provider._supports_json_mode()
     
@@ -28,7 +28,7 @@ class TestGeminiJSONModeFallback:
         """Test that Gemini models are detected as supporting JSON mode."""
         config = GeminiConfig(api_key="test-key", model="gemini-1.5-flash")
         
-        with patch('faciliter_lib.llm.providers.google_genai_provider.genai'):
+        with patch('core_lib.llm.providers.google_genai_provider.genai'):
             provider = GoogleGenAIProvider(config)
             assert provider._supports_json_mode()
     
@@ -36,7 +36,7 @@ class TestGeminiJSONModeFallback:
         """Test that Gemma 2 models don't support JSON mode."""
         config = GeminiConfig(api_key="test-key", model="gemma-2-9b-it")
         
-        with patch('faciliter_lib.llm.providers.google_genai_provider.genai'):
+        with patch('core_lib.llm.providers.google_genai_provider.genai'):
             provider = GoogleGenAIProvider(config)
             assert not provider._supports_json_mode()
     
@@ -44,7 +44,7 @@ class TestGeminiJSONModeFallback:
         """Test that fallback is triggered for Gemma models."""
         config = GeminiConfig(api_key="test-key", model="gemma-3-4b-it")
         
-        with patch('faciliter_lib.llm.providers.google_genai_provider.genai') as mock_genai:
+        with patch('core_lib.llm.providers.google_genai_provider.genai') as mock_genai:
             # Mock the client
             mock_client = MagicMock()
             mock_genai.Client.return_value = mock_client

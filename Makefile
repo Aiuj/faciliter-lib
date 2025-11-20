@@ -7,7 +7,7 @@ test:
 	pytest tests/ --disable-warnings -q
 
 lint:
-	ruff faciliter_lib tests
+	ruff core_lib tests
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -r {} +

@@ -1,13 +1,13 @@
 # Centralized Logging Guide
 
-Simple guide for using faciliter-lib's logging across any application (FastAPI, MCP servers, CLI tools, etc.).
+Simple guide for using core-lib's logging across any application (FastAPI, MCP servers, CLI tools, etc.).
 
 ## Quick Start
 
 ### 1. Basic Setup (Any Application)
 
 ```python
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # At application startup (main.py, app.py, etc.)
 setup_logging(app_name="my-app", level="INFO")
@@ -29,8 +29,8 @@ OTLP_ENDPOINT=http://localhost:4318/v1/logs
 ```
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # Automatically reads environment variables
 settings = LoggerSettings.from_env()
@@ -40,8 +40,8 @@ setup_logging(app_name="my-app", logger_settings=settings)
 ### 3. With Settings Class
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 settings = LoggerSettings(
     log_level="INFO",
@@ -61,8 +61,8 @@ setup_logging(app_name="my-app", logger_settings=settings)
 ```python
 # main.py
 from fastapi import FastAPI
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # Setup logging at startup
 settings = LoggerSettings.from_env()
@@ -86,7 +86,7 @@ async def get_item(item_id: int):
 ```python
 # server.py
 from mcp.server import Server
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # Setup logging
 setup_logging(app_name="mcp-server", level="INFO")
@@ -105,7 +105,7 @@ async def list_tools():
 ```python
 # cli.py
 import argparse
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 def main():
     parser = argparse.ArgumentParser()
@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
 ```python
 # app.py (Flask) or wsgi.py (Django)
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # Setup once at application initialization
 setup_logging(app_name="my-web-app", level="INFO")
@@ -232,9 +232,9 @@ The `parse_from()` function extracts metadata from the standard `from` query par
 ```python
 from fastapi import FastAPI, Query, Depends
 from typing import Optional
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
-from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
-from faciliter_lib.api_utils import require_api_key
+from core_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
+from core_lib.api_utils import require_api_key
 
 app = FastAPI()
 setup_logging(app_name="my-api")
@@ -312,9 +312,9 @@ curl -X POST "https://api.example.com/v1/answer/question?company_id=comp-789&fro
 Combine with tracing metadata for complete observability:
 
 ```python
-from faciliter_lib.tracing import setup_tracing, add_trace_metadata
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import setup_tracing, add_trace_metadata
+from core_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing import LoggingContext, parse_from
 
 # Setup both tracing and logging
 setup_tracing(service_name="my-api")
@@ -338,7 +338,7 @@ async def endpoint(from_: Optional[str] = Query(None, alias="from")):
 Contexts can be nested - inner contexts extend outer contexts:
 
 ```python
-from faciliter_lib.tracing import LoggingContext
+from core_lib.tracing import LoggingContext
 
 # Outer context: set session/user once for entire request
 with LoggingContext({"session_id": "session-123", "user_id": "user-456"}):
@@ -356,7 +356,7 @@ with LoggingContext({"session_id": "session-123", "user_id": "user-456"}):
 Update context mid-request without creating new context:
 
 ```python
-from faciliter_lib.tracing import set_logging_context, get_current_logging_context
+from core_lib.tracing import set_logging_context, get_current_logging_context
 
 with LoggingContext({"session_id": "session-123"}):
     logger.info("Started")  # session_id only
@@ -394,7 +394,7 @@ Automatically add context to ALL endpoints:
 
 ```python
 from fastapi import FastAPI, Request
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import LoggingContext, parse_from
 
 app = FastAPI()
 
@@ -426,7 +426,7 @@ MCP servers can use context for request tracking:
 
 ```python
 from mcp.server import Server
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import LoggingContext, parse_from
 
 server = Server("my-mcp-server")
 
@@ -443,7 +443,7 @@ async def call_tool(name: str, arguments: dict, from_: str | None = None):
 ### Testing Contextual Logging
 
 ```python
-from faciliter_lib.tracing import LoggingContext, get_current_logging_context, clear_logging_context
+from core_lib.tracing import LoggingContext, get_current_logging_context, clear_logging_context
 
 def test_logging_context():
     # Clear any existing context
@@ -470,14 +470,14 @@ def test_logging_context():
 **Setup once at application startup:**
 ```python
 # main.py or app.py
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.tracing.logger import setup_logging
 setup_logging(app_name="my-app")
 ```
 
 **Use get_module_logger() in modules:**
 ```python
 # services/user_service.py
-from faciliter_lib.tracing.logger import get_module_logger
+from core_lib.tracing.logger import get_module_logger
 logger = get_module_logger()  # Auto-namespaced to "my-app.services.user_service"
 
 def create_user(name: str):
@@ -553,7 +553,7 @@ This ensures logs from any module propagate to all configured handlers automatic
 To change log level at runtime (e.g., enable debug mode):
 
 ```python
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.tracing.logger import setup_logging
 
 # Initial setup
 setup_logging(app_name="my-app", level="INFO")
@@ -610,4 +610,4 @@ logger.info("日志消息：处理成功")  # Chinese
 - **Quick Reference**: `docs/OTLP_QUICK_REFERENCE.md`
 - **Environment Variables**: `docs/ENV_VARIABLES.md`
 - **Examples**: `examples/example_otlp_logging.py`
-- **API Docs**: See docstrings in `faciliter_lib/tracing/logger.py`
+- **API Docs**: See docstrings in `core_lib/tracing/logger.py`

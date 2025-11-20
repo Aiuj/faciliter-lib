@@ -1,12 +1,12 @@
-"""Base provider contract for native SDK adapters.
+﻿"""Base provider contract for native SDK adapters.
 
 Providers must implement the `chat` method that accepts OpenAI-style messages
 and optional tools/structured output and returns a unified dict.
 
 Example usage:
     ```python
-    from faciliter_lib.llm.providers.base import BaseProvider
-    from faciliter_lib.llm.llm_config import LLMConfig
+    from core_lib.llm.providers.base import BaseProvider
+    from core_lib.llm.llm_config import LLMConfig
     
     class MyProvider(BaseProvider):
         def chat(self, *, messages, tools=None, structured_output=None, 

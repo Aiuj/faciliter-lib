@@ -5,7 +5,7 @@ Tests for embedding dimension normalization utilities.
 import pytest
 import numpy as np
 
-from faciliter_lib.embeddings.embedding_utils import (
+from core_lib.embeddings.embedding_utils import (
     normalize_embedding_dimension,
     normalize_embeddings_batch,
     _truncate_or_pad,

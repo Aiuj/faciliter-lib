@@ -1,4 +1,4 @@
-"""FastAPI middleware utilities for tracing and logging context."""
+﻿"""FastAPI middleware utilities for tracing and logging context."""
 
 from typing import Any, Optional, Callable
 from fastapi import Request, Response
@@ -101,7 +101,7 @@ async def inject_from_logging_context(
     with @app.middleware("http") decorator.
     
     Parses the query param 'from' (JSON or key=value pairs), converts to dict,
-    pushes it into faciliter-lib's LoggingContext so all log records in this
+    pushes it into core-lib's LoggingContext so all log records in this
     request include the fields, and adds it to tracing metadata. Also stores
     it on request.state for handlers that want to reuse it.
     

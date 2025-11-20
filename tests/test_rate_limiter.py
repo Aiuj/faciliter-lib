@@ -5,7 +5,7 @@ import asyncio
 import time
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from faciliter_lib.llm.rate_limiter import RateLimitConfig, RateLimiter
+from core_lib.llm.rate_limiter import RateLimitConfig, RateLimiter
 
 
 class TestRateLimitConfig:
@@ -172,7 +172,7 @@ class TestRateLimiter:
         limiter = RateLimiter(config)
         
         with patch('asyncio.sleep'), \
-             patch('faciliter_lib.llm.rate_limiter.logger') as mock_logger:
+             patch('core_lib.llm.rate_limiter.logger') as mock_logger:
             
             # First request passes
             await limiter.acquire()

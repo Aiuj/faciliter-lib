@@ -12,7 +12,7 @@ import pytest
 import time
 from unittest.mock import patch, Mock, MagicMock
 import requests
-from faciliter_lib.embeddings.fallback_client import FallbackEmbeddingClient
+from core_lib.embeddings.fallback_client import FallbackEmbeddingClient
 
 
 class MockCache:
@@ -69,7 +69,7 @@ def test_http_503_triggers_overload():
     error_503 = requests.exceptions.HTTPError(response=MagicMock(status_code=503))
     provider1._generate_embedding_raw.side_effect = error_503
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         
         # Should fallback to secondary
@@ -92,7 +92,7 @@ def test_http_429_triggers_overload():
     error_429 = requests.exceptions.HTTPError(response=MagicMock(status_code=429))
     provider1._generate_embedding_raw.side_effect = error_429
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         result = client.generate_embedding("test")
         assert result is not None
@@ -110,7 +110,7 @@ def test_timeout_triggers_overload():
     
     provider1._generate_embedding_raw.side_effect = requests.exceptions.Timeout("Connection timed out")
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         result = client.generate_embedding("test")
         assert result is not None
@@ -129,7 +129,7 @@ def test_connection_pool_exhausted_triggers_overload():
     error = Exception("Connection pool is exhausted")
     provider1._generate_embedding_raw.side_effect = error
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         result = client.generate_embedding("test")
         assert result is not None
@@ -148,7 +148,7 @@ def test_non_overload_error_triggers_failure():
     error_500 = requests.exceptions.HTTPError(response=MagicMock(status_code=500))
     provider1._generate_embedding_raw.side_effect = error_500
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         result = client.generate_embedding("test")
         assert result is not None
@@ -170,7 +170,7 @@ def test_overload_and_failure_tracked_separately():
         requests.exceptions.HTTPError(response=MagicMock(status_code=500)),
     ]
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         
         # First call: overload
@@ -197,7 +197,7 @@ def test_multiple_overloads_increments_counter():
         response=MagicMock(status_code=503)
     )
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         
         for _ in range(3):
@@ -218,7 +218,7 @@ def test_reset_clears_overload_status():
         response=MagicMock(status_code=503)
     )
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         
         client.generate_embedding("test")
@@ -250,7 +250,7 @@ def test_all_providers_overloaded_returns_none():
         response=MagicMock(status_code=503)
     )
     
-    with patch('faciliter_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
+    with patch('core_lib.embeddings.fallback_client.get_cache', return_value=mock_cache):
         client = FallbackEmbeddingClient([provider1, provider2], use_health_cache=True)
         
         result = client.generate_embedding("test")

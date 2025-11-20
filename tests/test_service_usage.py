@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from faciliter_lib.tracing.service_usage import (
+from core_lib.tracing.service_usage import (
     log_llm_usage,
     log_embedding_usage,
     log_ocr_usage,
@@ -39,7 +39,7 @@ def test_calculate_embedding_cost_unknown_model():
     assert cost == 0.0
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_llm_usage_success(mock_logger):
     """Test logging LLM usage with valid data."""
     log_llm_usage(
@@ -81,7 +81,7 @@ def test_log_llm_usage_success(mock_logger):
     assert 'cost_usd' in attrs
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_llm_usage_with_error(mock_logger):
     """Test logging LLM usage with error."""
     log_llm_usage(
@@ -99,7 +99,7 @@ def test_log_llm_usage_with_error(mock_logger):
     assert attrs['error'] == 'Authentication failed'
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_embedding_usage_success(mock_logger):
     """Test logging embedding usage with valid data."""
     log_embedding_usage(
@@ -133,7 +133,7 @@ def test_log_embedding_usage_success(mock_logger):
     assert 'cost_usd' in attrs
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_ocr_usage_success(mock_logger):
     """Test logging OCR usage with valid data."""
     log_ocr_usage(
@@ -163,7 +163,7 @@ def test_log_ocr_usage_success(mock_logger):
     assert attrs['status'] == 'success'
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_llm_usage_with_metadata(mock_logger):
     """Test logging LLM usage with custom metadata."""
     log_llm_usage(
@@ -183,7 +183,7 @@ def test_log_llm_usage_with_metadata(mock_logger):
     assert attrs['custom.version'] == 'v2'
 
 
-@patch('faciliter_lib.tracing.service_usage.logger')
+@patch('core_lib.tracing.service_usage.logger')
 def test_log_embedding_usage_with_error(mock_logger):
     """Test logging embedding usage with error."""
     log_embedding_usage(
@@ -211,7 +211,7 @@ def test_calculate_llm_cost_partial_match():
 
 def test_tokens_per_second_calculation():
     """Test that tokens_per_second is calculated correctly."""
-    with patch('faciliter_lib.tracing.service_usage.logger') as mock_logger:
+    with patch('core_lib.tracing.service_usage.logger') as mock_logger:
         log_llm_usage(
             provider="openai",
             model="gpt-4",

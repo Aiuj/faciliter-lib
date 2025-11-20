@@ -4,10 +4,10 @@ The `ExcelManager` class provides a simple interface for loading, reading, and c
 
 ## Installation
 
-The `ExcelManager` is part of the faciliter-lib package and comes with the required dependencies:
+The `ExcelManager` is part of the core-lib package and comes with the required dependencies:
 
 ```bash
-pip install faciliter-lib
+pip install core-lib
 ```
 
 The following dependencies are automatically installed:
@@ -20,16 +20,16 @@ The following dependencies are automatically installed:
 
 ```python
 # Import from the main package
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 
 # Or import from the tools submodule
-from faciliter_lib.tools import ExcelManager
+from core_lib.tools import ExcelManager
 ```
 
 ### Loading and Converting Excel Files
 
 ```python
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 
 # Initialize with path to Excel file
 excel_manager = ExcelManager("path/to/your/file.xlsx")
@@ -55,7 +55,7 @@ print(combined_markdown)
 ### Getting Structured Content
 
 ```python
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 
 excel_manager = ExcelManager("data.xlsx")
 excel_manager.load()
@@ -127,7 +127,7 @@ content = excel_manager.get_content(detect_language=False)
 ## Complete Example
 
 ```python
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 import os
 
 def process_excel_file(file_path):
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 The `ExcelManager` provides clear error messages for common issues:
 
 ```python
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 
 manager = ExcelManager("nonexistent.xlsx")
 
@@ -336,13 +336,13 @@ The ExcelManager requires these packages which are automatically installed:
 
 - **openpyxl**: For reading Excel files (.xlsx format)
 - **tabulate**: For generating markdown tables
-- **faciliter_lib.utils.language_utils**: For language detection (when enabled)
+- **core_lib.utils.language_utils**: For language detection (when enabled)
 
 ## Notes
 
 - Only supports `.xlsx` files (Excel 2007+ format)
 - Files are loaded in read-only mode for performance
 - Empty rows and columns are automatically filtered out
-- Language detection uses the `LanguageUtils` class from faciliter-lib
+- Language detection uses the `LanguageUtils` class from core-lib
 - All cell content is converted to strings in the output
 - Large files are handled efficiently with streaming reads

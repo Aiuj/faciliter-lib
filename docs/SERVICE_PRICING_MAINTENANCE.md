@@ -6,7 +6,7 @@ This document provides quick instructions for maintaining the AI service pricing
 
 All pricing data is centralized in:
 ```
-faciliter_lib/tracing/service_pricing.py
+core_lib/tracing/service_pricing.py
 ```
 
 ## How to Update Pricing

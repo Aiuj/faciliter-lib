@@ -1,7 +1,7 @@
 """
 Settings Management Examples
 
-This module demonstrates practical usage of the Faciliter settings management system
+This module demonstrates practical usage of the Core settings management system
 with real-world scenarios and patterns.
 """
 
@@ -15,7 +15,7 @@ def example_basic_usage():
     """Demonstrate basic settings usage."""
     print("=== Example 1: Basic Settings Usage ===")
     
-    from faciliter_lib.config import StandardSettings
+    from core_lib.config import StandardSettings
     
     # Load settings from environment (will look for .env files automatically)
     settings = StandardSettings.from_env()
@@ -145,7 +145,7 @@ def example_llm_integration():
         "OPENAI_TEMPERATURE": "0.3"
     })
     
-    from faciliter_lib.config import StandardSettings
+    from core_lib.config import StandardSettings
     
     try:
         settings = StandardSettings.from_env(load_dotenv=False)
@@ -160,7 +160,7 @@ def example_llm_integration():
             print(f"Config type: {type(llm_config).__name__}")
             
             # This would work with existing LLM client code:
-            # from faciliter_lib.llm import LLMClient
+            # from core_lib.llm import LLMClient
             # client = LLMClient(llm_config)
             # response = client.chat("Hello!")
             
@@ -307,7 +307,7 @@ def example_environment_specific():
     """Demonstrate environment-specific configuration patterns."""
     print("=== Example 6: Environment-Specific Configuration ===")
     
-    from faciliter_lib.config import StandardSettings
+    from core_lib.config import StandardSettings
     
     environments = ["development", "staging", "production"]
     
@@ -388,7 +388,7 @@ def example_validation_and_errors():
     """Demonstrate validation and error handling."""
     print("=== Example 7: Validation and Error Handling ===")
     
-    from faciliter_lib.config import StandardSettings, SettingsError, EnvironmentVariableError
+    from core_lib.config import StandardSettings, SettingsError, EnvironmentVariableError
     
     # Test 1: Invalid temperature
     print("Test 1: Invalid temperature")
@@ -451,7 +451,7 @@ def example_validation_and_errors():
 
 def main():
     """Run all examples."""
-    print("Faciliter Settings Management Examples")
+    print("Core Settings Management Examples")
     print("=" * 50)
     
     # Clear environment to start fresh

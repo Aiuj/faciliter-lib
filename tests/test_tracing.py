@@ -6,7 +6,7 @@ from typing import Dict, Any
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
-from faciliter_lib.tracing.tracing import (
+from core_lib.tracing.tracing import (
     TracingProvider,
     LangfuseTracingProvider,
     TracingManager,
@@ -136,8 +136,8 @@ class TestTracingManager(unittest.TestCase):
         finally:
             os.environ.pop("APP_NAME", None)
     
-    @patch('faciliter_lib.tracing.tracing.trace')
-    @patch('faciliter_lib.tracing.tracing.get_client')
+    @patch('core_lib.tracing.tracing.trace')
+    @patch('core_lib.tracing.tracing.get_client')
     def test_setup_already_initialized_tracer(self, mock_get_client, mock_trace):
         """Test setup when tracer is already initialized."""
         # Mock that TracerProvider is already set
@@ -156,10 +156,10 @@ class TestTracingManager(unittest.TestCase):
         self.assertTrue(manager._initialized)
         mock_get_client.assert_called_once()
     
-    @patch('faciliter_lib.tracing.tracing.trace')
-    @patch('faciliter_lib.tracing.tracing.TracerProvider')
-    @patch('faciliter_lib.tracing.tracing.Resource')
-    @patch('faciliter_lib.tracing.tracing.Langfuse')
+    @patch('core_lib.tracing.tracing.trace')
+    @patch('core_lib.tracing.tracing.TracerProvider')
+    @patch('core_lib.tracing.tracing.Resource')
+    @patch('core_lib.tracing.tracing.Langfuse')
     def test_setup_fresh_initialization(self, mock_langfuse, mock_resource, mock_tracer_provider, mock_trace):
         """Test setup with fresh initialization."""
         # Mock that TracerProvider is not set (ProxyTracerProvider)
@@ -210,10 +210,10 @@ class TestTracingManager(unittest.TestCase):
         self.assertEqual(provider._client, mock_langfuse_client)
         self.assertTrue(manager._initialized)
     
-    @patch('faciliter_lib.tracing.tracing.trace')
-    @patch('faciliter_lib.tracing.tracing.TracerProvider')
-    @patch('faciliter_lib.tracing.tracing.Resource')
-    @patch('faciliter_lib.tracing.tracing.Langfuse')
+    @patch('core_lib.tracing.tracing.trace')
+    @patch('core_lib.tracing.tracing.TracerProvider')
+    @patch('core_lib.tracing.tracing.Resource')
+    @patch('core_lib.tracing.tracing.Langfuse')
     def test_setup_default_langfuse_host(self, mock_langfuse, mock_resource, mock_tracer_provider, mock_trace):
         """Test setup with default Langfuse host."""
         # Mock that TracerProvider is not set
@@ -274,7 +274,7 @@ class TestTracingManager(unittest.TestCase):
 
     def test_initialization_with_settings(self):
         """Test TracingManager initialization with TracingSettings."""
-        from faciliter_lib.config.tracing_settings import TracingSettings
+        from core_lib.config.tracing_settings import TracingSettings
         
         settings = TracingSettings(
             enabled=True,
@@ -297,7 +297,7 @@ class TestTracingManager(unittest.TestCase):
 
     def test_initialization_with_settings_disabled(self):
         """Test TracingManager initialization with disabled tracing."""
-        from faciliter_lib.config.tracing_settings import TracingSettings
+        from core_lib.config.tracing_settings import TracingSettings
         
         settings = TracingSettings(
             enabled=False,
@@ -311,14 +311,14 @@ class TestTracingManager(unittest.TestCase):
         
         # When disabled, setup should return NoOpTracingProvider
         provider = manager.setup()
-        from faciliter_lib.tracing.tracing import NoOpTracingProvider
+        from core_lib.tracing.tracing import NoOpTracingProvider
         self.assertIsInstance(provider, NoOpTracingProvider)
 
 
 class TestSetupTracing(unittest.TestCase):
     """Test the setup_tracing function."""
     
-    @patch('faciliter_lib.tracing.tracing.TracingManager')
+    @patch('core_lib.tracing.tracing.TracingManager')
     def test_setup_tracing_with_name(self, mock_manager_class):
         """Test setup_tracing function with service name."""
         mock_manager = Mock()
@@ -332,7 +332,7 @@ class TestSetupTracing(unittest.TestCase):
         mock_manager.setup.assert_called_once()
         self.assertEqual(result, mock_provider)
     
-    @patch('faciliter_lib.tracing.tracing.TracingManager')
+    @patch('core_lib.tracing.tracing.TracingManager')
     def test_setup_tracing_without_name(self, mock_manager_class):
         """Test setup_tracing function without service name."""
         mock_manager = Mock()
@@ -346,10 +346,10 @@ class TestSetupTracing(unittest.TestCase):
         mock_manager.setup.assert_called_once()
         self.assertEqual(result, mock_provider)
     
-    @patch('faciliter_lib.tracing.tracing.TracingManager')
+    @patch('core_lib.tracing.tracing.TracingManager')
     def test_setup_tracing_with_settings(self, mock_manager_class):
         """Test setup_tracing function with TracingSettings."""
-        from faciliter_lib.config.tracing_settings import TracingSettings
+        from core_lib.config.tracing_settings import TracingSettings
         
         mock_manager = Mock()
         mock_provider = Mock()
@@ -393,8 +393,8 @@ class TestTracingIntegration(unittest.TestCase):
             elif key in os.environ:
                 del os.environ[key]
     
-    @patch('faciliter_lib.tracing.tracing.trace')
-    @patch('faciliter_lib.tracing.tracing.Langfuse')
+    @patch('core_lib.tracing.tracing.trace')
+    @patch('core_lib.tracing.tracing.Langfuse')
     def test_end_to_end_workflow(self, mock_langfuse, mock_trace):
         """Test complete workflow from setup to usage."""
         # Setup mocks

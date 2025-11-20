@@ -1,4 +1,4 @@
-"""Job queue module for faciliter-lib."""
+﻿"""Job queue module for core-lib."""
 
 from .job_manager import (
     create_job_queue,

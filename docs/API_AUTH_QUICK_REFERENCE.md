@@ -58,8 +58,8 @@ print(f"AUTH_PRIVATE_KEY={private_key}")
 
 ```python
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 settings = AuthSettings.from_env()
@@ -80,8 +80,8 @@ async def protected_endpoint():
 
 ```python
 from fastapi import FastAPI, Depends
-from faciliter_lib.api_utils.fastapi_auth import create_auth_dependency
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import create_auth_dependency
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 settings = AuthSettings.from_env()
@@ -100,8 +100,8 @@ async def protected_endpoint():
 
 ```python
 from mcp import FastMCP
-from faciliter_lib.api_utils.fastmcp_auth import create_auth_middleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastmcp_auth import create_auth_middleware
+from core_lib.config import AuthSettings
 
 mcp = FastMCP("My Server")
 settings = AuthSettings.from_env()
@@ -122,8 +122,8 @@ def secure_tool(text: str) -> str:
 
 ```python
 import httpx
-from faciliter_lib.api_utils import generate_time_key
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils import generate_time_key
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 auth_key = generate_time_key(settings.auth_private_key)
@@ -140,8 +140,8 @@ async with httpx.AsyncClient() as client:
 #### MCP Client (SSE Transport)
 
 ```python
-from faciliter_lib.api_utils import get_auth_headers
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils import get_auth_headers
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 headers = get_auth_headers(settings)
@@ -155,8 +155,8 @@ headers = get_auth_headers(settings)
 
 ```python
 import subprocess
-from faciliter_lib.api_utils import get_auth_env_vars
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils import get_auth_env_vars
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 env_vars = get_auth_env_vars(settings)
@@ -187,7 +187,7 @@ Generate a time-based authentication key.
 
 **Example:**
 ```python
-from faciliter_lib.api_utils import generate_time_key
+from core_lib.api_utils import generate_time_key
 
 private_key = "my-secret-key-12345678"
 auth_key = generate_time_key(private_key)
@@ -210,7 +210,7 @@ Verify a time-based authentication key.
 
 **Example:**
 ```python
-from faciliter_lib.api_utils import verify_time_key
+from core_lib.api_utils import verify_time_key
 
 is_valid = verify_time_key(client_key, private_key)
 if is_valid:
@@ -235,7 +235,7 @@ Configuration class for authentication settings.
 
 **Example:**
 ```python
-from faciliter_lib.config import AuthSettings
+from core_lib.config import AuthSettings
 
 # From environment
 settings = AuthSettings.from_env()
@@ -364,7 +364,7 @@ env_vars = get_auth_env_vars(settings)
 ```python
 # Test with explicit time
 from datetime import datetime, timezone
-from faciliter_lib.api_utils import generate_time_key, verify_time_key
+from core_lib.api_utils import generate_time_key, verify_time_key
 
 now = datetime.now(timezone.utc)
 print(f"Current UTC time: {now}")
@@ -400,7 +400,7 @@ The library includes comprehensive tests:
 pytest tests/test_api_utils.py tests/test_auth_settings.py -v
 
 # Test with coverage
-pytest tests/test_api_utils.py --cov=faciliter_lib.api_utils
+pytest tests/test_api_utils.py --cov=core_lib.api_utils
 ```
 
 ## Examples
@@ -433,8 +433,8 @@ async def get_data():
     return {"data": "sensitive"}
 
 # After
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 settings = AuthSettings.from_env()
@@ -458,8 +458,8 @@ def my_tool():
     return "result"
 
 # After
-from faciliter_lib.api_utils.fastmcp_auth import create_auth_middleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastmcp_auth import create_auth_middleware
+from core_lib.config import AuthSettings
 
 mcp = FastMCP("My Server")
 settings = AuthSettings.from_env()
@@ -479,7 +479,7 @@ For testing or special use cases:
 
 ```python
 from datetime import datetime, timezone
-from faciliter_lib.api_utils import generate_time_key, verify_time_key
+from core_lib.api_utils import generate_time_key, verify_time_key
 
 # Generate key for specific time
 specific_time = datetime(2024, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
@@ -492,7 +492,7 @@ is_valid = verify_time_key(key, private_key, dt=specific_time)
 ### Multiple Private Keys (Key Rotation)
 
 ```python
-from faciliter_lib.api_utils import verify_time_key
+from core_lib.api_utils import verify_time_key
 
 def verify_with_rotation(provided_key: str) -> bool:
     """Verify key against current and previous private keys."""
@@ -517,7 +517,7 @@ settings = AuthSettings.from_env(
 )
 
 # Client
-from faciliter_lib.api_utils import generate_time_key
+from core_lib.api_utils import generate_time_key
 
 auth_key = generate_time_key(settings.auth_private_key)
 headers = {"x-my-custom-auth": auth_key}
@@ -537,8 +537,8 @@ def verify_api_key(key: str) -> bool:
 
 **After:**
 ```python
-from faciliter_lib.api_utils import verify_time_key
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils import verify_time_key
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 
@@ -554,4 +554,4 @@ def verify_api_key(key: str) -> bool:
 
 ## License
 
-Part of faciliter-lib. See main library documentation for license information.
+Part of core-lib. See main library documentation for license information.

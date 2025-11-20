@@ -1,4 +1,4 @@
-# Test configuration and fallbacks for faciliter-lib
+# Test configuration and fallbacks for core-lib
 #
 # Provides a lightweight fallback for async tests when pytest-asyncio
 # plugin is not installed. This ensures repository tests still run in
@@ -11,7 +11,7 @@ import logging
 from typing import Any
 import pytest
 
-logger = logging.getLogger("faciliter_lib.tests")
+logger = logging.getLogger("core_lib.tests")
 
 
 def pytest_configure(config: Any) -> None:

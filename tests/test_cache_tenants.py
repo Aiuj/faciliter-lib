@@ -1,5 +1,5 @@
 import pytest
-from faciliter_lib.cache.cache_manager import (
+from core_lib.cache.cache_manager import (
     set_cache,
     cache_set,
     cache_get,
@@ -61,16 +61,16 @@ def mock_redis(monkeypatch):
     def mock_conn(*args, **kwargs):
         return mock_instance
     monkeypatch.setattr('redis.Redis', mock_conn)
-    monkeypatch.setattr('faciliter_lib.cache.redis_cache.redis.Redis', mock_conn)
+    monkeypatch.setattr('core_lib.cache.redis_cache.redis.Redis', mock_conn)
     try:
         monkeypatch.setattr('valkey.Valkey', mock_conn)
     except Exception:
         pass
     try:
-        monkeypatch.setattr('faciliter_lib.cache.valkey_cache.valkey.Valkey', mock_conn)
+        monkeypatch.setattr('core_lib.cache.valkey_cache.valkey.Valkey', mock_conn)
     except Exception:
         pass
-    import faciliter_lib.cache.cache_manager as cm
+    import core_lib.cache.cache_manager as cm
     cm._cache_instance = None
     yield mock_instance
 

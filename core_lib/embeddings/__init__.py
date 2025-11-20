@@ -1,4 +1,4 @@
-"""Embeddings package: generic base and provider-specific implementations.
+﻿"""Embeddings package: generic base and provider-specific implementations.
 
 This package provides a stable public API for generating embeddings with multiple providers.
 It includes a provider-agnostic `BaseEmbeddingClient` and implementations for:
@@ -10,18 +10,18 @@ It includes a provider-agnostic `BaseEmbeddingClient` and implementations for:
 
 Example usage:
     # Simple auto-detection from environment
-    from faciliter_lib.embeddings import create_embedding_client
+    from core_lib.embeddings import create_embedding_client
     client = create_embedding_client()
     
     # With specific provider and settings
     client = create_embedding_client(provider="openai", model="text-embedding-3-small")
     
     # Using the factory class directly
-    from faciliter_lib.embeddings import EmbeddingFactory
+    from core_lib.embeddings import EmbeddingFactory
     client = EmbeddingFactory.create(provider="google_genai", task_type="SEMANTIC_SIMILARITY")
     
     # Provider-specific creation
-    from faciliter_lib.embeddings import create_openai_client, create_google_genai_client, create_infinity_client
+    from core_lib.embeddings import create_openai_client, create_google_genai_client, create_infinity_client
     openai_client = create_openai_client(model="text-embedding-3-large")
     google_client = create_google_genai_client(task_type="CLASSIFICATION")
     infinity_client = create_infinity_client(model="BAAI/bge-small-en-v1.5")

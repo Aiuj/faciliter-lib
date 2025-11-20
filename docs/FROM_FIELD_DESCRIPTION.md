@@ -7,21 +7,21 @@ The `FROM_FIELD_DESCRIPTION` constant provides standardized documentation for th
 ## Location
 
 ```python
-from faciliter_lib import FROM_FIELD_DESCRIPTION
+from core_lib import FROM_FIELD_DESCRIPTION
 # or
-from faciliter_lib.tracing import FROM_FIELD_DESCRIPTION
+from core_lib.tracing import FROM_FIELD_DESCRIPTION
 ```
 
 ## Purpose
 
-This constant ensures consistent documentation and usage patterns for the `from` parameter across all applications that use faciliter-lib for tracing and observability.
+This constant ensures consistent documentation and usage patterns for the `from` parameter across all applications that use core-lib for tracing and observability.
 
 ## Usage in FastAPI
 
 ```python
 from fastapi import FastAPI, Query
-from faciliter_lib import FROM_FIELD_DESCRIPTION, INTELLIGENCE_LEVEL_DESCRIPTION, setup_tracing
-from faciliter_lib.api_utils.fastapi_middleware import inject_from_logging_context
+from core_lib import FROM_FIELD_DESCRIPTION, INTELLIGENCE_LEVEL_DESCRIPTION, setup_tracing
+from core_lib.api_utils.fastapi_middleware import inject_from_logging_context
 
 app = FastAPI()
 tracing_client = setup_tracing(name="my-app")
@@ -83,7 +83,7 @@ All fields are optional:
 
 ## Benefits
 
-1. **Consistency**: All applications using faciliter-lib have the same documentation
+1. **Consistency**: All applications using core-lib have the same documentation
 2. **Centralized**: Single source of truth for the parameter description
 3. **Versioned**: Changes are tracked in the library version
 4. **Reusable**: Import once and use across all endpoints
@@ -97,10 +97,10 @@ If you have local definitions of `FROM_FIELD_DESCRIPTION`, replace:
 from api_utils.models import FROM_FIELD_DESCRIPTION
 
 # After
-from faciliter_lib import FROM_FIELD_DESCRIPTION
+from core_lib import FROM_FIELD_DESCRIPTION
 ```
 
 ## Related
 
-- See `faciliter_lib.tracing.TracingManager` for tracing client usage
-- See `faciliter_lib.tracing.setup_tracing()` for initialization
+- See `core_lib.tracing.TracingManager` for tracing client usage
+- See `core_lib.tracing.setup_tracing()` for initialization

@@ -1,6 +1,6 @@
 # Settings Management System
 
-The Faciliter library provides a comprehensive, extensible settings management system that handles configuration for any application. The system supports environment variables, .env files, type conversion, validation, and easy extension for custom settings.
+The Core Library provides a comprehensive, extensible settings management system that handles configuration for any application. The system supports environment variables, .env files, type conversion, validation, and easy extension for custom settings.
 
 ## Overview
 
@@ -19,7 +19,7 @@ The settings system is built around several key components:
 The settings system uses a modular architecture with dedicated files for each service type:
 
 ```
-faciliter_lib/config/
+core_lib/config/
 ├── base_settings.py       # Core framework and utilities
 ├── app_settings.py        # Core application settings  
 ├── llm_settings.py        # LLM provider configuration
@@ -43,7 +43,7 @@ This modular design provides:
 ### Basic Usage
 
 ```python
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 
 # Load all settings from environment variables and .env files
 settings = StandardSettings.from_env()
@@ -156,7 +156,7 @@ print(f"LLM enabled: {settings.enable_llm}")
 ### LLM Settings
 
 ```python
-from faciliter_lib.config import LLMSettings
+from core_lib.config import LLMSettings
 
 # Auto-detect provider from environment
 llm_settings = LLMSettings.from_env()
@@ -175,7 +175,7 @@ llm_config = settings.get_llm_config()  # Returns OpenAIConfig/GeminiConfig/Olla
 ### Embeddings Settings
 
 ```python
-from faciliter_lib.config import EmbeddingsSettings
+from core_lib.config import EmbeddingsSettings
 
 embeddings_settings = EmbeddingsSettings.from_env(
     provider="openai",
@@ -190,7 +190,7 @@ embeddings_config = settings.get_embeddings_config()
 ### Cache Settings  
 
 ```python
-from faciliter_lib.config import CacheSettings
+from core_lib.config import CacheSettings
 
 cache_settings = CacheSettings.from_env(
     provider="redis",  # or "valkey"
@@ -206,7 +206,7 @@ redis_config = settings.get_redis_config()  # Returns RedisConfig
 ### Database Settings
 
 ```python
-from faciliter_lib.config import DatabaseSettings
+from core_lib.config import DatabaseSettings
 
 database_settings = DatabaseSettings.from_env(
     host="localhost",
@@ -231,7 +231,7 @@ if settings.database:
 ### MCP Server Settings
 
 ```python
-from faciliter_lib.config import MCPServerSettings
+from core_lib.config import MCPServerSettings
 
 # Configure MCP (Model Context Protocol) server
 mcp_settings = MCPServerSettings.from_env(
@@ -258,7 +258,7 @@ if settings.mcp_server:
 ### FastAPI Server Settings
 
 ```python
-from faciliter_lib.config import FastAPIServerSettings
+from core_lib.config import FastAPIServerSettings
 
 # Configure optional FastAPI HTTP server
 fastapi_settings = FastAPIServerSettings.from_env(
@@ -279,7 +279,7 @@ if settings.fastapi_server:
 ### Tracing Settings
 
 ```python
-from faciliter_lib.config import TracingSettings
+from core_lib.config import TracingSettings
 
 tracing_settings = TracingSettings.from_env(
     service_name="my-service",
@@ -295,7 +295,7 @@ The easiest way to add custom configuration to your application is to extend `St
 ### Recommended Approach: Extending StandardSettings
 
 ```python
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 from typing import Optional
 
 class MyAppSettings:
@@ -402,7 +402,7 @@ For scenarios where you need custom initialization logic, validation, or post-pr
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List
-from faciliter_lib.config import StandardSettings, SettingsError, EnvParser
+from core_lib.config import StandardSettings, SettingsError, EnvParser
 
 @dataclass(frozen=True)
 class MyAppSettings(StandardSettings):
@@ -548,7 +548,7 @@ If you don't need complex initialization logic, you can make it even simpler:
 ```python
 from dataclasses import dataclass
 from typing import Optional, List
-from faciliter_lib.config import StandardSettings, EnvParser
+from core_lib.config import StandardSettings, EnvParser
 
 @dataclass(frozen=True)
 class SimpleAppSettings(StandardSettings):
@@ -703,7 +703,7 @@ class TestMyAppSettings(unittest.TestCase):
 ```python
 from dataclasses import dataclass
 from typing import Optional
-from faciliter_lib.config import StandardSettings, EnvParser
+from core_lib.config import StandardSettings, EnvParser
 
 @dataclass(frozen=True)
 class TestAppSettings(StandardSettings):
@@ -968,7 +968,7 @@ For more complex scenarios where you need full control over validation logic or 
 ```python
 from dataclasses import dataclass
 from typing import Optional
-from faciliter_lib.config import BaseSettings, SettingsError
+from core_lib.config import BaseSettings, SettingsError
 
 @dataclass(frozen=True)
 class CustomAPISettings(BaseSettings):
@@ -1012,7 +1012,7 @@ class CustomAPISettings(BaseSettings):
 The system provides powerful environment variable parsing with type conversion:
 
 ```python
-from faciliter_lib.config import EnvParser
+from core_lib.config import EnvParser
 
 # Basic parsing with defaults
 api_key = EnvParser.get_env("API_KEY", "OPENAI_API_KEY", default="")
@@ -1035,7 +1035,7 @@ redis_host = EnvParser.get_env("REDIS_HOST", "CACHE_HOST", "DB_HOST", default="l
 Use the settings manager to register and manage multiple configuration instances:
 
 ```python
-from faciliter_lib.config import settings_manager, StandardSettings
+from core_lib.config import settings_manager, StandardSettings
 
 # Register settings
 app_settings = StandardSettings.from_env()
@@ -1065,8 +1065,8 @@ all_settings = settings_manager.as_dict()
 ### Using with LLM Clients
 
 ```python
-from faciliter_lib.config import StandardSettings
-from faciliter_lib.llm import LLMClient
+from core_lib.config import StandardSettings
+from core_lib.llm import LLMClient
 
 # Load settings and create LLM client
 settings = StandardSettings.from_env()
@@ -1081,8 +1081,8 @@ if settings.llm:
 ### Using with Cache
 
 ```python
-from faciliter_lib.config import StandardSettings
-from faciliter_lib.cache import RedisCache
+from core_lib.config import StandardSettings
+from core_lib.cache import RedisCache
 
 settings = StandardSettings.from_env()
 if settings.cache:
@@ -1096,8 +1096,8 @@ if settings.cache:
 ### Using with Embeddings
 
 ```python
-from faciliter_lib.config import StandardSettings
-from faciliter_lib.embeddings import create_embeddings_provider
+from core_lib.config import StandardSettings
+from core_lib.embeddings import create_embeddings_provider
 
 settings = StandardSettings.from_env()
 if settings.embeddings:
@@ -1413,7 +1413,7 @@ OTLP_LOG_LEVEL=INFO                                  # Independent OTLP log leve
 OTLP_HEADERS='{"Authorization": "Bearer token"}'     # Auth headers (JSON)
 OTLP_TIMEOUT=10                                      # Request timeout (seconds)
 OTLP_INSECURE=false                                  # Skip SSL verification
-OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "faciliter-lib")
+OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "core-lib")
 OTLP_SERVICE_VERSION=1.0.0                           # Service version (default: from pyproject.toml)
 ```
 

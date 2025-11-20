@@ -1,4 +1,4 @@
-"""Configuration helpers for faciliter_lib.
+﻿"""Configuration helpers for core_lib.
 
 Expose configuration classes and category constants for easy import.
 """

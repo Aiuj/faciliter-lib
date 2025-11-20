@@ -1,4 +1,4 @@
-"""Logging handlers for faciliter-lib.
+﻿"""Logging handlers for core-lib.
 
 Modular logging handlers that are loaded only when needed.
 """

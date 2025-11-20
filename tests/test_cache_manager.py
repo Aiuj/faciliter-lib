@@ -1,5 +1,5 @@
 import pytest
-from faciliter_lib.cache.cache_manager import (
+from core_lib.cache.cache_manager import (
     set_cache,
     get_cache,
     cache_get,
@@ -47,7 +47,7 @@ def mock_redis(monkeypatch):
     
     # Mock the redis.Redis class
     monkeypatch.setattr('redis.Redis', mock_redis_connection)
-    monkeypatch.setattr('faciliter_lib.cache.redis_cache.redis.Redis', mock_redis_connection)
+    monkeypatch.setattr('core_lib.cache.redis_cache.redis.Redis', mock_redis_connection)
     # Also mock the valkey client so ValkeyCache uses the same mocked backend
     # This makes Valkey a drop-in for Redis in tests.
     try:
@@ -57,12 +57,12 @@ def mock_redis(monkeypatch):
         # the cache manager will fall back to Redis.
         pass
     try:
-        monkeypatch.setattr('faciliter_lib.cache.valkey_cache.valkey.Valkey', mock_redis_connection)
+        monkeypatch.setattr('core_lib.cache.valkey_cache.valkey.Valkey', mock_redis_connection)
     except Exception:
         pass
     
     # Reset the global cache instance for test isolation
-    import faciliter_lib.cache.cache_manager as cache_module
+    import core_lib.cache.cache_manager as cache_module
     cache_module._cache_instance = None
     
     yield mock_redis_instance

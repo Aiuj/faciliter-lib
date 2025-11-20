@@ -2,7 +2,7 @@
 
 ## Overview
 
-A new embedding provider has been added to `faciliter-lib` that integrates with Infinity, a high-throughput, low-latency REST API for serving embeddings. This provider is **fully backward compatible** and requires **no changes to existing client code**.
+A new embedding provider has been added to `core-lib` that integrates with Infinity, a high-throughput, low-latency REST API for serving embeddings. This provider is **fully backward compatible** and requires **no changes to existing client code**.
 
 ## What is Infinity?
 
@@ -20,7 +20,7 @@ Infinity is an open-source embedding server that provides:
 
 ### Files Created
 
-1. **`faciliter_lib/embeddings/infinity_provider.py`**
+1. **`core_lib/embeddings/infinity_provider.py`**
    - New provider implementation
    - Implements `BaseEmbeddingClient` interface
    - OpenAI-compatible API calls to Infinity server
@@ -40,18 +40,18 @@ Infinity is an open-source embedding server that provides:
 
 ### Files Modified
 
-1. **`faciliter_lib/embeddings/factory.py`**
+1. **`core_lib/embeddings/factory.py`**
    - Added Infinity import with graceful fallback
    - Added `infinity()` factory method
    - Added `create_infinity_client()` convenience function
    - Updated provider selection logic
 
-2. **`faciliter_lib/embeddings/embeddings_config.py`**
+2. **`core_lib/embeddings/embeddings_config.py`**
    - Added Infinity-specific configuration fields
    - Added environment variable support (`INFINITY_BASE_URL`, `INFINITY_TIMEOUT`)
    - Updated `from_env()` to read Infinity settings
 
-3. **`faciliter_lib/embeddings/__init__.py`**
+3. **`core_lib/embeddings/__init__.py`**
    - Exported `InfinityEmbeddingClient`
    - Exported `create_infinity_client`
    - Updated module docstring
@@ -77,7 +77,7 @@ EMBEDDING_DIMENSION=384
 
 ```python
 # Existing code - NO CHANGES NEEDED
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()  # Automatically uses Infinity
 embedding = client.generate_embedding("Hello, world!")
@@ -86,7 +86,7 @@ embedding = client.generate_embedding("Hello, world!")
 ### Explicit Usage
 
 ```python
-from faciliter_lib.embeddings import create_infinity_client
+from core_lib.embeddings import create_infinity_client
 
 client = create_infinity_client(
     model="BAAI/bge-small-en-v1.5",
@@ -99,7 +99,7 @@ embedding = client.generate_embedding("Test text")
 ### Factory Pattern
 
 ```python
-from faciliter_lib.embeddings import EmbeddingFactory
+from core_lib.embeddings import EmbeddingFactory
 
 client = EmbeddingFactory.infinity(
     model="sentence-transformers/all-MiniLM-L6-v2"
@@ -189,7 +189,7 @@ No code changes required in mcp-doc-qa!
 Run the example script to verify:
 
 ```bash
-cd faciliter-lib
+cd core-lib
 python examples/example_infinity_embeddings.py
 ```
 
@@ -288,7 +288,7 @@ Potential future improvements:
 
 ## Conclusion
 
-The Infinity embedding provider has been successfully integrated into faciliter-lib with:
+The Infinity embedding provider has been successfully integrated into core-lib with:
 
 ✅ Full backward compatibility  
 ✅ Zero code changes required  

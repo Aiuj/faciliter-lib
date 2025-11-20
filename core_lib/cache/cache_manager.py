@@ -1,4 +1,4 @@
-# cache_manager.py
+﻿# cache_manager.py
 # Cache manager with support for Redis and Valkey providers
 """Cache manager helpers to create and manage a global cache instance.
 
@@ -16,7 +16,7 @@ Key Features:
 
 Usage Examples:
     # Initialize the global cache
-    >>> from faciliter_lib.cache import set_cache, cache_get, cache_set
+    >>> from core_lib.cache import set_cache, cache_get, cache_set
     >>> set_cache(provider="auto", ttl=3600)
     
     # Simple global cache usage
@@ -30,7 +30,7 @@ Usage Examples:
     >>> tenant_result = cache_get({"query": "data"}, company_id="tenant-123")
     
     # Advanced: Direct instance creation
-    >>> from faciliter_lib.cache import create_cache, RedisConfig
+    >>> from core_lib.cache import create_cache, RedisConfig
     >>> config = RedisConfig(host="localhost", port=6379, ttl=7200)
     >>> cache = create_cache(provider="redis", config=config)
     >>> cache.connect()
@@ -158,7 +158,7 @@ def _auto_detect_provider() -> CacheProvider:
             import redis as _redis  # type: ignore
             return "redis"
         except Exception:
-            # No cache client libraries installed — return 'redis' as conventional
+            # No cache client libraries installed â€” return 'redis' as conventional
             # value; callers (e.g., set_cache) will handle the absence of client libs.
             return "redis"
 
@@ -199,13 +199,13 @@ def set_cache(
             try:
                 import valkey  # type: ignore
             except Exception:
-                logging.warning("[set_cache] Valkey client not installed — falling back to Redis if available")
+                logging.warning("[set_cache] Valkey client not installed â€” falling back to Redis if available")
                 provider = "redis"
         if provider == "redis":
             try:
                 import redis  # type: ignore
             except Exception:
-                logging.warning("[set_cache] Redis client not installed — caching will be disabled")
+                logging.warning("[set_cache] Redis client not installed â€” caching will be disabled")
                 _cache_instance = False
                 return False
 

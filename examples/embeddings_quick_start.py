@@ -2,7 +2,7 @@
 """
 Embeddings Quick Start Example
 
-This script demonstrates the key features of the faciliter-lib embeddings module.
+This script demonstrates the key features of the core-lib embeddings module.
 Run different sections by uncommenting the relevant function calls at the bottom.
 """
 
@@ -19,7 +19,7 @@ def demo_basic_usage():
     print("=== Basic Usage Demo ===")
     
     try:
-        from faciliter_lib.embeddings import create_embedding_client
+        from core_lib.embeddings import create_embedding_client
         
         # Auto-detect provider from environment
         client = create_embedding_client()
@@ -56,7 +56,7 @@ def demo_provider_specific():
     
     # OpenAI with custom dimensions
     try:
-        from faciliter_lib.embeddings import create_openai_client
+        from core_lib.embeddings import create_openai_client
         
         client = create_openai_client(
             model="text-embedding-3-small",
@@ -77,7 +77,7 @@ def demo_provider_specific():
     
     # Google GenAI with task types
     try:
-        from faciliter_lib.embeddings import create_google_genai_client, TaskType
+        from core_lib.embeddings import create_google_genai_client, TaskType
         
         client = create_google_genai_client(
             model="text-embedding-004",
@@ -101,7 +101,7 @@ def demo_provider_specific():
     
     # Local model
     try:
-        from faciliter_lib.embeddings import create_local_client
+        from core_lib.embeddings import create_local_client
         
         client = create_local_client(
             model="sentence-transformers/all-MiniLM-L6-v2",
@@ -128,7 +128,7 @@ def demo_task_types():
     print("=== Task Types Demo ===")
     
     try:
-        from faciliter_lib.embeddings import create_google_genai_client, TaskType
+        from core_lib.embeddings import create_google_genai_client, TaskType
         
         # Different task types for different use cases
         task_examples = {
@@ -172,7 +172,7 @@ def demo_factory_patterns():
     print("=== Factory Patterns Demo ===")
     
     try:
-        from faciliter_lib.embeddings import EmbeddingFactory, EmbeddingsConfig
+        from core_lib.embeddings import EmbeddingFactory, EmbeddingsConfig
         
         # Method 1: Auto-detection
         try:
@@ -227,18 +227,18 @@ def demo_error_handling():
     """Demonstrate proper error handling."""
     print("=== Error Handling Demo ===")
     
-    from faciliter_lib.embeddings import EmbeddingGenerationError
+    from core_lib.embeddings import EmbeddingGenerationError
     
     # Test missing provider
     try:
-        from faciliter_lib.embeddings import EmbeddingFactory
+        from core_lib.embeddings import EmbeddingFactory
         client = EmbeddingFactory.create(provider="nonexistent")
     except ValueError as e:
         print(f"✓ Caught provider error: {e}")
     
     # Test missing dependency
     try:
-        from faciliter_lib.embeddings import EmbeddingFactory
+        from core_lib.embeddings import EmbeddingFactory
         with_patch = EmbeddingFactory.openai()
     except ImportError as e:
         print(f"✓ Caught import error: {e}")
@@ -247,7 +247,7 @@ def demo_error_handling():
     
     # Test invalid input
     try:
-        from faciliter_lib.embeddings import create_embedding_client
+        from core_lib.embeddings import create_embedding_client
         client = create_embedding_client()
         # This should work, but test with invalid input type
         embedding = client.generate_embedding(12345)  # Invalid input type
@@ -264,7 +264,7 @@ def demo_health_checks():
     print("=== Health Checks Demo ===")
     
     try:
-        from faciliter_lib.embeddings import create_embedding_client
+        from core_lib.embeddings import create_embedding_client
         
         client = create_embedding_client()
         
@@ -293,7 +293,7 @@ def demo_health_checks():
 
 def main():
     """Run all demos."""
-    print("Faciliter-lib Embeddings Quick Start")
+    print("core-lib Embeddings Quick Start")
     print("=" * 50)
     
     # Uncomment the demos you want to run
@@ -307,7 +307,7 @@ def main():
     print("Demo complete!")
     print("\nTo use embeddings in your code:")
     print("1. Set environment variables (EMBEDDING_PROVIDER, API keys)")
-    print("2. Import: from faciliter_lib.embeddings import create_embedding_client")
+    print("2. Import: from core_lib.embeddings import create_embedding_client")
     print("3. Create client: client = create_embedding_client()")
     print("4. Generate: embedding = client.generate_embedding('your text')")
 

@@ -1,5 +1,5 @@
 import unittest
-from faciliter_lib.utils.language_utils import LanguageUtils
+from core_lib.utils.language_utils import LanguageUtils
 from unittest.mock import patch
 
 class TestLanguageUtils(unittest.TestCase):
@@ -145,7 +145,7 @@ class TestLanguageUtils(unittest.TestCase):
     def test_detect_languages_respects_threshold(self):
         # We'll patch the underlying detect() to return a list with controlled scores
         fake_output = [("fr", 0.95), ("en", 0.25), ("es", 0.1)]
-        with patch('faciliter_lib.utils.language_utils.detect', return_value=fake_output):
+        with patch('core_lib.utils.language_utils.detect', return_value=fake_output):
             result = LanguageUtils.detect_languages("dummy text", min_confidence=0.2)
             # Should include fr and en, but not es
             langs = [r['lang'] for r in result]
@@ -156,7 +156,7 @@ class TestLanguageUtils(unittest.TestCase):
     def test_detect_languages_ignores_non_numeric_scores_for_threshold(self):
         # Simulate detector returning mixed shapes including non-numeric score
         fake_output = [{'lang': 'fr', 'score': 0.9}, {'lang': 'xx', 'score': None}, ('en', 0.4), 'de']
-        with patch('faciliter_lib.utils.language_utils.detect', return_value=fake_output):
+        with patch('core_lib.utils.language_utils.detect', return_value=fake_output):
             result = LanguageUtils.detect_languages("dummy text", min_confidence=0.3)
             # 'fr' and 'en' should be present (0.9 and 0.4), 'xx' has None so ignored, 'de' has no score so ignored
             langs = [r['lang'] for r in result]
@@ -193,7 +193,7 @@ class TestLanguageUtils(unittest.TestCase):
             }
             return mapping.get(text, [])
 
-        with patch('faciliter_lib.utils.language_utils.LanguageUtils.detect_languages', side_effect=fake_detect):
+        with patch('core_lib.utils.language_utils.LanguageUtils.detect_languages', side_effect=fake_detect):
             result = LanguageUtils.detect_most_common_language(samples, min_confidence=0.5)
             self.assertEqual(result, 'en')
 

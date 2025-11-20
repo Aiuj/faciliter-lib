@@ -1,6 +1,6 @@
 # Django Logging Integration Guide
 
-Complete guide for integrating faciliter-lib's centralized logging system with Django, including proper OTLP (OpenTelemetry) configuration and lifecycle management.
+Complete guide for integrating core-lib's centralized logging system with Django, including proper OTLP (OpenTelemetry) configuration and lifecycle management.
 
 ## Quick Start
 
@@ -8,11 +8,11 @@ Complete guide for integrating faciliter-lib's centralized logging system with D
 
 ```python
 # settings.py
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # CRITICAL: Disable Django's default logging configuration
-# This prevents Django from configuring logging and allows faciliter-lib to manage it
+# This prevents Django from configuring logging and allows core-lib to manage it
 # See: https://docs.djangoproject.com/en/5.2/topics/logging/
 LOGGING_CONFIG = None
 
@@ -42,8 +42,8 @@ import os
 import signal
 import sys
 from django.core.wsgi import get_wsgi_application
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging, flush_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging, flush_logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
@@ -69,7 +69,7 @@ application = get_wsgi_application()
 
 ```python
 # views.py
-from faciliter_lib.tracing.logger import get_module_logger
+from core_lib.tracing.logger import get_module_logger
 
 logger = get_module_logger()  # Auto-namespaced to "my-django-app.myapp.views"
 
@@ -121,12 +121,12 @@ import os
 import signal
 import sys
 from django.core.wsgi import get_wsgi_application
-from faciliter_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
 # Setup logging
-from faciliter_lib.config.logger_settings import LoggerSettings
+from core_lib.config.logger_settings import LoggerSettings
 settings = LoggerSettings.from_env()
 setup_logging(app_name="my-django-app", logger_settings=settings)
 
@@ -159,7 +159,7 @@ class MyAppConfig(AppConfig):
     
     def ready(self):
         """Ensure OTLP handler cleanup on Django shutdown"""
-        from faciliter_lib.tracing.logger import flush_logging
+        from core_lib.tracing.logger import flush_logging
         
         # Register cleanup - works for runserver
         atexit.register(flush_logging)
@@ -175,7 +175,7 @@ For Django management commands (migrate, etc.):
 ```python
 # myapp/management/commands/base.py
 from django.core.management.base import BaseCommand
-from faciliter_lib.tracing.logger import flush_logging, get_module_logger
+from core_lib.tracing.logger import flush_logging, get_module_logger
 
 class FlushLoggingCommand(BaseCommand):
     """Base command that ensures OTLP logs are flushed"""
@@ -227,7 +227,7 @@ Add request-specific metadata to all logs within a request using `LoggingContext
 
 ```python
 # middleware.py
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import LoggingContext, parse_from
 import uuid
 
 class LoggingContextMiddleware:
@@ -264,8 +264,8 @@ MIDDLEWARE = [
 ### Manual Context in Views
 
 ```python
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.tracing.logger import get_module_logger
+from core_lib.tracing import LoggingContext
+from core_lib.tracing.logger import get_module_logger
 
 logger = get_module_logger()
 
@@ -302,15 +302,15 @@ graceful_timeout = 30  # Time to wait for workers to finish
 
 def on_starting(server):
     """Called before master process is initialized"""
-    from faciliter_lib.config.logger_settings import LoggerSettings
-    from faciliter_lib.tracing.logger import setup_logging
+    from core_lib.config.logger_settings import LoggerSettings
+    from core_lib.tracing.logger import setup_logging
     
     settings = LoggerSettings.from_env()
     setup_logging(app_name="my-django-app", logger_settings=settings)
 
 def worker_exit(server, worker):
     """Called when worker exits - flush OTLP logs"""
-    from faciliter_lib.tracing.logger import flush_logging, get_module_logger
+    from core_lib.tracing.logger import flush_logging, get_module_logger
     
     logger = get_module_logger()
     logger.info(f"Worker {worker.pid} shutting down, flushing logs")
@@ -318,7 +318,7 @@ def worker_exit(server, worker):
 
 def on_exit(server):
     """Called when master exits"""
-    from faciliter_lib.tracing.logger import flush_logging, get_module_logger
+    from core_lib.tracing.logger import flush_logging, get_module_logger
     
     logger = get_module_logger()
     logger.info("Master process shutting down, flushing logs")
@@ -338,8 +338,8 @@ For Celery tasks, ensure OTLP logs are flushed after task completion:
 # celery.py
 from celery import Celery
 from celery.signals import worker_process_init, worker_shutdown
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
 
 app = Celery('myproject')
 app.config_from_object('django.conf:settings', namespace='CELERY')
@@ -362,7 +362,7 @@ def shutdown_worker(**kwargs):
 # Task example
 @app.task
 def process_data(data_id):
-    from faciliter_lib.tracing import LoggingContext
+    from core_lib.tracing import LoggingContext
     
     with LoggingContext({"task_id": str(process_data.request.id), "data_id": data_id}):
         logger.info(f"Processing data {data_id}")
@@ -377,7 +377,7 @@ def process_data(data_id):
 ```python
 # tests.py
 from django.test import TestCase
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger, flush_logging
+from core_lib.tracing.logger import setup_logging, get_module_logger, flush_logging
 import logging
 
 class LoggingTestCase(TestCase):
@@ -403,8 +403,8 @@ class LoggingTestCase(TestCase):
 
 ```python
 import pytest
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
 
 @pytest.fixture(scope="session")
 def configure_logging():
@@ -433,7 +433,7 @@ def test_with_logging(configure_logging):
 **Most Common Issue**: Forgot to set `LOGGING_CONFIG = None` in settings.py
 
 **Symptoms**:
-- Logs appear in Django's default format instead of faciliter-lib format
+- Logs appear in Django's default format instead of core-lib format
 - OTLP logs not being sent
 - File logging not working as configured
 
@@ -445,7 +445,7 @@ LOGGING_CONFIG = None  # Disable Django's logging configuration
 
 **Reference**: [Django Logging Documentation](https://docs.djangoproject.com/en/5.2/topics/logging/)
 
-Without `LOGGING_CONFIG = None`, Django will run its default `logging.config.dictConfig()` which overwrites your faciliter-lib configuration.
+Without `LOGGING_CONFIG = None`, Django will run its default `logging.config.dictConfig()` which overwrites your core-lib configuration.
 
 ### Logs Not Sent to OTLP Collector
 
@@ -461,13 +461,13 @@ Without `LOGGING_CONFIG = None`, Django will run its default `logging.config.dic
 
 3. **Verify OTLP is enabled**
    ```python
-   from faciliter_lib.tracing.logger import get_last_logging_config
+   from core_lib.tracing.logger import get_last_logging_config
    print(get_last_logging_config())
    ```
 
 4. **Manually flush logs**
    ```python
-   from faciliter_lib.tracing.logger import flush_logging
+   from core_lib.tracing.logger import flush_logging
    flush_logging()  # Force immediate send
    ```
 
@@ -536,8 +536,8 @@ If you see performance issues:
 
 ```python
 # settings.py
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # CRITICAL: Disable Django's logging (REQUIRED)
 LOGGING_CONFIG = None
@@ -551,7 +551,7 @@ import os
 import signal
 import sys
 from django.core.wsgi import get_wsgi_application
-from faciliter_lib.tracing.logger import flush_logging, get_module_logger
+from core_lib.tracing.logger import flush_logging, get_module_logger
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
@@ -571,8 +571,8 @@ signal.signal(signal.SIGINT, handle_shutdown)
 application = get_wsgi_application()
 
 # views.py
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.tracing.logger import get_module_logger
+from core_lib.tracing import LoggingContext
+from core_lib.tracing.logger import get_module_logger
 
 logger = get_module_logger()
 

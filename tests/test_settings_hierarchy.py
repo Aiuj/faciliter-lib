@@ -16,10 +16,10 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from faciliter_lib.config.base_settings import BaseSettings, SettingsError
-from faciliter_lib.config.app_settings import AppSettings
-from faciliter_lib.config.api_settings import ApiSettings
-from faciliter_lib.config.standard_settings import StandardSettings
+from core_lib.config.base_settings import BaseSettings, SettingsError
+from core_lib.config.app_settings import AppSettings
+from core_lib.config.api_settings import ApiSettings
+from core_lib.config.standard_settings import StandardSettings
 
 
 class TestSettingsHierarchyInheritance:
@@ -243,7 +243,7 @@ class TestValidationAcrossLevels:
     
     def test_api_settings_validation_invalid_cache(self):
         """Test ApiSettings validates cache configuration."""
-        from faciliter_lib.config.cache_settings import CacheSettings
+        from core_lib.config.cache_settings import CacheSettings
         
         invalid_cache = CacheSettings(host="localhost", port=0)
         

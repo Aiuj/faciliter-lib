@@ -1,4 +1,4 @@
-"""
+﻿"""
 Module for loading and manipulating Excel files, and rendering their contents as markdown tables.
 """
 
@@ -195,7 +195,7 @@ class ExcelManager:
             md_table = tabulate(rows, headers=headers, tablefmt='github')
             
             if detect_language:
-                # Detect language using faciliter-lib
+                # Detect language using core-lib
                 language = LanguageUtils.detect_language(sheet_name + ":\n" + md_table)
                 logger.debug(f"Language detected for sheet '{sheet_name}': {language}")
             else:

@@ -8,7 +8,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from freezegun import freeze_time
 
-from faciliter_lib.api_utils import (
+from core_lib.api_utils import (
     generate_time_key,
     verify_time_key,
     TimeBasedAuthError,

@@ -1,4 +1,4 @@
-"""OpenTelemetry Protocol (OTLP) logging handler.
+﻿"""OpenTelemetry Protocol (OTLP) logging handler.
 
 This module provides an OTLP handler that sends logs to an OpenTelemetry collector
 via HTTP using the OTLP protocol. The handler converts Python logging records to
@@ -377,7 +377,7 @@ class _OTLPWorkerHandler(logging.Handler):
                         "resource": {"attributes": resource_attrs},
                         "scopeLogs": [
                             {
-                                "scope": {"name": "faciliter-lib-logger"},
+                                "scope": {"name": "core-lib-logger"},
                                 "logRecords": batch_to_send,
                             }
                         ],

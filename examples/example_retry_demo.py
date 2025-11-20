@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Demo script showing the retry functionality in faciliter_lib.
+Demo script showing the retry functionality in core_lib.
 
 This example demonstrates:
 1. The generic retry decorator with different strategies

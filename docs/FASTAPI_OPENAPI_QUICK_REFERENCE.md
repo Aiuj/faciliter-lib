@@ -4,7 +4,7 @@ Utilities for customizing FastAPI's OpenAPI schema, particularly for adding secu
 
 ## Installation
 
-These utilities are part of `faciliter_lib.api_utils` and require FastAPI to be installed:
+These utilities are part of `core_lib.api_utils` and require FastAPI to be installed:
 
 ```bash
 pip install fastapi
@@ -16,9 +16,9 @@ pip install fastapi
 
 ```python
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_openapi import configure_api_key_auth
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_openapi import configure_api_key_auth
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI(title="My API", version="1.0.0")
 
@@ -73,7 +73,7 @@ Adds any type of security scheme (API key, OAuth2, HTTP Bearer, etc.) to the Ope
 
 **Example - Bearer Token:**
 ```python
-from faciliter_lib.api_utils.fastapi_openapi import add_custom_security_scheme
+from core_lib.api_utils.fastapi_openapi import add_custom_security_scheme
 
 bearer_scheme = {
     "type": "http",
@@ -120,7 +120,7 @@ add_custom_security_scheme(
 If your API uses a custom header name:
 
 ```python
-from faciliter_lib.config import AuthSettings
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 settings.auth_key_header_name = "x-custom-token"
@@ -192,14 +192,14 @@ configure_api_key_auth(
 
 ## Integration with Time-Based Authentication
 
-These utilities work seamlessly with `faciliter_lib`'s time-based authentication:
+These utilities work seamlessly with `core_lib`'s time-based authentication:
 
 ```python
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_openapi import configure_api_key_auth
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.api_utils import generate_time_key
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_openapi import configure_api_key_auth
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.api_utils import generate_time_key
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 
@@ -218,7 +218,7 @@ app.add_middleware(
 )
 
 # To test in Swagger UI, generate a key:
-# from faciliter_lib.api_utils import generate_time_key
+# from core_lib.api_utils import generate_time_key
 # key = generate_time_key("your-private-key")
 # Then paste the key into the Swagger UI "Authorize" dialog
 ```

@@ -1,4 +1,4 @@
-"""LLM module for faciliter-lib.
+﻿"""LLM module for core-lib.
 
 This module provides abstractions for working with different LLM providers
 including Google Gemini, OpenAI, Azure OpenAI, and local Ollama APIs.

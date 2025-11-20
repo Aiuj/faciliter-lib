@@ -4,8 +4,8 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from faciliter_lib.api_utils.fastapi_middleware import inject_from_logging_context
-from faciliter_lib.tracing import get_current_logging_context
+from core_lib.api_utils.fastapi_middleware import inject_from_logging_context
+from core_lib.tracing import get_current_logging_context
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 # Embeddings Comprehensive Guide
 
-Complete guide to using embeddings in `faciliter-lib` with production patterns, high availability, authentication, and advanced configuration.
+Complete guide to using embeddings in `core-lib` with production patterns, high availability, authentication, and advanced configuration.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ Complete guide to using embeddings in `faciliter-lib` with production patterns, 
 
 ## Overview
 
-The `faciliter-lib` embeddings module provides a unified interface for generating text embeddings across multiple providers with automatic failover, authentication, and production-ready features.
+The `core-lib` embeddings module provides a unified interface for generating text embeddings across multiple providers with automatic failover, authentication, and production-ready features.
 
 ### Key Features
 
@@ -38,7 +38,7 @@ The `faciliter-lib` embeddings module provides a unified interface for generatin
 ### Simple Single Host
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Automatically configured from environment
 client = create_embedding_client()
@@ -55,7 +55,7 @@ EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ### High Availability (Recommended for Production)
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Automatically creates FallbackEmbeddingClient from comma-separated URLs
 client = create_embedding_client()
@@ -87,7 +87,7 @@ EMBEDDING_CACHE_DURATION_SECONDS=7200
 ```
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
 ```
@@ -120,7 +120,7 @@ EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 #### Automatic Fallback Detection
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Automatically uses FallbackEmbeddingClient when comma-separated URLs detected
 client = create_embedding_client()
@@ -158,7 +158,7 @@ EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ```
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Tokens automatically included in requests
 client = create_embedding_client()
@@ -261,7 +261,7 @@ EMBEDDING_BASE_URL=http://localhost:7997
 #### Multiple Providers (Manual Fallback)
 
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 # Explicit mixed provider setup
 client = FallbackEmbeddingClient.from_config([
@@ -368,7 +368,7 @@ INFINITY_TOKEN=$(az keyvault secret show --vault-name my-vault --name infinity-t
 
 **4. Mixed authentication:**
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 # Some hosts with auth, some without
 client = FallbackEmbeddingClient.from_config([
@@ -392,7 +392,7 @@ INFINITY_BASE_URL=http://h1:7997,http://h2:7997,http://h3:7997
 
 ```python
 # ...automatically creates fallback client with health caching
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
 # Returns FallbackEmbeddingClient with 3 providers and health tracking!
@@ -419,7 +419,7 @@ The fallback client uses the cache (if available) to track provider health statu
 
 **How it works:**
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 client = FallbackEmbeddingClient.from_config([
     {"provider": "infinity", "base_url": "http://h1:7997"},
@@ -463,7 +463,7 @@ The fallback client intelligently handles temporary server overload separately f
 
 **Example:**
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 client = FallbackEmbeddingClient.from_config([
     {"provider": "infinity", "base_url": "http://primary:7997"},
@@ -510,7 +510,7 @@ for provider in stats['providers']:
 ### Explicit Fallback Control
 
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 # Explicit configuration with full control
 client = FallbackEmbeddingClient.from_config([
@@ -669,7 +669,7 @@ EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ### Pattern 2: Local with Cloud Backup
 
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 # Try local first, fall back to cloud
 client = FallbackEmbeddingClient.from_config([
@@ -728,7 +728,7 @@ EMBEDDING_DIMENSION=1024
 ### Pattern 5: Graceful Degradation
 
 ```python
-from faciliter_lib.embeddings import FallbackEmbeddingClient
+from core_lib.embeddings import FallbackEmbeddingClient
 
 # Don't raise exceptions, return None instead
 client = FallbackEmbeddingClient.from_config(
@@ -783,10 +783,10 @@ print(f"Generation took {time_ms:.2f}ms")
 import logging
 
 # Enable debug logging for embeddings
-logging.getLogger('faciliter_lib.embeddings').setLevel(logging.DEBUG)
+logging.getLogger('core_lib.embeddings').setLevel(logging.DEBUG)
 
 # Fallback-specific logging
-logging.getLogger('faciliter_lib.embeddings.fallback_client').setLevel(logging.INFO)
+logging.getLogger('core_lib.embeddings.fallback_client').setLevel(logging.INFO)
 ```
 
 ### Common Issues
@@ -795,7 +795,7 @@ logging.getLogger('faciliter_lib.embeddings.fallback_client').setLevel(logging.I
 
 ```python
 # Check if token is configured
-from faciliter_lib.embeddings import embeddings_settings
+from core_lib.embeddings import embeddings_settings
 print(f"Token configured: {bool(embeddings_settings.infinity_token)}")
 
 # Verify token in client
@@ -809,14 +809,14 @@ if hasattr(client, 'token'):
 from dotenv import load_dotenv
 load_dotenv()  # Load .env BEFORE importing
 
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 client = create_embedding_client()
 ```
 
 #### All Providers Failing
 
 ```python
-from faciliter_lib.embeddings import EmbeddingGenerationError
+from core_lib.embeddings import EmbeddingGenerationError
 
 try:
     embedding = client.generate_embedding("text")
@@ -837,7 +837,7 @@ except EmbeddingGenerationError as e:
 
 ```python
 # Debug URL configuration
-from faciliter_lib.embeddings import embeddings_settings
+from core_lib.embeddings import embeddings_settings
 
 print(f"Infinity URL: {embeddings_settings.infinity_url}")
 print(f"Ollama URL: {embeddings_settings.ollama_url}")

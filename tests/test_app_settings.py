@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from faciliter_lib.utils.app_settings import AppSettings
+from core_lib.utils.app_settings import AppSettings
 
 
 def test_app_settings_reads_version_from_pyproject(tmp_path: Path, monkeypatch):

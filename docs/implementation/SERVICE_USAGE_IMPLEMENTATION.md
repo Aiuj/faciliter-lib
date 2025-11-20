@@ -2,11 +2,11 @@
 
 ## Overview
 
-This implementation adds comprehensive AI service usage tracking to faciliter-lib using OpenTelemetry/OpenSearch, eliminating the need for complex Langfuse span management and context errors.
+This implementation adds comprehensive AI service usage tracking to core-lib using OpenTelemetry/OpenSearch, eliminating the need for complex Langfuse span management and context errors.
 
 ## What Was Implemented
 
-### 1. Core Module: `faciliter_lib/tracing/service_usage.py`
+### 1. Core Module: `core_lib/tracing/service_usage.py`
 
 A new module providing:
 
@@ -28,7 +28,7 @@ A new module providing:
   - Status: success/error with error messages
   - OpenTelemetry semantic conventions (gen_ai.*)
 
-### 1a. Pricing Module: `faciliter_lib/tracing/service_pricing.py`
+### 1a. Pricing Module: `core_lib/tracing/service_pricing.py`
 
 Centralized pricing data for easy maintenance:
 
@@ -48,13 +48,13 @@ Supports 30+ models including:
 
 Updated providers to automatically log usage:
 
-**`faciliter_lib/llm/providers/google_genai_provider.py`**:
+**`core_lib/llm/providers/google_genai_provider.py`**:
 - Replaced `add_trace_metadata()` with `log_llm_usage()`
 - Extracts token counts from `usage_metadata`
 - Logs after every `chat()` call
 - Includes error tracking
 
-**`faciliter_lib/llm/providers/openai_provider.py`**:
+**`core_lib/llm/providers/openai_provider.py`**:
 - Replaced `add_trace_metadata()` with `log_llm_usage()`
 - Extracts token counts from completion.usage
 - Logs after every `chat()` call
@@ -64,13 +64,13 @@ Updated providers to automatically log usage:
 
 Updated embedding providers to automatically log usage:
 
-**`faciliter_lib/embeddings/openai_provider.py`**:
+**`core_lib/embeddings/openai_provider.py`**:
 - Added `log_embedding_usage()` to `_generate_embedding_raw()`
 - Extracts token usage from API response
 - Logs success and error cases
 - Includes embedding dimension and text count
 
-**`faciliter_lib/embeddings/infinity_provider.py`**:
+**`core_lib/embeddings/infinity_provider.py`**:
 - Added `log_embedding_usage()` to `_generate_embedding_raw()`
 - Estimates tokens from text length (Infinity doesn't report)
 - Logs success and error cases
@@ -78,7 +78,7 @@ Updated embedding providers to automatically log usage:
 
 ### 4. Module Exports
 
-Updated `faciliter_lib/tracing/__init__.py`:
+Updated `core_lib/tracing/__init__.py`:
 - Exported all service usage functions
 - Added to `__all__` for proper API exposure
 - Maintains backward compatibility
@@ -166,7 +166,7 @@ from core_lib.tracing.service_usage import log_llm_usage
 ### LLM Tracking
 
 ```python
-from faciliter_lib.llm import create_openai_client
+from core_lib.llm import create_openai_client
 
 client = create_openai_client(model="gpt-4o-mini")
 response = client.chat(messages=[...])
@@ -176,7 +176,7 @@ response = client.chat(messages=[...])
 ### Embedding Tracking
 
 ```python
-from faciliter_lib.embeddings import create_openai_embedding_client
+from core_lib.embeddings import create_openai_embedding_client
 
 client = create_openai_embedding_client(model="text-embedding-3-small")
 embeddings = client.generate_embedding(["text1", "text2"])
@@ -186,7 +186,7 @@ embeddings = client.generate_embedding(["text1", "text2"])
 ### With User Context
 
 ```python
-from faciliter_lib.tracing import LoggingContext
+from core_lib.tracing import LoggingContext
 
 with LoggingContext({"user_id": "user-123", "company_id": "acme"}):
     response = llm_client.chat(...)
@@ -256,20 +256,20 @@ GET /logs-*/_search
 ## Files Changed
 
 ### New Files
-- `faciliter_lib/tracing/service_usage.py` (321 lines - refactored, pricing moved out)
-- `faciliter_lib/tracing/service_pricing.py` (182 lines - centralized pricing data)
+- `core_lib/tracing/service_usage.py` (321 lines - refactored, pricing moved out)
+- `core_lib/tracing/service_pricing.py` (182 lines - centralized pricing data)
 - `docs/SERVICE_USAGE_TRACKING.md` (558 lines)
 - `examples/example_service_usage_tracking.py` (303 lines)
 - `tests/test_service_usage.py` (201 lines)
 
 ### Modified Files
-- `faciliter_lib/llm/providers/google_genai_provider.py` (added usage logging)
-- `faciliter_lib/llm/providers/openai_provider.py` (added usage logging)
-- `faciliter_lib/llm/providers/ollama_provider.py` (added usage logging)
-- `faciliter_lib/embeddings/openai_provider.py` (added usage logging)
-- `faciliter_lib/embeddings/infinity_provider.py` (added usage logging)
-- `faciliter_lib/embeddings/google_genai_provider.py` (added usage logging)
-- `faciliter_lib/tracing/__init__.py` (exported new functions and pricing data)
+- `core_lib/llm/providers/google_genai_provider.py` (added usage logging)
+- `core_lib/llm/providers/openai_provider.py` (added usage logging)
+- `core_lib/llm/providers/ollama_provider.py` (added usage logging)
+- `core_lib/embeddings/openai_provider.py` (added usage logging)
+- `core_lib/embeddings/infinity_provider.py` (added usage logging)
+- `core_lib/embeddings/google_genai_provider.py` (added usage logging)
+- `core_lib/tracing/__init__.py` (exported new functions and pricing data)
 - `README.md` (added service usage tracking section)
 
 ## Future Enhancements
@@ -291,7 +291,7 @@ For existing code using Langfuse `add_trace_metadata`:
 
 ### Before
 ```python
-from faciliter_lib.tracing.tracing import add_trace_metadata
+from core_lib.tracing.tracing import add_trace_metadata
 
 # Manual metadata tracking
 add_trace_metadata({
@@ -305,7 +305,7 @@ add_trace_metadata({
 ```python
 # Automatically tracked! No code changes needed.
 # If you need custom metadata:
-from faciliter_lib.tracing.service_usage import log_llm_usage
+from core_lib.tracing.service_usage import log_llm_usage
 
 log_llm_usage(
     provider="openai",

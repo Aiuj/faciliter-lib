@@ -2,8 +2,8 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from faciliter_lib.embeddings.factory import create_embedding_client
-from faciliter_lib.embeddings.fallback_client import FallbackEmbeddingClient
+from core_lib.embeddings.factory import create_embedding_client
+from core_lib.embeddings.fallback_client import FallbackEmbeddingClient
 
 
 class TestAutoFallbackDetection:
@@ -16,7 +16,7 @@ class TestAutoFallbackDetection:
             'INFINITY_BASE_URL': 'http://localhost:7997',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.factory.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.factory.EmbeddingFactory.create') as mock_create:
                 mock_client = Mock()
                 mock_create.return_value = mock_client
                 
@@ -33,7 +33,7 @@ class TestAutoFallbackDetection:
             'INFINITY_BASE_URL': 'http://host1:7997,http://host2:7997,http://host3:7997',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -52,7 +52,7 @@ class TestAutoFallbackDetection:
             'EMBEDDING_BASE_URL': 'http://host1:7997,http://host2:7997',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -72,7 +72,7 @@ class TestAutoFallbackDetection:
             'INFINITY_BASE_URL': 'http://localhost:7997',  # No comma
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.factory.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.factory.EmbeddingFactory.create') as mock_create:
                 mock_client = Mock()
                 mock_create.return_value = mock_client
                 
@@ -93,7 +93,7 @@ class TestTokenAuthentication:
             'INFINITY_TOKEN': 'shared-token',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -115,7 +115,7 @@ class TestTokenAuthentication:
             'INFINITY_TOKEN': 'token1,token2,token3',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -136,7 +136,7 @@ class TestTokenAuthentication:
             'INFINITY_TOKEN': 'token1,token2',  # Only 2 tokens for 3 hosts
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -157,7 +157,7 @@ class TestTokenAuthentication:
             'EMBEDDING_TOKEN': 'generic-token1,generic-token2',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -178,7 +178,7 @@ class TestTokenAuthentication:
             'OPENAI_API_KEY': 'sk-key1,sk-key2',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384

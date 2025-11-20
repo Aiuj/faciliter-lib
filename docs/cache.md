@@ -1,9 +1,9 @@
  # Cache provider and how clients should use it
 
- The library exposes a unified cache manager that can use either Redis or Valkey as the backing store. The cache implementations include connection pooling and health check capabilities for improved performance and reliability. The recommended pattern is to initialize the global cache via `faciliter_lib.cache.cache_manager.set_cache()` using environment variables (recommended for deployments). This ensures the library selects the proper backend automatically and keeps application code backend-agnostic.
+ The library exposes a unified cache manager that can use either Redis or Valkey as the backing store. The cache implementations include connection pooling and health check capabilities for improved performance and reliability. The recommended pattern is to initialize the global cache via `core_lib.cache.cache_manager.set_cache()` using environment variables (recommended for deployments). This ensures the library selects the proper backend automatically and keeps application code backend-agnostic.
 
  Key high-level points for client usage:
- - Use `faciliter_lib.cache.cache_manager.set_cache` (no-args) during app startup so the module can select the best provider based on `CACHE_BACKEND`, installed libraries, and environment settings.
+ - Use `core_lib.cache.cache_manager.set_cache` (no-args) during app startup so the module can select the best provider based on `CACHE_BACKEND`, installed libraries, and environment settings.
  - Use the facade helpers (`cache_get`, `cache_set`, `cache_delete`) throughout your code; they operate against the global cache installed by `set_cache()`.
  - Two built-in implementations exist: `RedisCache` and `ValkeyCache`. Both include connection pooling for better performance and resource management.
  - Use health checks to monitor cache server availability.
@@ -13,14 +13,14 @@
 
  ```python
  # app startup
- from faciliter_lib.cache.cache_manager import set_cache
+ from core_lib.cache.cache_manager import set_cache
 
  # Prefer environment-driven initialization; set_cache() will read
  # `CACHE_BACKEND` and provider-specific env vars and auto-detect clients.
  set_cache()
 
  # Later in app code
- from faciliter_lib.cache.cache_manager import cache_get, cache_set
+ from core_lib.cache.cache_manager import cache_get, cache_set
  cache_set("user:123", {"name": "Alice"}, ttl=300)
  user = cache_get("user:123")
  ```
@@ -35,9 +35,9 @@
  Example: explicit Redis cache instance
 
  ```python
- from faciliter_lib.cache.redis_cache import RedisCache
- from faciliter_lib.cache.redis_config import RedisConfig
- from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set
+ from core_lib.cache.redis_cache import RedisCache
+ from core_lib.cache.redis_config import RedisConfig
+ from core_lib.cache.cache_manager import set_cache, cache_get, cache_set
 
  cfg = RedisConfig(host="localhost", port=6379, db=0)
  cache = RedisCache.from_config(cfg)
@@ -50,9 +50,9 @@
  Example: using Valkey as the backend (same facade)
 
  ```python
- from faciliter_lib.cache.valkey_cache import ValkeyCache
- from faciliter_lib.cache.valkey_config import ValkeyConfig
- from faciliter_lib.cache.cache_manager import set_cache, cache_get, cache_set
+ from core_lib.cache.valkey_cache import ValkeyCache
+ from core_lib.cache.valkey_config import ValkeyConfig
+ from core_lib.cache.cache_manager import set_cache, cache_get, cache_set
 
  cfg = ValkeyConfig(url="https://valkey.example.com", api_key="YOUR_KEY")
  cache = ValkeyCache.from_config(cfg)
@@ -93,7 +93,7 @@
 
  Example:
  ```python
- from faciliter_lib.cache.cache_manager import set_cache, cache_set, cache_get, cache_clear_company
+ from core_lib.cache.cache_manager import set_cache, cache_set, cache_get, cache_clear_company
 
  set_cache()  # environment driven
  cache_set({'user_id': 10}, {'name': 'Alice'}, company_id='acme')
@@ -169,8 +169,8 @@
  Connection pool settings can be configured via environment variables or programmatically:
 
  ```python
- from faciliter_lib.cache.redis_config import RedisConfig
- from faciliter_lib.cache.redis_cache import RedisCache
+ from core_lib.cache.redis_config import RedisConfig
+ from core_lib.cache.redis_cache import RedisCache
 
  # Programmatic configuration
  config = RedisConfig(
@@ -186,7 +186,7 @@
  Both cache implementations provide health check functionality to monitor server availability:
 
  ```python
- from faciliter_lib.cache.cache_manager import get_cache
+ from core_lib.cache.cache_manager import get_cache
 
  cache = get_cache()
  if cache and cache.health_check():

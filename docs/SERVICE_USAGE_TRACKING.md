@@ -1,6 +1,6 @@
 # Service Usage Tracking with OpenTelemetry
 
-This document explains how faciliter-lib automatically tracks AI service usage (LLM, embeddings, OCR) and sends detailed metrics to OpenSearch via OpenTelemetry, eliminating the need for complex Langfuse span management.
+This document explains how core-lib automatically tracks AI service usage (LLM, embeddings, OCR) and sends detailed metrics to OpenSearch via OpenTelemetry, eliminating the need for complex Langfuse span management.
 
 ## Overview
 
@@ -37,8 +37,8 @@ The service usage tracking uses standard Python logging infrastructure, which me
 Configure your logger settings to enable OTLP:
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing import setup_logging
 
 # Configure OTLP
 logger_settings = LoggerSettings(
@@ -66,7 +66,7 @@ LOG_LEVEL=INFO
 Use `LoggingContext` to automatically add user/session/company metadata:
 
 ```python
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import LoggingContext, parse_from
 
 @app.post("/api/chat")
 async def chat_endpoint(from_: Optional[str] = Query(None, alias="from")):
@@ -307,7 +307,7 @@ Set up alerts for:
 
 ## Cost Calculation
 
-The library includes built-in pricing for common models in `faciliter_lib/tracing/service_pricing.py`.
+The library includes built-in pricing for common models in `core_lib/tracing/service_pricing.py`.
 
 ### LLM Pricing (per 1K tokens)
 
@@ -333,7 +333,7 @@ The library includes built-in pricing for common models in `faciliter_lib/tracin
 
 ### Updating Pricing
 
-To update or add pricing, edit `faciliter_lib/tracing/service_pricing.py`:
+To update or add pricing, edit `core_lib/tracing/service_pricing.py`:
 
 ```python
 # Add new LLM model pricing
@@ -353,7 +353,7 @@ The pricing data is centralized in this single file for easy maintenance.
 If you build custom integrations, you can manually log usage:
 
 ```python
-from faciliter_lib.tracing.service_usage import log_llm_usage, log_embedding_usage
+from core_lib.tracing.service_usage import log_llm_usage, log_embedding_usage
 
 # Log custom LLM usage
 log_llm_usage(
@@ -395,7 +395,7 @@ log_embedding_usage(
 
 1. Check OTLP is enabled:
    ```python
-   from faciliter_lib.tracing import get_last_logging_config
+   from core_lib.tracing import get_last_logging_config
    config = get_last_logging_config()
    print(config.get("otlp_enabled"))  # Should be True
    ```
@@ -422,7 +422,7 @@ Cost is automatically calculated for known models. If `cost_usd` is 0:
 
 User/session data comes from `LoggingContext`:
 ```python
-from faciliter_lib.tracing import LoggingContext
+from core_lib.tracing import LoggingContext
 
 with LoggingContext({"user_id": "user-123", "session_id": "sess-456"}):
     # All service usage here will include user context
@@ -434,9 +434,9 @@ with LoggingContext({"user_id": "user-123", "session_id": "sess-456"}):
 Complete example showing service usage tracking:
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing import setup_logging, LoggingContext
-from faciliter_lib.llm import create_client_from_env
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing import setup_logging, LoggingContext
+from core_lib.llm import create_client_from_env
 
 # 1. Setup logging with OTLP
 logger_settings = LoggerSettings(

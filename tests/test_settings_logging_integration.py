@@ -4,7 +4,7 @@ import logging
 import pytest
 from dataclasses import dataclass
 
-from faciliter_lib.config import (
+from core_lib.config import (
     StandardSettings,
     initialize_settings,
     reset_settings,

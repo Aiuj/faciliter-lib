@@ -14,7 +14,7 @@ while keeping all the standard functionality.
 import os
 from dataclasses import dataclass
 from typing import Optional
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 
 
 @dataclass(frozen=True)

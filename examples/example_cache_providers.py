@@ -8,7 +8,7 @@ This example shows how to:
 """
 
 import os
-from faciliter_lib.cache import (
+from core_lib.cache import (
     create_cache, set_cache, get_cache, cache_get, cache_set,
     RedisCache, ValkeyCache, RedisConfig, ValkeyConfig
 )

@@ -6,7 +6,7 @@ various backends like OpenSearch, Elasticsearch, or cloud observability platform
 
 Requirements:
     - OpenTelemetry collector running and accessible
-    - requests library (installed with faciliter-lib[dev])
+    - requests library (installed with core-lib[dev])
 
 Configuration:
     You can configure OTLP logging via:
@@ -16,8 +16,8 @@ Configuration:
 """
 
 import time
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 
 def example_basic_otlp():
@@ -194,7 +194,7 @@ def example_otlp_with_standard_settings():
     print("\n=== Example 6: OTLP with StandardSettings ===\n")
     
     import os
-    from faciliter_lib.config import StandardSettings
+    from core_lib.config import StandardSettings
     
     # Configure via environment
     os.environ["OTLP_ENABLED"] = "true"
@@ -224,8 +224,8 @@ def example_contextual_logging():
     """Example: Contextual logging with parse_from for request metadata."""
     print("\n=== Example 7: Contextual Logging with parse_from ===\n")
     
-    from faciliter_lib.tracing import LoggingContext
-    from faciliter_lib.tracing import parse_from
+    from core_lib.tracing import LoggingContext
+    from core_lib.tracing import parse_from
     
     # Configure OTLP
     logger_settings = LoggerSettings(

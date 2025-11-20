@@ -3,7 +3,7 @@
 import pytest
 from pydantic import BaseModel, Field
 
-from faciliter_lib.llm.json_parser import (
+from core_lib.llm.json_parser import (
     extract_json_from_text,
     parse_structured_output,
     augment_prompt_for_json,

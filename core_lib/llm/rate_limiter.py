@@ -1,4 +1,4 @@
-"""faciliter_lib.llm.rate_limiter
+﻿"""core_lib.llm.rate_limiter
 
 Utilities for client-side rate limiting of API requests.
 

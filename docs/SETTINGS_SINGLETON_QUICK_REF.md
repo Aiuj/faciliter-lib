@@ -2,13 +2,13 @@
 
 ## Installation
 ```bash
-# faciliter-lib already installed
-from faciliter_lib.config import initialize_settings, get_settings
+# core-lib already installed
+from core_lib.config import initialize_settings, get_settings
 ```
 
 ## Basic Usage (3 Lines)
 ```python
-from faciliter_lib.config import initialize_settings, get_settings
+from core_lib.config import initialize_settings, get_settings
 
 # 1. Initialize once at startup
 settings = initialize_settings(app_name="my-app")
@@ -20,7 +20,7 @@ config = get_settings()
 ## Custom Settings Class
 ```python
 from dataclasses import dataclass
-from faciliter_lib.config import StandardSettings, initialize_settings
+from core_lib.config import StandardSettings, initialize_settings
 
 @dataclass(frozen=True)
 class MySettings(StandardSettings):
@@ -101,7 +101,7 @@ initialize_settings(
 ## Error Handling
 
 ```python
-from faciliter_lib.config import get_settings, SettingsError
+from core_lib.config import get_settings, SettingsError
 
 try:
     settings = get_settings()
@@ -141,7 +141,7 @@ All StandardSettings env vars work:
 ```python
 # app.py
 from dataclasses import dataclass
-from faciliter_lib.config import (
+from core_lib.config import (
     StandardSettings,
     initialize_settings,
     get_settings

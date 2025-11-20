@@ -5,13 +5,13 @@ Tests for embedding factory integration with model-aware normalization.
 import pytest
 from unittest.mock import Mock, patch
 
-from faciliter_lib.embeddings import (
+from core_lib.embeddings import (
     EmbeddingFactory,
     create_embedding_client,
     get_model_dimension,
     get_best_normalization_method,
 )
-from faciliter_lib.embeddings.ollama import OllamaEmbeddingClient
+from core_lib.embeddings.ollama import OllamaEmbeddingClient
 
 
 class TestEmbeddingFactoryNormalization:
@@ -104,7 +104,7 @@ class TestModelDatabase:
 class TestEndToEndNormalization:
     """End-to-end tests for normalization pipeline."""
     
-    @patch('faciliter_lib.embeddings.ollama.ollama')
+    @patch('core_lib.embeddings.ollama.ollama')
     def test_embedding_generation_with_normalization(self, mock_ollama):
         """Test complete embedding generation with dimension normalization."""
         # Mock ollama.embed to return 768-dim embedding
@@ -128,7 +128,7 @@ class TestEndToEndNormalization:
         assert isinstance(result, list)
         assert all(isinstance(x, float) for x in result)
     
-    @patch('faciliter_lib.embeddings.ollama.ollama')
+    @patch('core_lib.embeddings.ollama.ollama')
     def test_embedding_with_l2_and_dimension_norm(self, mock_ollama):
         """Test embedding generation with both L2 and dimension normalization."""
         import numpy as np

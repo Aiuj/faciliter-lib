@@ -37,8 +37,8 @@ os.environ.update({
 
 def example_with_logger_settings():
     """Example 1: Using LoggerSettings directly"""
-    from faciliter_lib.config import LoggerSettings
-    from faciliter_lib.tracing.logger import setup_logging
+    from core_lib.config import LoggerSettings
+    from core_lib.tracing.logger import setup_logging
     
     # Create logger settings from environment
     logger_settings = LoggerSettings.from_env()
@@ -75,8 +75,8 @@ def example_with_logger_settings():
 
 def example_with_standard_settings():
     """Example 2: Using StandardSettings with integrated LoggerSettings"""
-    from faciliter_lib.config import StandardSettings
-    from faciliter_lib.tracing.logger import setup_logging
+    from core_lib.config import StandardSettings
+    from core_lib.tracing.logger import setup_logging
     
     # Create standard settings (includes logger auto-detection)
     settings = StandardSettings.from_env()
@@ -107,8 +107,8 @@ def example_with_standard_settings():
 
 def example_with_custom_fields():
     """Example 3: Custom fields and metadata in logs"""
-    from faciliter_lib.config import LoggerSettings
-    from faciliter_lib.tracing.logger import setup_logging
+    from core_lib.config import LoggerSettings
+    from core_lib.tracing.logger import setup_logging
     
     # Create custom logger settings
     logger_settings = LoggerSettings(
@@ -145,7 +145,7 @@ def example_with_custom_fields():
 
 def example_fallback_without_ovh():
     """Example 4: Logging without OVH LDP (console only)"""
-    from faciliter_lib.tracing.logger import setup_logging
+    from core_lib.tracing.logger import setup_logging
     
     # Temporarily disable OVH LDP
     original_enabled = os.getenv("OVH_LDP_ENABLED")
@@ -165,8 +165,8 @@ def example_fallback_without_ovh():
 
 def example_validation():
     """Example 5: Settings validation"""
-    from faciliter_lib.config import LoggerSettings
-    from faciliter_lib.config.base_settings import SettingsError
+    from core_lib.config import LoggerSettings
+    from core_lib.config.base_settings import SettingsError
     
     print("\nValidation Examples:")
     

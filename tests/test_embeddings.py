@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import List
 
-from faciliter_lib.embeddings import (
+from core_lib.embeddings import (
     BaseEmbeddingClient,
     EmbeddingGenerationError,
     EmbeddingsConfig,
@@ -106,7 +106,7 @@ class TestEmbeddingFactory:
     
     def test_factory_create_with_provider(self):
         """Test factory create method with explicit provider."""
-        with patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient):
+        with patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient):
             client = EmbeddingFactory.create(provider="openai", model="test-model")
             assert isinstance(client, MockOpenAIEmbeddingClient)
             assert client.model == "test-model"
@@ -116,7 +116,7 @@ class TestEmbeddingFactory:
         with pytest.raises(ValueError, match="Unknown provider"):
             EmbeddingFactory.create(provider="unknown")
     
-    @patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
     def test_factory_openai(self):
         """Test OpenAI factory method."""
         client = EmbeddingFactory.openai(
@@ -126,7 +126,7 @@ class TestEmbeddingFactory:
         assert isinstance(client, MockOpenAIEmbeddingClient)
         assert client.model == "text-embedding-3-small"
     
-    @patch('faciliter_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
     def test_factory_google_genai(self):
         """Test Google GenAI factory method."""
         client = EmbeddingFactory.google_genai(
@@ -137,7 +137,7 @@ class TestEmbeddingFactory:
         assert client.model == "text-embedding-004"
         assert client.task_type == "SEMANTIC_SIMILARITY"
     
-    @patch('faciliter_lib.embeddings.factory.LocalEmbeddingClient', MockLocalEmbeddingClient)
+    @patch('core_lib.embeddings.factory.LocalEmbeddingClient', MockLocalEmbeddingClient)
     def test_factory_local(self):
         """Test local factory method."""
         client = EmbeddingFactory.local(
@@ -156,7 +156,7 @@ class TestEmbeddingFactory:
             api_key="test-key"
         )
         
-        with patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient):
+        with patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient):
             client = EmbeddingFactory.from_config(config)
             assert isinstance(client, MockOpenAIEmbeddingClient)
             assert client.model == "test-model"
@@ -165,21 +165,21 @@ class TestEmbeddingFactory:
 class TestConvenienceFunctions:
     """Test convenience functions."""
     
-    @patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
     def test_create_embedding_client(self):
         """Test create_embedding_client function."""
         client = create_embedding_client(provider="openai", model="test-model")
         assert isinstance(client, MockOpenAIEmbeddingClient)
         assert client.model == "test-model"
     
-    @patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
     def test_create_openai_client(self):
         """Test create_openai_client function."""
         client = create_openai_client(model="text-embedding-3-large")
         assert isinstance(client, MockOpenAIEmbeddingClient)
         assert client.model == "text-embedding-3-large"
     
-    @patch('faciliter_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
     def test_create_google_genai_client(self):
         """Test create_google_genai_client function."""
         client = create_google_genai_client(
@@ -190,7 +190,7 @@ class TestConvenienceFunctions:
         assert client.model == "text-embedding-004"
         assert client.task_type == "CLASSIFICATION"
     
-    @patch('faciliter_lib.embeddings.factory.LocalEmbeddingClient', MockLocalEmbeddingClient)
+    @patch('core_lib.embeddings.factory.LocalEmbeddingClient', MockLocalEmbeddingClient)
     def test_create_local_client(self):
         """Test create_local_client function."""
         client = create_local_client(
@@ -284,8 +284,8 @@ class TestBaseEmbeddingClient:
         client.embedding_time_ms = 150.5
         assert client.get_embedding_time_ms() == 150.5
     
-    @patch('faciliter_lib.embeddings.base.cache_get')
-    @patch('faciliter_lib.embeddings.base.cache_set')
+    @patch('core_lib.embeddings.base.cache_get')
+    @patch('core_lib.embeddings.base.cache_set')
     def test_cache_disabled_with_zero_duration(self, mock_cache_set, mock_cache_get):
         """Test that cache is completely bypassed when cache_duration_seconds=0."""
         # Create client with cache disabled
@@ -312,8 +312,8 @@ class TestBaseEmbeddingClient:
         mock_cache_get.assert_not_called()
         mock_cache_set.assert_not_called()
     
-    @patch('faciliter_lib.embeddings.base.cache_get')
-    @patch('faciliter_lib.embeddings.base.cache_set')
+    @patch('core_lib.embeddings.base.cache_get')
+    @patch('core_lib.embeddings.base.cache_set')
     def test_cache_enabled_with_positive_duration(self, mock_cache_set, mock_cache_get):
         """Test that cache is used when cache_duration_seconds > 0."""
         # Mock cache_get to return None (cache miss)
@@ -350,19 +350,19 @@ class TestProviderAvailability:
     
     def test_openai_not_available(self):
         """Test OpenAI provider when library not available."""
-        with patch('faciliter_lib.embeddings.factory._openai_available', False):
+        with patch('core_lib.embeddings.factory._openai_available', False):
             with pytest.raises(ImportError, match="OpenAI provider not available"):
                 EmbeddingFactory.openai()
     
     def test_google_genai_not_available(self):
         """Test Google GenAI provider when library not available."""
-        with patch('faciliter_lib.embeddings.factory._google_genai_available', False):
+        with patch('core_lib.embeddings.factory._google_genai_available', False):
             with pytest.raises(ImportError, match="Google GenAI provider not available"):
                 EmbeddingFactory.google_genai()
     
     def test_local_not_available(self):
         """Test local provider when libraries not available."""
-        with patch('faciliter_lib.embeddings.factory._local_available', False):
+        with patch('core_lib.embeddings.factory._local_available', False):
             with pytest.raises(ImportError, match="Local provider not available"):
                 EmbeddingFactory.local()
 
@@ -370,7 +370,7 @@ class TestProviderAvailability:
 class TestIntegration:
     """Integration tests (mocked to avoid network calls)."""
     
-    @patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
     def test_end_to_end_openai(self):
         """Test end-to-end OpenAI embedding generation."""
         client = create_openai_client(model="text-embedding-3-small")
@@ -385,7 +385,7 @@ class TestIntegration:
         assert isinstance(embeddings, list)
         assert len(embeddings) == 2
     
-    @patch('faciliter_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.GoogleGenAIEmbeddingClient', MockGoogleGenAIEmbeddingClient)
     def test_end_to_end_google_genai(self):
         """Test end-to-end Google GenAI embedding generation."""
         client = create_google_genai_client(
@@ -402,14 +402,14 @@ class TestIntegration:
         'EMBEDDING_MODEL': 'text-embedding-3-small',
         'OPENAI_API_KEY': 'test-key'
     })
-    @patch('faciliter_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
+    @patch('core_lib.embeddings.factory.OpenAIEmbeddingClient', MockOpenAIEmbeddingClient)
     def test_auto_detection_from_env(self):
         """Test automatic provider detection from environment."""
         # Force reload of embeddings_settings
-        from faciliter_lib.embeddings.embeddings_config import EmbeddingsConfig
+        from core_lib.embeddings.embeddings_config import EmbeddingsConfig
         config = EmbeddingsConfig.from_env()
         
-        with patch('faciliter_lib.embeddings.factory.embeddings_settings', config):
+        with patch('core_lib.embeddings.factory.embeddings_settings', config):
             client = create_client_from_env()
             assert isinstance(client, MockOpenAIEmbeddingClient)
             assert client.model == "text-embedding-3-small"

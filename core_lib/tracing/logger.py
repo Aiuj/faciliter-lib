@@ -1,4 +1,4 @@
-"""Centralized logging utilities for faciliter-lib.
+﻿"""Centralized logging utilities for core-lib.
 
 Capabilities:
  - One-time global logging initialization that can be triggered from an application entrypoint
@@ -6,7 +6,7 @@ Capabilities:
  - Module-level lightweight accessors (`get_logger`, `get_module_logger`) that DO NOT force
      global initialization during import time.
  - Override support: callers can explicitly pass a `level` to `setup_logging` to override
-     environment / settings derived values (useful for scripts or ad‑hoc notebooks).
+     environment / settings derived values (useful for scripts or adâ€‘hoc notebooks).
  - Optional file logging with rotation (disabled by default) controlled via function params
      or environment variables.
  - Optional OVH Logs Data Platform integration via GELF protocol (lazy-loaded when enabled).
@@ -39,7 +39,7 @@ import sys
 import os
 from typing import Optional, Union, Any
 
-try:  # Optional – settings may not be available yet
+try:  # Optional â€“ settings may not be available yet
     from core_lib.config.app_settings import AppSettings  # type: ignore
 except Exception:  # pragma: no cover - defensive
     AppSettings = Any  # fallback typing only
@@ -470,7 +470,7 @@ def flush_logging() -> None:
     Example:
         # Django wsgi.py
         import atexit
-        from faciliter_lib.tracing.logger import flush_logging
+        from core_lib.tracing.logger import flush_logging
         
         atexit.register(flush_logging)
     """

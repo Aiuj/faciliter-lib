@@ -10,7 +10,7 @@ import threading
 from dataclasses import dataclass
 from typing import Optional
 
-from faciliter_lib.config import (
+from core_lib.config import (
     StandardSettings,
     SettingsSingletonManager,
     initialize_settings,

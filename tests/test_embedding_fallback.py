@@ -2,8 +2,8 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from faciliter_lib.embeddings.fallback_client import FallbackEmbeddingClient
-from faciliter_lib.embeddings.base import EmbeddingGenerationError
+from core_lib.embeddings.fallback_client import FallbackEmbeddingClient
+from core_lib.embeddings.base import EmbeddingGenerationError
 
 
 class TestFallbackEmbeddingClient:
@@ -128,7 +128,7 @@ class TestFallbackEmbeddingClient:
 
     def test_from_config_creates_providers(self):
         """Test from_config factory method."""
-        with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+        with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
             mock_provider = Mock()
             mock_provider.model = "test-model"
             mock_provider.embedding_dim = 384
@@ -147,7 +147,7 @@ class TestFallbackEmbeddingClient:
 
     def test_from_config_applies_common_settings(self):
         """Test that common settings override individual provider settings."""
-        with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+        with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
             mock_provider = Mock()
             mock_provider.model = "common-model"
             mock_provider.embedding_dim = 512
@@ -237,7 +237,7 @@ class TestFallbackEmbeddingClient:
             'EMBEDDING_MODEL': 'test-model',
             'EMBEDDING_DIMENSION': '384',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384
@@ -255,7 +255,7 @@ class TestFallbackEmbeddingClient:
             'EMBEDDING_BASE_URL': 'http://host1:7997,http://host2:7997',
             'EMBEDDING_MODEL': 'test-model',
         }):
-            with patch('faciliter_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
+            with patch('core_lib.embeddings.fallback_client.EmbeddingFactory.create') as mock_create:
                 mock_provider = Mock()
                 mock_provider.model = "test-model"
                 mock_provider.embedding_dim = 384

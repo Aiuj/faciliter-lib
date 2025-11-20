@@ -1,17 +1,17 @@
-"""Example: Using Infinity Embedding Provider with faciliter-lib
+"""Example: Using Infinity Embedding Provider with core-lib
 
 This example demonstrates how to use the Infinity embedding provider
 to generate embeddings using a local Infinity server.
 
 Prerequisites:
 1. Infinity server running on http://localhost:7997
-2. faciliter-lib installed with: pip install faciliter-lib
+2. core-lib installed with: pip install core-lib
 
 Start Infinity server:
   docker run -d -p 7997:7997 michaelf34/infinity:latest --model-name-or-path BAAI/bge-small-en-v1.5
 """
 
-from faciliter_lib.embeddings import create_infinity_client, create_embedding_client
+from core_lib.embeddings import create_infinity_client, create_embedding_client
 
 def example_basic_usage():
     """Basic usage with explicit Infinity client creation."""
@@ -196,7 +196,7 @@ def main():
         print("\nMake sure:")
         print("  1. Infinity server is running on http://localhost:7997")
         print("  2. Run: docker run -d -p 7997:7997 michaelf34/infinity:latest --model-name-or-path BAAI/bge-small-en-v1.5")
-        print("  3. faciliter-lib is installed with requests: pip install requests")
+        print("  3. core-lib is installed with requests: pip install requests")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Settings Singleton Manager
 
 Provides a thread-safe singleton pattern for managing a single StandardSettings 
@@ -255,7 +255,7 @@ def initialize_settings(
         The initialized settings instance
         
     Example:
-        >>> from faciliter_lib.config import initialize_settings, StandardSettings
+        >>> from core_lib.config import initialize_settings, StandardSettings
         >>> # Initialize with automatic logging setup
         >>> settings = initialize_settings()
         
@@ -288,7 +288,7 @@ def get_settings() -> StandardSettings:
         SettingsError: If settings have not been initialized
         
     Example:
-        >>> from faciliter_lib.config import get_settings
+        >>> from core_lib.config import get_settings
         >>> settings = get_settings()
         >>> print(settings.app_name)
     """
@@ -305,7 +305,7 @@ def set_settings(settings: StandardSettings) -> None:
         TypeError: If settings is not a StandardSettings instance
         
     Example:
-        >>> from faciliter_lib.config import set_settings, StandardSettings
+        >>> from core_lib.config import set_settings, StandardSettings
         >>> custom_settings = StandardSettings.from_env(app_name="my-app")
         >>> set_settings(custom_settings)
     """
@@ -319,7 +319,7 @@ def reset_settings() -> None:
     when you need to completely reconfigure settings.
     
     Example:
-        >>> from faciliter_lib.config import reset_settings, initialize_settings
+        >>> from core_lib.config import reset_settings, initialize_settings
         >>> reset_settings()
         >>> settings = initialize_settings(log_level="DEBUG")
     """
@@ -333,7 +333,7 @@ def has_settings() -> bool:
         True if settings are initialized, False otherwise
         
     Example:
-        >>> from faciliter_lib.config import has_settings, initialize_settings
+        >>> from core_lib.config import has_settings, initialize_settings
         >>> if not has_settings():
         ...     initialize_settings()
     """
@@ -347,7 +347,7 @@ def get_settings_safe() -> Optional[StandardSettings]:
         The settings instance if initialized, None otherwise
         
     Example:
-        >>> from faciliter_lib.config import get_settings_safe
+        >>> from core_lib.config import get_settings_safe
         >>> settings = get_settings_safe()
         >>> if settings:
         ...     print(settings.app_name)

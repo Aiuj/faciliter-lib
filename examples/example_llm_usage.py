@@ -220,7 +220,7 @@ def example_factory_patterns():
         
         # Method 4: From configuration object
         print("4. From configuration object:")
-        from faciliter_lib.llm import OllamaConfig
+        from core_lib.llm import OllamaConfig
         config = OllamaConfig(model="qwen3:1.7b", temperature=0.5, thinking_enabled=True)
         client = LLMFactory.from_config(config)
         print(f"   Created client from config object")

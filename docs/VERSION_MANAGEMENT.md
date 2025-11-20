@@ -227,7 +227,7 @@ Service name and version are automatically propagated to OTLP:
 
 ```python
 # No configuration needed - automatic!
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 
 settings = StandardSettings.from_env()
 
@@ -239,8 +239,8 @@ settings = StandardSettings.from_env()
 ### Langfuse Tracing
 
 ```python
-from faciliter_lib.tracing import setup_tracing
-from faciliter_lib.config import get_settings
+from core_lib.tracing import setup_tracing
+from core_lib.config import get_settings
 
 settings = get_settings()
 
@@ -251,8 +251,8 @@ tracing_client = setup_tracing(name=settings.app.app_name)
 ### Logging
 
 ```python
-from faciliter_lib import setup_logging
-from faciliter_lib.config import get_settings
+from core_lib import setup_logging
+from core_lib.config import get_settings
 
 settings = get_settings()
 
@@ -266,7 +266,7 @@ In tests, the version is automatically detected from `pyproject.toml`:
 
 ```python
 import pytest
-from faciliter_lib.utils.app_settings import AppSettings
+from core_lib.utils.app_settings import AppSettings
 from pathlib import Path
 
 def test_app_version():
@@ -294,7 +294,7 @@ def test_settings_version():
 ✅ **CI/CD friendly** - Easy to parse in automation scripts  
 ✅ **Git tag integration** - Can use setuptools-scm for auto-versioning  
 ✅ **Observability ready** - Automatically flows to OTLP, Langfuse, logs  
-✅ **Zero configuration** - Works out of the box with faciliter-lib  
+✅ **Zero configuration** - Works out of the box with core-lib  
 
 ## Migration from Old Approach
 
@@ -316,11 +316,11 @@ OTLP_SERVICE_NAME=my-app
 OTLP_SERVICE_VERSION=0.1.0
 ```
 
-### After (faciliter-lib)
+### After (core-lib)
 
 ```python
 # ✅ New approach - automatic and consistent
-from faciliter_lib.config import get_settings
+from core_lib.config import get_settings
 
 settings = get_settings()
 app_name = settings.app.app_name   # From pyproject.toml
@@ -355,7 +355,7 @@ version = "0.1.0"
 3. **Update code to use settings**:
    ```python
    # Replace hardcoded values or env vars
-   from faciliter_lib.config import get_settings
+   from core_lib.config import get_settings
    settings = get_settings()
    ```
 
@@ -427,7 +427,7 @@ COPY pyproject.toml /app/
 
 ```python
 from pathlib import Path
-from faciliter_lib.utils.app_settings import AppSettings
+from core_lib.utils.app_settings import AppSettings
 
 project_root = Path(__file__).resolve().parents[1]
 print(f"Project root: {project_root}")
@@ -458,7 +458,7 @@ print(f"Version: {settings.version}")
 - **No environment variables needed** for app name/version
 - **Automatically propagated** to OTLP, logging, tracing, etc.
 - **Update once** in `pyproject.toml` and it's used everywhere
-- **faciliter-lib handles everything** automatically
+- **core-lib handles everything** automatically
 
 For more information:
 - [Settings Singleton Guide](SETTINGS_SINGLETON_QUICK_REF.md)

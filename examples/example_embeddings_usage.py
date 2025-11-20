@@ -8,7 +8,7 @@ try:
 except ImportError:
     pass
 
-from faciliter_lib.embeddings import (
+from core_lib.embeddings import (
     create_embedding_client,
     create_openai_client,
     create_google_genai_client,
@@ -215,7 +215,7 @@ def example_factory_patterns():
         # Method 4: From configuration object
         print("4. From configuration object:")
         try:
-            from faciliter_lib.embeddings import EmbeddingsConfig
+            from core_lib.embeddings import EmbeddingsConfig
             config = EmbeddingsConfig(
                 provider="openai",
                 model="text-embedding-3-small",
@@ -296,7 +296,7 @@ def example_performance_comparison():
 
 
 if __name__ == "__main__":
-    print("Faciliter-lib Embeddings Examples")
+    print("core-lib Embeddings Examples")
     print("=" * 40)
     
     # Run examples (some may fail if dependencies/API keys not available)

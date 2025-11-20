@@ -8,25 +8,25 @@ A complete time-based HMAC authentication system for securing FastAPI and MCP se
 
 ### Core Modules
 
-1. **`faciliter_lib/api_utils/time_based_auth.py`**
+1. **`core_lib/api_utils/time_based_auth.py`**
    - `generate_time_key()` - Generate HMAC-SHA256 authentication keys
    - `verify_time_key()` - Verify keys against 3-hour time windows
    - `TimeBasedAuthError` - Custom exception for auth errors
    - Uses UTC time windows (hour-based) with previous, current, and next hour validity
 
-2. **`faciliter_lib/api_utils/auth_settings.py`**
+2. **`core_lib/api_utils/auth_settings.py`**
    - `AuthSettings` class - Configuration management extending BaseSettings
    - Environment variable support: AUTH_ENABLED, AUTH_PRIVATE_KEY, AUTH_KEY_HEADER_NAME
    - Validation: minimum 16-character key requirement
    - Security: masks private key in serialization
 
-3. **`faciliter_lib/api_utils/fastapi_auth.py`**
+3. **`core_lib/api_utils/fastapi_auth.py`**
    - `TimeBasedAuthMiddleware` - FastAPI middleware for all-routes protection
    - `create_auth_dependency()` - Factory for route-level dependencies
    - `verify_auth_dependency()` - Default dependency with env settings
    - Graceful handling when FastAPI is not installed (optional dependency)
 
-4. **`faciliter_lib/api_utils/fastmcp_auth.py`**
+4. **`core_lib/api_utils/fastmcp_auth.py`**
    - `create_auth_middleware()` - Middleware factory for FastMCP v2 servers
    - `verify_mcp_auth()` - Manual verification helper
    - `get_auth_headers()` - Generate headers for HTTP/SSE transport
@@ -35,11 +35,11 @@ A complete time-based HMAC authentication system for securing FastAPI and MCP se
 
 ### Integration
 
-5. **Updated `faciliter_lib/config/__init__.py`**
+5. **Updated `core_lib/config/__init__.py`**
    - Added AuthSettings to config exports
    - Integrated with existing settings system
 
-6. **Updated `faciliter_lib/__init__.py`**
+6. **Updated `core_lib/__init__.py`**
    - Exported core auth functions at top level
    - Exported AuthSettings from config
 
@@ -58,7 +58,7 @@ A complete time-based HMAC authentication system for securing FastAPI and MCP se
    - Manual verification and testing
    - Production configuration guide
 
-9. **`faciliter_lib/api_utils/README.md`**
+9. **`core_lib/api_utils/README.md`**
    - Quick reference for the module
    - Links to full documentation
 
@@ -116,8 +116,8 @@ A complete time-based HMAC authentication system for securing FastAPI and MCP se
 ### Server (FastAPI)
 ```python
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 settings = AuthSettings.from_env()
@@ -126,8 +126,8 @@ app.add_middleware(TimeBasedAuthMiddleware, settings=settings)
 
 ### Client
 ```python
-from faciliter_lib.api_utils import generate_time_key
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils import generate_time_key
+from core_lib.config import AuthSettings
 
 settings = AuthSettings.from_env()
 auth_key = generate_time_key(settings.auth_private_key)
@@ -152,20 +152,20 @@ All tests passing:
 ## Files Modified/Created
 
 ### New Files (13)
-- faciliter_lib/api_utils/__init__.py
-- faciliter_lib/api_utils/time_based_auth.py
-- faciliter_lib/api_utils/auth_settings.py
-- faciliter_lib/api_utils/fastapi_auth.py
-- faciliter_lib/api_utils/fastmcp_auth.py
-- faciliter_lib/api_utils/README.md
+- core_lib/api_utils/__init__.py
+- core_lib/api_utils/time_based_auth.py
+- core_lib/api_utils/auth_settings.py
+- core_lib/api_utils/fastapi_auth.py
+- core_lib/api_utils/fastmcp_auth.py
+- core_lib/api_utils/README.md
 - tests/test_api_utils.py
 - tests/test_auth_settings.py
 - examples/example_api_auth.py
 - docs/API_AUTH_QUICK_REFERENCE.md
 
 ### Modified Files (4)
-- faciliter_lib/__init__.py
-- faciliter_lib/config/__init__.py
+- core_lib/__init__.py
+- core_lib/config/__init__.py
 - README.md
 - pyproject.toml
 

@@ -110,7 +110,7 @@ worker.start()
 ### 4. Function-Based Handler
 
 ```python
-from faciliter_lib.jobs import JobWorker, Job
+from core_lib.jobs import JobWorker, Job
 
 def process_my_task(job: Job) -> dict:
     """Simple function handler."""
@@ -266,7 +266,7 @@ if worker.is_running():
 ## Advanced: Custom Job Queue
 
 ```python
-from faciliter_lib.jobs import create_job_queue, set_job_queue, JobConfig
+from core_lib.jobs import create_job_queue, set_job_queue, JobConfig
 
 # Custom configuration
 config = JobConfig(
@@ -307,7 +307,7 @@ class MyHandler(JobHandler):
 ### In Clients
 
 ```python
-from faciliter_lib.jobs import get_job_status, JobStatus
+from core_lib.jobs import get_job_status, JobStatus
 
 job = get_job_status(job_id)
 
@@ -383,7 +383,7 @@ class FileHandler(JobHandler):
 ```python
 import schedule
 import time
-from faciliter_lib.jobs import cleanup_old_jobs
+from core_lib.jobs import cleanup_old_jobs
 
 def cleanup_task():
     deleted = cleanup_old_jobs(older_than_seconds=86400)  # 24h
@@ -402,7 +402,7 @@ while True:
 ### Mock Queue
 
 ```python
-from faciliter_lib.jobs import set_job_queue
+from core_lib.jobs import set_job_queue
 from unittest.mock import MagicMock
 
 # Create mock queue
@@ -418,7 +418,7 @@ assert job_id == "test-job-id"
 ### Test Handler
 
 ```python
-from faciliter_lib.jobs import Job, JobStatus
+from core_lib.jobs import Job, JobStatus
 
 def test_my_handler():
     handler = MyTaskHandler()

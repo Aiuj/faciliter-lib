@@ -1,11 +1,11 @@
-"""faciliter_lib.utils - Utility functions and classes.
+﻿"""core_lib.utils - Utility functions and classes.
 
-This package provides utility functionality for the faciliter_lib library including:
+This package provides utility functionality for the core_lib library including:
 - AppSettings: Application configuration and settings management
 - LanguageUtils: Language detection, text manipulation, and NLP utilities
 - File utilities: Temporary file creation and cleanup helpers
 
-Convenience imports for the `faciliter_lib.utils` package.
+Convenience imports for the `core_lib.utils` package.
 
 Exports a small, stable surface so consumers can do::
 

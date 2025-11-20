@@ -5,9 +5,9 @@ import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock, call
 from typing import Dict, Any, List
 
-from faciliter_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
-from faciliter_lib.llm.retry import RetryConfig, RetryStrategy
-from faciliter_lib.llm.rate_limiter import RateLimitConfig
+from core_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
+from core_lib.llm.retry import RetryConfig, RetryStrategy
+from core_lib.llm.rate_limiter import RateLimitConfig
 
 
 class MockGoogleAPIException(Exception):
@@ -101,7 +101,7 @@ class TestGoogleGenAIProviderRateLimit:
             
             # Mock rate limiter to raise an exception but catch it in _acquire_rate_limit
             # The test should verify that the warning is logged but request succeeds
-            with patch('faciliter_lib.llm.providers.google_genai_provider.logger') as mock_logger:
+            with patch('core_lib.llm.providers.google_genai_provider.logger') as mock_logger:
                 # Directly test the rate limit method to ensure it handles exceptions
                 provider._rate_limiter.acquire = AsyncMock(side_effect=Exception("Rate limiter failed"))
                 
@@ -252,7 +252,7 @@ class TestGoogleGenAIProviderRetry:
             
             with patch.object(provider, '_acquire_rate_limit'), \
                  patch('time.sleep') as mock_sleep, \
-                 patch('faciliter_lib.llm.providers.google_genai_provider.logger') as mock_logger:
+                 patch('core_lib.llm.providers.google_genai_provider.logger') as mock_logger:
                 
                 messages = [{"role": "user", "content": "Hello"}]
                 result = provider.chat(messages=messages)

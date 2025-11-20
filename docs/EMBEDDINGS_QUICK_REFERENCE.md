@@ -1,17 +1,17 @@
 # Embeddings Quick Reference
 
-Get started with embeddings in `faciliter-lib` in minutes. **For comprehensive documentation, see [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md).**
+Get started with embeddings in `core-lib` in minutes. **For comprehensive documentation, see [EMBEDDINGS_GUIDE.md](./EMBEDDINGS_GUIDE.md).**
 
 ## Installation
 
 ```bash
 # Recommended: Install with all embedding providers
-uv pip install "faciliter-lib[all]"
+uv pip install "core-lib[all]"
 
 # Or install specific providers
-uv pip install "faciliter-lib[embeddings]"  # Core only
-uv pip install "faciliter-lib[infinity]"    # + Infinity
-uv pip install "faciliter-lib[openai]"      # + OpenAI
+uv pip install "core-lib[embeddings]"  # Core only
+uv pip install "core-lib[infinity]"    # + Infinity
+uv pip install "core-lib[openai]"      # + OpenAI
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ```
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
 embedding = client.generate_embedding("Hello, world!")
@@ -43,7 +43,7 @@ EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
 ```
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Automatically creates FallbackEmbeddingClient with 3 providers
 client = create_embedding_client()
@@ -86,7 +86,7 @@ infinity_emb v2 --model-name-or-path BAAI/bge-small-en-v1.5
 ### Single Embedding
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
 embedding = client.generate_embedding("Your text here")
@@ -110,7 +110,7 @@ for i, emb in enumerate(embeddings):
 ### With Task Type
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client, TaskType
+from core_lib.embeddings import create_embedding_client, TaskType
 
 client = create_embedding_client()
 embedding = client.generate_embedding(
@@ -122,7 +122,7 @@ embedding = client.generate_embedding(
 ### Custom Dimensions
 
 ```python
-from faciliter_lib.embeddings import create_openai_client
+from core_lib.embeddings import create_openai_client
 
 # Reduce token usage for OpenAI
 client = create_openai_client(
@@ -196,7 +196,7 @@ if client.health_check():
 ## Common Task Types
 
 ```python
-from faciliter_lib.embeddings import TaskType
+from core_lib.embeddings import TaskType
 
 # Most common
 TaskType.SEMANTIC_SIMILARITY  # Default - similarity search

@@ -5,9 +5,9 @@ to add authentication to Swagger UI in FastAPI applications.
 """
 
 from fastapi import FastAPI, Depends, HTTPException, status
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.api_utils.fastapi_openapi import configure_api_key_auth, add_custom_security_scheme
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.api_utils.fastapi_openapi import configure_api_key_auth, add_custom_security_scheme
+from core_lib.config import AuthSettings
 
 
 # Example 1: Basic API key authentication with Swagger UI

@@ -16,12 +16,12 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from faciliter_lib.config.api_settings import ApiSettings
-from faciliter_lib.config.base_settings import SettingsError
-from faciliter_lib.config.cache_settings import CacheSettings
-from faciliter_lib.config.tracing_settings import TracingSettings
-from faciliter_lib.config.mcp_settings import MCPServerSettings
-from faciliter_lib.config.fastapi_settings import FastAPIServerSettings
+from core_lib.config.api_settings import ApiSettings
+from core_lib.config.base_settings import SettingsError
+from core_lib.config.cache_settings import CacheSettings
+from core_lib.config.tracing_settings import TracingSettings
+from core_lib.config.mcp_settings import MCPServerSettings
+from core_lib.config.fastapi_settings import FastAPIServerSettings
 
 
 class TestApiSettingsBasics:

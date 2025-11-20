@@ -1,4 +1,4 @@
-"""Cache module for faciliter-lib."""
+﻿"""Cache module for core-lib."""
 
 from .cache_manager import (
     create_cache,

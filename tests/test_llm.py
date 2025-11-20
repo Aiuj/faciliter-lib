@@ -5,7 +5,7 @@ from unittest.mock import patch
 from pydantic import BaseModel
 from typing import Optional
 
-from faciliter_lib.llm import (
+from core_lib.llm import (
     LLMClient,
     GeminiConfig,
     OllamaConfig,
@@ -57,14 +57,14 @@ class TestLLMConfig:
 
 
 class TestLLMClient:
-    @patch("faciliter_lib.llm.llm_client.OllamaProvider")
+    @patch("core_lib.llm.llm_client.OllamaProvider")
     def test_ollama_client_initialization(self, mock_ollama):
         config = OllamaConfig(model="llama3.2", temperature=0.7)
         client = LLMClient(config)
         mock_ollama.assert_called_once()
         assert client.config == config
 
-    @patch("faciliter_lib.llm.llm_client.GoogleGenAIProvider")
+    @patch("core_lib.llm.llm_client.GoogleGenAIProvider")
     def test_gemini_client_initialization(self, mock_gemini):
         config = GeminiConfig(api_key="test-key", model="gemini-1.5-flash", temperature=0.5)
         client = LLMClient(config)
@@ -80,7 +80,7 @@ class TestLLMClient:
 
     def test_normalize_messages_string(self):
         config = OllamaConfig(model="test")
-        with patch("faciliter_lib.llm.llm_client.OllamaProvider"):
+        with patch("core_lib.llm.llm_client.OllamaProvider"):
             client = LLMClient(config)
             messages = client._normalize_messages("Hello world")
             assert len(messages) == 1
@@ -89,7 +89,7 @@ class TestLLMClient:
 
     def test_normalize_messages_list(self):
         config = OllamaConfig(model="test")
-        with patch("faciliter_lib.llm.llm_client.OllamaProvider"):
+        with patch("core_lib.llm.llm_client.OllamaProvider"):
             client = LLMClient(config)
             input_messages = [
                 {"role": "user", "content": "Hello"},
@@ -104,7 +104,7 @@ class TestLLMClient:
 
     def test_get_model_info(self):
         config = OllamaConfig(model="llama3.2", temperature=0.7, thinking_enabled=True)
-        with patch("faciliter_lib.llm.llm_client.OllamaProvider"):
+        with patch("core_lib.llm.llm_client.OllamaProvider"):
             client = LLMClient(config)
             info = client.get_model_info()
             assert info["provider"] == "ollama"
@@ -115,7 +115,7 @@ class TestLLMClient:
     def test_chat_passes_search_grounding_flag_to_provider(self):
         # Verify that LLMClient forwards use_search_grounding to provider.chat
         config = GeminiConfig(api_key="k", model="gemini-1.5-flash")
-        with patch("faciliter_lib.llm.llm_client.GoogleGenAIProvider") as mock_provider_cls:
+        with patch("core_lib.llm.llm_client.GoogleGenAIProvider") as mock_provider_cls:
             mock_provider = mock_provider_cls.return_value
             mock_provider.chat.return_value = {
                 "content": "ok",
@@ -130,7 +130,7 @@ class TestLLMClient:
 
     def test_close_is_idempotent(self):
         config = OllamaConfig(model="llama3.2")
-        with patch("faciliter_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
+        with patch("core_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
             mock_provider = mock_provider_cls.return_value
             client = LLMClient(config)
             client.close()
@@ -139,7 +139,7 @@ class TestLLMClient:
 
 
 class TestUtilityFunctions:
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_create_ollama_client(self, mock_client_class):
         client = create_ollama_client(model="llama3.2", temperature=0.8, thinking_enabled=True)
         mock_client_class.assert_called_once()
@@ -149,7 +149,7 @@ class TestUtilityFunctions:
         assert call_args.thinking_enabled is True
         assert call_args.provider == "ollama"
 
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_create_gemini_client_with_key(self, mock_client_class):
         client = create_gemini_client(api_key="test-key", model="gemini-pro", temperature=0.3)
         mock_client_class.assert_called_once()
@@ -186,9 +186,9 @@ class TestIntegration:
         class M(BaseModel):
             a: int
         # Simulate provider response via monkeypatching provider in client
-        from faciliter_lib.llm.llm_client import LLMClient
-        from faciliter_lib.llm.llm_config import OllamaConfig
-        with patch("faciliter_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
+        from core_lib.llm.llm_client import LLMClient
+        from core_lib.llm.llm_config import OllamaConfig
+        with patch("core_lib.llm.llm_client.OllamaProvider") as mock_provider_cls:
             mock_provider = mock_provider_cls.return_value
             mock_provider.chat.return_value = {
                 "content": {"a": 1},
@@ -209,25 +209,25 @@ class TestIntegration:
 class TestLLMFactory:
     """Test the new LLMFactory functionality."""
 
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_factory_create_auto_detect(self, mock_client_class):
-        from faciliter_lib.llm import LLMFactory
+        from core_lib.llm import LLMFactory
         with patch.dict('os.environ', {'LLM_PROVIDER': 'ollama'}):
             client = LLMFactory.create()
             mock_client_class.assert_called_once()
 
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_factory_create_with_provider(self, mock_client_class):
-        from faciliter_lib.llm import LLMFactory
+        from core_lib.llm import LLMFactory
         client = LLMFactory.create(provider="ollama", model="llama3.2", temperature=0.5)
         mock_client_class.assert_called_once()
         call_args = mock_client_class.call_args[0][0]
         assert call_args.model == "llama3.2"
         assert call_args.temperature == 0.5
 
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_factory_from_config(self, mock_client_class):
-        from faciliter_lib.llm import LLMFactory, OllamaConfig
+        from core_lib.llm import LLMFactory, OllamaConfig
         config = OllamaConfig(model="llama3.2", temperature=0.3)
         client = LLMFactory.from_config(config)
         mock_client_class.assert_called_once()
@@ -235,9 +235,9 @@ class TestLLMFactory:
         assert call_args.model == "llama3.2"
         assert call_args.temperature == 0.3
 
-    @patch("faciliter_lib.llm.factory.LLMClient")
+    @patch("core_lib.llm.factory.LLMClient")
     def test_create_llm_client_convenience(self, mock_client_class):
-        from faciliter_lib.llm import create_llm_client
+        from core_lib.llm import create_llm_client
         with patch.dict('os.environ', {'LLM_PROVIDER': 'ollama'}):
             client = create_llm_client(model="llama3.2")
             mock_client_class.assert_called_once()

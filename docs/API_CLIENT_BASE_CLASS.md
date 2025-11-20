@@ -19,7 +19,7 @@ The `APIClient` base class provides a reusable foundation for building HTTP API 
 ### Basic Usage
 
 ```python
-from faciliter_lib.api_utils import APIClient
+from core_lib.api_utils import APIClient
 
 # Create a simple client with time-based auth
 client = APIClient(
@@ -42,7 +42,7 @@ response = httpx.get(
 ### Creating a Custom API Client
 
 ```python
-from faciliter_lib.api_utils import APIClient
+from core_lib.api_utils import APIClient
 from typing import Dict, Any
 
 class MyAPIClient(APIClient):
@@ -178,7 +178,7 @@ Use a custom prefix for environment variables:
 
 ```python
 import os
-from faciliter_lib.api_utils import APIClient
+from core_lib.api_utils import APIClient
 
 def create_api_client_from_env(prefix: str) -> APIClient:
     """Create API client from environment variables."""
@@ -205,7 +205,7 @@ KB_API_AUTH_HEADER_NAME=x-auth-key  # Optional
 ## Complete Example
 
 ```python
-from faciliter_lib.api_utils import APIClient
+from core_lib.api_utils import APIClient
 from typing import Dict, Any, List
 
 class UserAPIClient(APIClient):
@@ -412,4 +412,4 @@ See `examples/example_api_client_usage.py` for comprehensive examples including:
 
 ## License
 
-Part of faciliter-lib. See main library documentation for license information.
+Part of core-lib. See main library documentation for license information.

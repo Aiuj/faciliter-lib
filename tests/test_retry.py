@@ -6,7 +6,7 @@ import asyncio
 from unittest.mock import patch, MagicMock, call
 from typing import Any
 
-from faciliter_lib.llm.retry import (
+from core_lib.llm.retry import (
     RetryConfig,
     RetryStrategy,
     retry_handler,
@@ -226,7 +226,7 @@ class TestRetryHandlerSync:
             raise CustomRetryableError("Test error")
         
         with patch('time.sleep'), \
-             patch('faciliter_lib.llm.retry.logger') as mock_logger:
+             patch('core_lib.llm.retry.logger') as mock_logger:
             
             with pytest.raises(CustomRetryableError):
                 logged_func()

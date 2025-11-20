@@ -1,7 +1,7 @@
-"""Main LLM client class for abstracting different LLM providers.
+﻿"""Main LLM client class for abstracting different LLM providers.
 
 This version removes LangChain and uses native provider SDKs via lightweight
-provider classes under ``faciliter_lib.llm.providers``.
+provider classes under ``core_lib.llm.providers``.
 """
 
 import json

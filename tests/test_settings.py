@@ -22,11 +22,11 @@ from unittest.mock import patch, Mock
 
 import pytest
 
-from faciliter_lib.config.base_settings import (
+from core_lib.config.base_settings import (
     BaseSettings, SettingsError, EnvironmentVariableError,
     EnvParser, DotEnvLoader, SettingsManager, settings_manager
 )
-from faciliter_lib.config.standard_settings import (
+from core_lib.config.standard_settings import (
     StandardSettings, LLMSettings, EmbeddingsSettings, 
     CacheSettings, TracingSettings, DatabaseSettings
 )
@@ -152,8 +152,8 @@ class TestDotEnvLoader(unittest.TestCase):
         import shutil
         shutil.rmtree(self.temp_dir)
     
-    @patch('faciliter_lib.config.base_settings.HAS_DOTENV', True)
-    @patch('faciliter_lib.config.base_settings.load_dotenv')
+    @patch('core_lib.config.base_settings.HAS_DOTENV', True)
+    @patch('core_lib.config.base_settings.load_dotenv')
     def test_load_dotenv_files_success(self, mock_load_dotenv):
         """Test successful .env file loading."""
         # Create .env file
@@ -166,13 +166,13 @@ class TestDotEnvLoader(unittest.TestCase):
         self.assertTrue(result)
         mock_load_dotenv.assert_called_once_with(env_file, override=False)
     
-    @patch('faciliter_lib.config.base_settings.HAS_DOTENV', False)
+    @patch('core_lib.config.base_settings.HAS_DOTENV', False)
     def test_load_dotenv_files_no_dotenv(self):
         """Test behavior when python-dotenv is not available."""
         result = DotEnvLoader.load_dotenv_files([self.temp_path])
         self.assertFalse(result)
     
-    @patch('faciliter_lib.config.base_settings.HAS_DOTENV', True)
+    @patch('core_lib.config.base_settings.HAS_DOTENV', True)
     def test_load_dotenv_files_missing_file(self):
         """Test behavior when .env file doesn't exist."""
         result = DotEnvLoader.load_dotenv_files([self.temp_path / "nonexistent"])
@@ -676,7 +676,7 @@ class TestStandardSettingsInheritance(unittest.TestCase):
     
     def test_standard_settings_inherits_api_settings(self):
         """Test that StandardSettings inherits from ApiSettings."""
-        from faciliter_lib.config.api_settings import ApiSettings
+        from core_lib.config.api_settings import ApiSettings
         assert issubclass(StandardSettings, ApiSettings)
     
     def test_standard_settings_has_api_settings_attributes(self):
@@ -1412,7 +1412,7 @@ class TestMCPServerSettings(unittest.TestCase):
     
     def test_mcp_server_settings_defaults(self):
         """Test MCP server settings with defaults."""
-        from faciliter_lib.config.mcp_settings import MCPServerSettings
+        from core_lib.config.mcp_settings import MCPServerSettings
         settings = MCPServerSettings.from_env(load_dotenv=False)
         
         self.assertEqual(settings.server_name, "faciliter-mcp-server")
@@ -1426,7 +1426,7 @@ class TestMCPServerSettings(unittest.TestCase):
     
     def test_mcp_server_custom_settings(self):
         """Test MCP server settings with custom values."""
-        from faciliter_lib.config.mcp_settings import MCPServerSettings
+        from core_lib.config.mcp_settings import MCPServerSettings
         os.environ.update({
             "MCP_SERVER_NAME": "custom-server",
             "MCP_SERVER_VERSION": "1.2.3",
@@ -1448,7 +1448,7 @@ class TestMCPServerSettings(unittest.TestCase):
     
     def test_mcp_server_validation(self):
         """Test MCP server validation."""
-        from faciliter_lib.config.mcp_settings import MCPServerSettings
+        from core_lib.config.mcp_settings import MCPServerSettings
         
         # Test invalid port
         settings = MCPServerSettings(port=70000)
@@ -1464,7 +1464,7 @@ class TestMCPServerSettings(unittest.TestCase):
     
     def test_mcp_server_connection_config(self):
         """Test MCP server connection configuration."""
-        from faciliter_lib.config.mcp_settings import MCPServerSettings
+        from core_lib.config.mcp_settings import MCPServerSettings
         settings = MCPServerSettings(
             host="localhost",
             port=8000,

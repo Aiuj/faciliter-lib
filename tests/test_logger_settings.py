@@ -227,10 +227,10 @@ class TestLoggerIntegration:
         # Logger should be at DEBUG level
         assert logger.level == 10  # DEBUG = 10
     
-    @patch('faciliter_lib.tracing.handlers.otlp_handler.OTLPHandler')
+    @patch('core_lib.tracing.handlers.otlp_handler.OTLPHandler')
     def test_setup_logging_with_otlp(self, mock_otlp_handler):
         """Test setup_logging with OTLP enabled."""
-        from faciliter_lib.tracing.logger import setup_logging
+        from core_lib.tracing.logger import setup_logging
         
         # Create a mock handler instance
         mock_handler_instance = MagicMock()
@@ -261,7 +261,7 @@ class TestLoggerIntegration:
     
     def test_setup_logging_without_otlp(self):
         """Test that OTLP handler is not loaded when disabled."""
-        from faciliter_lib.tracing.logger import setup_logging
+        from core_lib.tracing.logger import setup_logging
         
         logger_settings = LoggerSettings(
             log_level="INFO",
@@ -287,7 +287,7 @@ class TestStandardSettingsWithLogger:
         monkeypatch.setenv("OVH_LDP_TOKEN", "token")
         monkeypatch.setenv("OVH_LDP_ENDPOINT", "gra1.logs.ovh.com")
         
-        from faciliter_lib.config import StandardSettings
+        from core_lib.config import StandardSettings
         
         settings = StandardSettings.from_env(load_dotenv=False)
         
@@ -298,7 +298,7 @@ class TestStandardSettingsWithLogger:
     
     def test_standard_settings_logger_disabled_by_default(self):
         """Test that logger is not enabled by default."""
-        from faciliter_lib.config import StandardSettings
+        from core_lib.config import StandardSettings
         
         settings = StandardSettings.from_env(load_dotenv=False)
         
@@ -307,7 +307,7 @@ class TestStandardSettingsWithLogger:
     
     def test_standard_settings_logger_safe_property(self, monkeypatch):
         """Test logger_safe property returns NullConfig when logger is None."""
-        from faciliter_lib.config import StandardSettings
+        from core_lib.config import StandardSettings
         
         settings = StandardSettings.from_env(load_dotenv=False)
         

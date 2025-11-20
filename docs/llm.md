@@ -20,7 +20,7 @@ The LLM module provides a unified interface for working with different Large Lan
 The new factory-based approach automatically detects your configuration and creates the appropriate client:
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 # Auto-detect provider from environment variables
 client = create_llm_client()
@@ -33,7 +33,7 @@ print(response["content"])
 ### Provider-Specific Creation
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 # Use a specific provider with overrides
 client = create_llm_client(
@@ -53,7 +53,7 @@ client = create_llm_client(
 ### Using the Factory Class Directly
 
 ```python
-from faciliter_lib.llm import LLMFactory
+from core_lib.llm import LLMFactory
 
 # Create with factory methods
 client = LLMFactory.openai(model="gpt-4", temperature=0.3)
@@ -92,7 +92,7 @@ export AZURE_OPENAI_DEPLOYMENT=gpt-4
 ```
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 # Factory auto-detects the provider and uses environment settings
 client = create_llm_client()
@@ -170,7 +170,7 @@ Available environment variables:
 ### Using Custom Configuration Objects
 
 ```python
-from faciliter_lib.llm import LLMFactory, OpenAIConfig, GeminiConfig
+from core_lib.llm import LLMFactory, OpenAIConfig, GeminiConfig
 
 # Create a custom configuration
 config = OpenAIConfig(
@@ -195,7 +195,7 @@ client = LLMFactory.from_config(
 ### Mixing Environment and Manual Configuration
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 # Load base settings from env, override specific parameters
 client = create_llm_client(
@@ -209,7 +209,7 @@ client = create_llm_client(
 ### Conversation History
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 client = create_llm_client()
 
@@ -230,7 +230,7 @@ response = client.chat(
 ```python
 from pydantic import BaseModel
 from typing import Optional
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 class WeatherResponse(BaseModel):
     location: str
@@ -253,7 +253,7 @@ if response["structured"] and not response.get("error"):
 ### Using Tools
 
 ```python
-from faciliter_lib.llm import create_llm_client
+from core_lib.llm import create_llm_client
 
 client = create_llm_client()
 
@@ -302,7 +302,7 @@ The `LLMFactory` class provides multiple creation methods:
 Main factory method that intelligently creates clients based on parameters:
 
 ```python
-from faciliter_lib.llm import LLMFactory
+from core_lib.llm import LLMFactory
 
 # Auto-detect from environment
 client = LLMFactory.create()
@@ -331,7 +331,7 @@ client = LLMFactory.openai_compatible(base_url="http://localhost:8000")
 For simpler usage, several convenience functions are available:
 
 ```python
-from faciliter_lib.llm import create_llm_client, create_client_from_env
+from core_lib.llm import create_llm_client, create_client_from_env
 
 # Main convenience function - recommended for most use cases
 client = create_llm_client()  # Auto-detect
@@ -348,11 +348,11 @@ If you were using the old `utils.py` functions, here's how to migrate:
 
 ```python
 # Old way
-from faciliter_lib.llm.utils import create_gemini_client
+from core_lib.llm.utils import create_gemini_client
 client = create_gemini_client(model="gemini-pro")
 
 # New way (all approaches work)
-from faciliter_lib.llm import LLMFactory, create_llm_client
+from core_lib.llm import LLMFactory, create_llm_client
 
 # Option 1: Use the factory
 client = LLMFactory.gemini(model="gemini-pro")
@@ -361,7 +361,7 @@ client = LLMFactory.gemini(model="gemini-pro")
 client = create_llm_client(provider="gemini", model="gemini-pro")
 
 # Option 3: Backward-compatible functions still work
-from faciliter_lib.llm import create_gemini_client
+from core_lib.llm import create_gemini_client
 client = create_gemini_client(model="gemini-pro")
 ```
 

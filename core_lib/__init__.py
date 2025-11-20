@@ -1,4 +1,4 @@
-"""faciliter-lib: Shared library for MCP agent tools."""
+﻿"""core-lib: Shared library for MCP agent tools."""
 
 __version__ = "0.2.9"
 

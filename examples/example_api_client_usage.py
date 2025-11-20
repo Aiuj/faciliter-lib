@@ -2,7 +2,7 @@
 Example: Using APIClient Base Class for Custom APIs
 
 This example demonstrates how to use the reusable APIClient base class
-from faciliter-lib to create authenticated API clients for any service.
+from core-lib to create authenticated API clients for any service.
 
 The APIClient provides:
 - Time-based HMAC authentication
@@ -12,7 +12,7 @@ The APIClient provides:
 - SSL verification control
 """
 
-from faciliter_lib.api_utils import APIClient
+from core_lib.api_utils import APIClient
 import httpx
 from typing import Dict, Any, List, Optional
 

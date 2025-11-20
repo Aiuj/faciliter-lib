@@ -16,7 +16,7 @@ The Settings Singleton Manager provides a thread-safe singleton pattern for mana
 ### Basic Usage
 
 ```python
-from faciliter_lib.config import initialize_settings, get_settings
+from core_lib.config import initialize_settings, get_settings
 
 # Initialize settings (typically done at application startup)
 settings = initialize_settings()
@@ -31,7 +31,7 @@ def some_function():
 
 ```python
 from dataclasses import dataclass
-from faciliter_lib.config import StandardSettings, initialize_settings, get_settings
+from core_lib.config import StandardSettings, initialize_settings, get_settings
 
 @dataclass(frozen=True)
 class MyAppSettings(StandardSettings):
@@ -80,7 +80,7 @@ Initialize the global settings singleton from environment variables and optional
 
 **Example:**
 ```python
-from faciliter_lib.config import initialize_settings
+from core_lib.config import initialize_settings
 
 # Simple initialization with automatic logging setup
 settings = initialize_settings()
@@ -115,7 +115,7 @@ Get the current settings instance.
 
 **Example:**
 ```python
-from faciliter_lib.config import get_settings
+from core_lib.config import get_settings
 
 def my_function():
     config = get_settings()
@@ -134,7 +134,7 @@ Set the settings instance directly.
 
 **Example:**
 ```python
-from faciliter_lib.config import set_settings, StandardSettings
+from core_lib.config import set_settings, StandardSettings
 
 # Create a settings instance manually
 custom_settings = StandardSettings.from_env(app_name="manual-app")
@@ -149,7 +149,7 @@ Reset the settings singleton, removing the current instance.
 
 **Example:**
 ```python
-from faciliter_lib.config import reset_settings, initialize_settings
+from core_lib.config import reset_settings, initialize_settings
 
 # Reset and reconfigure
 reset_settings()
@@ -164,7 +164,7 @@ Check if settings have been initialized.
 
 **Example:**
 ```python
-from faciliter_lib.config import has_settings, initialize_settings
+from core_lib.config import has_settings, initialize_settings
 
 if not has_settings():
     initialize_settings()
@@ -178,7 +178,7 @@ Get settings without raising an error if not initialized.
 
 **Example:**
 ```python
-from faciliter_lib.config import get_settings_safe
+from core_lib.config import get_settings_safe
 
 settings = get_settings_safe()
 if settings:
@@ -207,7 +207,7 @@ Initialize settings once at application startup, then access throughout your cod
 
 ```python
 # main.py
-from faciliter_lib.config import initialize_settings
+from core_lib.config import initialize_settings
 
 def main():
     # Initialize at startup
@@ -222,7 +222,7 @@ def main():
     run_app()
 
 # module_a.py
-from faciliter_lib.config import get_settings
+from core_lib.config import get_settings
 
 def process_data():
     config = get_settings()
@@ -230,7 +230,7 @@ def process_data():
     pass
 
 # module_b.py
-from faciliter_lib.config import get_settings
+from core_lib.config import get_settings
 
 def api_handler():
     config = get_settings()
@@ -243,7 +243,7 @@ def api_handler():
 Initialize settings only when first needed:
 
 ```python
-from faciliter_lib.config import has_settings, initialize_settings, get_settings
+from core_lib.config import has_settings, initialize_settings, get_settings
 
 def get_config():
     """Get application config, initializing if needed."""
@@ -263,7 +263,7 @@ Reset settings between tests for isolation:
 
 ```python
 import pytest
-from faciliter_lib.config import reset_settings, initialize_settings, get_settings
+from core_lib.config import reset_settings, initialize_settings, get_settings
 
 class TestMyFeature:
     def setup_method(self):
@@ -291,7 +291,7 @@ Configure based on environment:
 
 ```python
 import os
-from faciliter_lib.config import initialize_settings
+from core_lib.config import initialize_settings
 
 def init_for_environment():
     env = os.getenv("ENVIRONMENT", "dev")
@@ -329,7 +329,7 @@ Define and use custom settings throughout your application:
 ```python
 from dataclasses import dataclass
 from typing import Optional
-from faciliter_lib.config import StandardSettings, initialize_settings, get_settings
+from core_lib.config import StandardSettings, initialize_settings, get_settings
 
 @dataclass(frozen=True)
 class APIServerSettings(StandardSettings):
@@ -374,7 +374,7 @@ def setup_cors():
 The singleton manager uses double-checked locking to ensure thread-safe initialization:
 
 ```python
-from faciliter_lib.config import initialize_settings
+from core_lib.config import initialize_settings
 import threading
 
 def init_in_thread(thread_id):
@@ -431,7 +431,7 @@ The `SettingsManager` (from `base_settings.py`) is different from the singleton 
 ## Error Handling
 
 ```python
-from faciliter_lib.config import (
+from core_lib.config import (
     get_settings,
     initialize_settings,
     SettingsError
@@ -458,7 +458,7 @@ if settings is None:
 ```python
 # In agent-rfx/src/settings.py
 from dataclasses import dataclass
-from faciliter_lib.config import StandardSettings, initialize_settings
+from core_lib.config import StandardSettings, initialize_settings
 
 @dataclass(frozen=True)
 class Settings(StandardSettings):
@@ -487,7 +487,7 @@ def main():
 
 ```python
 from fastapi import FastAPI, Depends
-from faciliter_lib.config import initialize_settings, get_settings
+from core_lib.config import initialize_settings, get_settings
 
 app = FastAPI()
 

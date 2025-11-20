@@ -2,7 +2,7 @@ import os
 import logging
 from pathlib import Path
 
-from faciliter_lib import setup_logging, get_module_logger, get_last_logging_config
+from core_lib import setup_logging, get_module_logger, get_last_logging_config
 
 def test_setup_logging_basic(tmp_path: Path):
     log_file = tmp_path / "test.log"

@@ -1,6 +1,6 @@
-"""Example Django WSGI configuration with faciliter-lib logging.
+"""Example Django WSGI configuration with core-lib logging.
 
-This example shows how to properly configure faciliter-lib logging in a Django
+This example shows how to properly configure core-lib logging in a Django
 application with OTLP (OpenTelemetry) support and proper shutdown handling.
 
 CRITICAL: You MUST add `LOGGING_CONFIG = None` to your settings.py file to disable
@@ -17,14 +17,14 @@ import os
 import signal
 import sys
 from django.core.wsgi import get_wsgi_application
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging, flush_logging, get_module_logger
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
 # === Configure Logging ===
 # Note: LOGGING_CONFIG = None MUST be set in settings.py
-# Without this, Django will override faciliter-lib's logging configuration
+# Without this, Django will override core-lib's logging configuration
 # Load settings from environment variables
 settings = LoggerSettings.from_env()
 
@@ -70,14 +70,14 @@ application = get_wsgi_application()
 """
 # settings.py - CRITICAL CONFIGURATION
 
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # STEP 1: Disable Django's default logging (REQUIRED)
 # See: https://docs.djangoproject.com/en/5.2/topics/logging/
 LOGGING_CONFIG = None
 
-# STEP 2: Configure faciliter-lib logging
+# STEP 2: Configure core-lib logging
 LOGGER_SETTINGS = LoggerSettings.from_env()
 setup_logging(
     app_name="my-django-app",
@@ -115,8 +115,8 @@ OVH_LDP_ENDPOINT=gra1.logs.ovh.com
 # === Example Django View ===
 """
 # views.py
-from faciliter_lib.tracing import LoggingContext
-from faciliter_lib.tracing.logger import get_module_logger
+from core_lib.tracing import LoggingContext
+from core_lib.tracing.logger import get_module_logger
 from django.http import JsonResponse
 
 logger = get_module_logger()
@@ -155,11 +155,11 @@ graceful_timeout = 30
 
 def worker_exit(server, worker):
     '''Flush logs when worker exits'''
-    from faciliter_lib.tracing.logger import flush_logging
+    from core_lib.tracing.logger import flush_logging
     flush_logging()
 
 def on_exit(server):
     '''Flush logs when master exits'''
-    from faciliter_lib.tracing.logger import flush_logging
+    from core_lib.tracing.logger import flush_logging
     flush_logging()
 """

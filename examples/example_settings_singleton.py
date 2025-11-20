@@ -1,7 +1,7 @@
 """
 Example: Using Settings Singleton Manager
 
-Demonstrates how to use the Settings Singleton Manager pattern in faciliter-lib
+Demonstrates how to use the Settings Singleton Manager pattern in core-lib
 for managing application-wide configuration with custom settings.
 """
 

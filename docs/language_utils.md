@@ -18,7 +18,7 @@ Two related convenience methods are provided on `LanguageUtils`:
 ## Usage
 
 ```python
-from faciliter_lib.utils.language_utils import LanguageUtils
+from core_lib.utils.language_utils import LanguageUtils
 
 text = "Bonjour tout le monde!"
 

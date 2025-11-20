@@ -1,6 +1,6 @@
 # Tracing Module Tests
 
-This document provides an overview of the comprehensive test suite created for the `faciliter_lib.tracing` module.
+This document provides an overview of the comprehensive test suite created for the `core_lib.tracing` module.
 
 ## Test Coverage
 

@@ -8,8 +8,8 @@ from pathlib import Path
 
 # Test imports
 def test_excel_manager_import():
-    """Test that ExcelManager can be imported from faciliter_lib.tools."""
-    from faciliter_lib.tools import ExcelManager
+    """Test that ExcelManager can be imported from core_lib.tools."""
+    from core_lib.tools import ExcelManager
     assert ExcelManager is not None
 
 
@@ -20,19 +20,19 @@ class TestExcelManager:
         """Set up test fixtures."""
         self.test_excel_path = "/fake/path/test.xlsx"
         
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_excel_manager_init(self, mock_load_workbook):
         """Test ExcelManager initialization."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         assert manager.excel_path == self.test_excel_path
         assert manager.wb is None
         
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_load_workbook_success(self, mock_load_workbook):
         """Test successful workbook loading."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock the workbook
         mock_wb = Mock()
@@ -46,10 +46,10 @@ class TestExcelManager:
         assert manager.wb == mock_wb
         mock_load_workbook.assert_called_once_with(self.test_excel_path, read_only=True)
         
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_load_workbook_failure(self, mock_load_workbook):
         """Test workbook loading failure."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         mock_load_workbook.side_effect = Exception("File not found")
         
@@ -63,7 +63,7 @@ class TestExcelManager:
         
     def test_clean_cell_none(self):
         """Test cleaning None cell values."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         result = manager.clean_cell(None)
@@ -71,7 +71,7 @@ class TestExcelManager:
         
     def test_clean_cell_nan(self):
         """Test cleaning NaN cell values."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         result = manager.clean_cell(float('nan'))
@@ -79,7 +79,7 @@ class TestExcelManager:
         
     def test_clean_cell_normal_value(self):
         """Test cleaning normal cell values."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         result = manager.clean_cell("test value")
@@ -90,7 +90,7 @@ class TestExcelManager:
         
     def test_get_sheet_tables_basic(self):
         """Test basic sheet table extraction."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock worksheet with basic data
         mock_ws = Mock()
@@ -111,7 +111,7 @@ class TestExcelManager:
         
     def test_get_sheet_tables_with_headers(self):
         """Test sheet table extraction with Excel-style headers."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock worksheet
         mock_ws = Mock()
@@ -130,7 +130,7 @@ class TestExcelManager:
         
     def test_get_sheet_tables_max_rows(self):
         """Test sheet table extraction with row limit."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock worksheet with more data
         mock_ws = Mock()
@@ -147,10 +147,10 @@ class TestExcelManager:
         # Should limit to 2 rows
         assert len(result) <= 2
         
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_get_content_not_loaded(self, mock_load_workbook):
         """Test get_content when workbook is not loaded."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         
@@ -159,11 +159,11 @@ class TestExcelManager:
         
         assert "Workbook not loaded" in str(exc_info.value)
         
-    @patch('faciliter_lib.tools.excel_manager.tabulate')
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.tabulate')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_get_content_success(self, mock_load_workbook, mock_tabulate):
         """Test successful content extraction."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock workbook and worksheet
         mock_wb = MagicMock()
@@ -182,7 +182,7 @@ class TestExcelManager:
         manager = ExcelManager(self.test_excel_path)
         manager.load()
         
-        with patch('faciliter_lib.utils.language_utils.LanguageUtils.detect_language') as mock_detect:
+        with patch('core_lib.utils.language_utils.LanguageUtils.detect_language') as mock_detect:
             mock_detect.return_value = 'en'
             
             result = manager.get_content()
@@ -193,11 +193,11 @@ class TestExcelManager:
             assert result[0]['language'] == 'en'
             assert 'rows' in result[0]
             
-    @patch('faciliter_lib.tools.excel_manager.tabulate')
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.tabulate')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_to_markdown_not_loaded(self, mock_load_workbook, mock_tabulate):
         """Test to_markdown when workbook is not loaded."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         
@@ -206,11 +206,11 @@ class TestExcelManager:
         
         assert "Workbook not loaded" in str(exc_info.value)
         
-    @patch('faciliter_lib.tools.excel_manager.tabulate')
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.tabulate')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_to_combined_markdown_not_loaded(self, mock_load_workbook, mock_tabulate):
         """Test to_combined_markdown when workbook is not loaded."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         
@@ -219,11 +219,11 @@ class TestExcelManager:
         
         assert "Workbook not loaded" in str(exc_info.value)
         
-    @patch('faciliter_lib.tools.excel_manager.tabulate')
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.tabulate')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_to_markdown_success(self, mock_load_workbook, mock_tabulate):
         """Test successful markdown conversion."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock workbook with multiple sheets
         mock_wb = MagicMock()
@@ -269,11 +269,11 @@ class TestExcelManager:
         # Should call tabulate for each sheet
         assert mock_tabulate.call_count == 2
         
-    @patch('faciliter_lib.tools.excel_manager.tabulate')
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.tabulate')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_to_combined_markdown_success(self, mock_load_workbook, mock_tabulate):
         """Test successful combined markdown conversion."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock workbook with multiple sheets
         mock_wb = MagicMock()
@@ -311,7 +311,7 @@ class TestExcelManager:
         
     def test_excel_col_name_generation(self):
         """Test Excel column name generation (A, B, ..., Z, AA, AB, ...)."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         manager = ExcelManager(self.test_excel_path)
         
@@ -328,10 +328,10 @@ class TestExcelManager:
             # Check that we have some form of column identifier
             assert len(result[0]) >= 1
             
-    @patch('faciliter_lib.tools.excel_manager.load_workbook')
+    @patch('core_lib.tools.excel_manager.load_workbook')
     def test_get_content_no_language_detection(self, mock_load_workbook):
         """Test get_content with language detection disabled."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock workbook and worksheet
         mock_wb = MagicMock()
@@ -344,7 +344,7 @@ class TestExcelManager:
         manager = ExcelManager(self.test_excel_path)
         manager.load()
         
-        with patch('faciliter_lib.tools.excel_manager.tabulate') as mock_tabulate:
+        with patch('core_lib.tools.excel_manager.tabulate') as mock_tabulate:
             mock_tabulate.return_value = "| Header |\n|--------|\n| Data |"
             
             result = manager.get_content(detect_language=False)
@@ -354,7 +354,7 @@ class TestExcelManager:
             
     def test_empty_worksheet_handling(self):
         """Test handling of empty worksheets."""
-        from faciliter_lib.tools import ExcelManager
+        from core_lib.tools import ExcelManager
         
         # Mock empty worksheet
         mock_ws = Mock()

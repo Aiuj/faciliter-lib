@@ -1,7 +1,7 @@
-"""
+﻿"""
 app_settings.py
 
-Reusable application settings helper for Facilit­er projects.
+Reusable application settings helper for FacilitÂ­er projects.
 
 Features:
 - Reads app version from pyproject.toml ([project].version) with safe fallbacks.
@@ -9,7 +9,7 @@ Features:
 - Provides a small, dependency-free API using stdlib tomllib (Python 3.11+).
 
 Usage:
-    from faciliter_lib.utils.app_settings import AppSettings
+    from core_lib.utils.app_settings import AppSettings
     settings = AppSettings(app_name="MyApp", project_root=Path(__file__).resolve().parents[1])
     print(settings.version)
 

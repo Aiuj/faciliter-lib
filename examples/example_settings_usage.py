@@ -92,7 +92,7 @@ def example_custom_settings():
         "DB_PASSWORD": "secret123"
     })
     
-    from faciliter_lib.config import EnvParser
+    from core_lib.config import EnvParser
     
     # Build custom settings from environment
     database_config = None
@@ -179,7 +179,7 @@ def example_settings_manager():
     """Demonstrate settings manager for complex applications."""
     print("=== Example 4: Settings Manager ===")
     
-    from faciliter_lib.config import settings_manager, StandardSettings, LLMSettings
+    from core_lib.config import settings_manager, StandardSettings, LLMSettings
     
     # Set up environment
     os.environ.update({
@@ -268,7 +268,7 @@ LANGFUSE_HOST=https://staging.langfuse.com
     env_file.write_text(env_content.strip())
     
     try:
-        from faciliter_lib.config import StandardSettings, DotEnvLoader
+        from core_lib.config import StandardSettings, DotEnvLoader
         
         # Load .env file manually with custom name
         DotEnvLoader.load_dotenv_files([Path.cwd()], filename=".env.example")

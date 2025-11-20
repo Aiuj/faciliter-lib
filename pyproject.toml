@@ -3,8 +3,8 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "faciliter-lib"
-version = "0.2.10"
+name = "core-lib"
+version = "0.3.0"
 description = "Shared library for MCP agent tools (internal use only)"
 authors = [{ name = "Julien Nadaud", email = "jnadaud@faciliter.ai" }]
 readme = "README.md"
@@ -48,16 +48,16 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Aiuj/faciliter-lib"
-Repository = "https://github.com/Aiuj/faciliter-lib"
-Issues = "https://github.com/Aiuj/faciliter-lib/issues"
+Homepage = "https://github.com/Aiuj/core-lib"
+Repository = "https://github.com/Aiuj/core-lib"
+Issues = "https://github.com/Aiuj/core-lib/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["faciliter_lib*"]
+include = ["core_lib*"]
 
 [tool.setuptools.package-data]
-faciliter_lib = ["py.typed"]
+core_lib = ["py.typed"]
 
 [tool.black]
 line-length = 88
@@ -81,4 +81,4 @@ dev = [
 ]
 
 [tool.uv.sources]
-faciliter-lib = { path = "../faciliter-lib", editable = true }
+core-lib = { path = "../core-lib", editable = true }

@@ -2,12 +2,25 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Run faciliter-lib tests",
+			"label": "Run core-lib tests",
 			"type": "shell",
 			"command": "pytest",
 			"args": [
 				"-q"
 			],
+			"problemMatcher": [
+				"$pytest-stylish"
+			],
+			"group": "test"
+		},
+		{
+			"label": "Run core-lib tests",
+			"type": "shell",
+			"command": "pytest",
+			"args": [
+				"-q"
+			],
+			"isBackground": false,
 			"problemMatcher": [
 				"$pytest-stylish"
 			],

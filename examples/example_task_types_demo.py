@@ -5,7 +5,7 @@ Demo script showing the official Google GenAI task types, including RETRIEVAL_DO
 This script demonstrates all available task types in the embeddings module.
 """
 
-from faciliter_lib.embeddings import TaskType, EmbeddingFactory
+from core_lib.embeddings import TaskType, EmbeddingFactory
 import os
 
 def demonstrate_task_types():

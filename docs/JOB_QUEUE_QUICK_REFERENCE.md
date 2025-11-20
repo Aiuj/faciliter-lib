@@ -2,14 +2,14 @@
 
 ## Overview
 
-The `faciliter-lib` job queue system provides a Redis-based async job processing framework for distributed applications. It follows the same design pattern as the cache module.
+The `core-lib` job queue system provides a Redis-based async job processing framework for distributed applications. It follows the same design pattern as the cache module.
 
 ## Installation
 
-Already included in `faciliter-lib`:
+Already included in `core-lib`:
 
 ```python
-from faciliter_lib.jobs import (
+from core_lib.jobs import (
     submit_job, get_job_status, get_job_result,
     update_job_progress, complete_job, fail_job,
     JobWorker, JobHandler, JobStatus, Job
@@ -36,7 +36,7 @@ JOB_QUEUE_SOCKET_TIMEOUT=5
 ### 1. Submit a Job
 
 ```python
-from faciliter_lib.jobs import submit_job
+from core_lib.jobs import submit_job
 
 job_id = submit_job(
     job_type="my_task",
@@ -57,7 +57,7 @@ print(f"Job submitted: {job_id}")
 ### 2. Check Job Status
 
 ```python
-from faciliter_lib.jobs import get_job_status, JobStatus
+from core_lib.jobs import get_job_status, JobStatus
 
 job = get_job_status(job_id)
 
@@ -75,7 +75,7 @@ if job:
 ### 3. Create a Worker
 
 ```python
-from faciliter_lib.jobs import JobWorker, JobHandler, Job
+from core_lib.jobs import JobWorker, JobHandler, Job
 
 # Define a handler
 class MyTaskHandler(JobHandler):
@@ -152,7 +152,7 @@ result = get_job_result(job_id)  # Returns None if not completed
 ### Update Job Progress (from worker)
 
 ```python
-from faciliter_lib.jobs import update_job_progress
+from core_lib.jobs import update_job_progress
 
 update_job_progress(
     job_id="...",
@@ -164,7 +164,7 @@ update_job_progress(
 ### Complete or Fail Job (from worker)
 
 ```python
-from faciliter_lib.jobs import complete_job, fail_job
+from core_lib.jobs import complete_job, fail_job
 
 # Success
 complete_job(job_id, result={"data": "..."})
@@ -176,7 +176,7 @@ fail_job(job_id, error="Something went wrong")
 ### List Jobs
 
 ```python
-from faciliter_lib.jobs import list_jobs, JobStatus
+from core_lib.jobs import list_jobs, JobStatus
 
 # All pending jobs
 pending = list_jobs(status=JobStatus.PENDING)
@@ -191,7 +191,7 @@ user_jobs = list_jobs(user_id="user1")
 ### Cleanup
 
 ```python
-from faciliter_lib.jobs import cleanup_old_jobs
+from core_lib.jobs import cleanup_old_jobs
 
 # Delete completed/failed jobs older than 24 hours
 deleted_count = cleanup_old_jobs(older_than_seconds=86400)
@@ -229,7 +229,7 @@ class Job:
 ## JobStatus Enum
 
 ```python
-from faciliter_lib.jobs import JobStatus
+from core_lib.jobs import JobStatus
 
 JobStatus.PENDING       # Job submitted, waiting for worker
 JobStatus.PROCESSING    # Worker is processing the job

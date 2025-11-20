@@ -24,14 +24,14 @@ export APP_NAME=my-service
 
 ### Via Code (Explicit Configuration)
 ```python
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 settings = LoggerSettings(
     log_level="DEBUG",              # Console shows DEBUG+
     otlp_enabled=True,
     otlp_endpoint="http://localhost:4318/v1/logs",
-    otlp_service_name="my-app",     # Default: APP_NAME or "faciliter-lib"
+    otlp_service_name="my-app",     # Default: APP_NAME or "core-lib"
     otlp_log_level="INFO",          # OTLP only receives INFO+ (optional)
 )
 logger = setup_logging(logger_settings=settings)
@@ -42,7 +42,7 @@ logger = setup_logging(logger_settings=settings)
 export LOG_LEVEL=DEBUG                # Console level
 export OTLP_ENABLED=true              # Explicit enable (optional with auto-enable)
 export OTLP_ENDPOINT=http://localhost:4318/v1/logs
-export OTLP_SERVICE_NAME=my-app       # Default: APP_NAME or "faciliter-lib"
+export OTLP_SERVICE_NAME=my-app       # Default: APP_NAME or "core-lib"
 export OTLP_SERVICE_VERSION=1.0.0     # Default: from pyproject.toml
 export OTLP_LOG_LEVEL=INFO            # OTLP level (optional, defaults to LOG_LEVEL)
 ```
@@ -56,7 +56,7 @@ export OTLP_LOG_LEVEL=INFO            # OTLP level (optional, defaults to LOG_LE
 | `otlp_headers` | `{}` | Auth headers |
 | `otlp_timeout` | `10` | Timeout (seconds) |
 | `otlp_insecure` | `False` | Skip SSL check |
-| `otlp_service_name` | `faciliter-lib` | Service name |
+| `otlp_service_name` | `core-lib` | Service name |
 | `otlp_service_version` | `None` | Version tag |
 | `otlp_log_level` | Inherits from `log_level` | Independent log level for OTLP handler |
 
@@ -132,7 +132,7 @@ export OTLP_LOG_LEVEL=WARNING  # Only send WARNING+ to reduce OTLP ingestion
 Add request-specific metadata (user_id, session_id, company_id) to all logs:
 
 ```python
-from faciliter_lib.tracing import LoggingContext, parse_from
+from core_lib.tracing import LoggingContext, parse_from
 
 @app.post("/endpoint")
 async def endpoint(from_: Optional[str] = Query(None, alias="from")):

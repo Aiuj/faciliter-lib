@@ -1,6 +1,6 @@
-# Version Management with faciliter-lib
+# Version Management with core-lib
 
-This document explains how application name and version are managed in faciliter-lib-based projects.
+This document explains how application name and version are managed in core-lib-based projects.
 
 ## Single Source of Truth: `pyproject.toml`
 
@@ -14,7 +14,7 @@ version = "0.1.0"
 
 ## Automatic Detection
 
-The `faciliter-lib` library automatically reads the version from `pyproject.toml`:
+The `core-lib` library automatically reads the version from `pyproject.toml`:
 
 - **Application Name**: Read from `[project].name` in `pyproject.toml`
 - **Version**: Read from `[project].version` in `pyproject.toml`
@@ -23,7 +23,7 @@ The `faciliter-lib` library automatically reads the version from `pyproject.toml
 
 ## How It Works
 
-1. **Settings Initialization**: When settings are initialized, `faciliter-lib.config.AppSettings` automatically locates and reads `pyproject.toml`
+1. **Settings Initialization**: When settings are initialized, `core_lib.config.AppSettings` automatically locates and reads `pyproject.toml`
 2. **Project Root Detection**: Walks up from the current directory to find `pyproject.toml`
 3. **Version Resolution Priority**:
    - First: `[project].version` from `pyproject.toml`
@@ -35,7 +35,7 @@ The `faciliter-lib` library automatically reads the version from `pyproject.toml
 In Python code using `StandardSettings` or `AppSettings`:
 
 ```python
-from faciliter_lib.config import get_settings
+from core_lib.config import get_settings
 
 settings = get_settings()
 
@@ -48,7 +48,7 @@ environment = settings.app.environment  # "dev" or "production"
 Or use `AppSettings` directly:
 
 ```python
-from faciliter_lib.utils.app_settings import AppSettings
+from core_lib.utils.app_settings import AppSettings
 from pathlib import Path
 
 # Auto-detect project root

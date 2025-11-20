@@ -11,10 +11,10 @@ except ImportError:
 from pydantic import BaseModel
 from typing import List, Optional
 # Import the new factory-based functions (recommended)
-from faciliter_lib.llm import create_llm_client, LLMFactory
+from core_lib.llm import create_llm_client, LLMFactory
 # Also import traditional functions for comparison
-from faciliter_lib.llm import create_ollama_client, create_gemini_client, create_client_from_env
-from faciliter_lib.tracing import setup_tracing
+from core_lib.llm import create_ollama_client, create_gemini_client, create_client_from_env
+from core_lib.tracing import setup_tracing
 
 # Initialize tracing
 tracing_client = setup_tracing()

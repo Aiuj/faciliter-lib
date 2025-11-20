@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='faciliter-lib',
-    version='0.2.10',
+    name='core-lib',
+    version='0.3.0',
     description='Shared library for MCP agent tools (internal use only)',
     author='Julien Nadaud',
     author_email='jnadaud@faciliter.ai',
-    url='https://github.com/Aiuj/faciliter-lib',
+    url='https://github.com/Aiuj/core-lib',
     packages=find_packages(),
     install_requires=[
         'fast-langdetect>=1.0.0',

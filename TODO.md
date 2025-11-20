@@ -1,6 +1,14 @@
-# Faciliter lib roadmap
+# Core-lib roadmap
 
 ## Changes done
+
+### 0.3.0
+
+- Renamed package from `faciliter-lib`/`faciliter_lib` to `core-lib`/`core_lib`
+- Added backward compatibility shim under `faciliter_lib` to avoid breaking existing consumers
+- Updated default OTLP service name and logger scope to "core-lib"
+- Updated all documentation, examples, and references to reflect core-lib naming
+- All imports in the library now consistently use `core_lib` to avoid circular imports
 
 ### 0.2.11
 

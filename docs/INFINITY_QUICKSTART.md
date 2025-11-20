@@ -42,7 +42,7 @@ EMBEDDING_DIMENSION=384
 ### 3. Use It!
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # That's it! No code changes needed!
 client = create_embedding_client()
@@ -54,7 +54,7 @@ embedding = client.generate_embedding("Hello, world!")
 The Infinity provider integrates seamlessly. Your existing code like this:
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 client = create_embedding_client()
 embeddings = client.generate_embedding(["Text 1", "Text 2"])
@@ -67,7 +67,7 @@ Will automatically use Infinity when `EMBEDDING_PROVIDER=infinity` is set!
 You can also use it explicitly:
 
 ```python
-from faciliter_lib.embeddings import create_infinity_client
+from core_lib.embeddings import create_infinity_client
 
 client = create_infinity_client(
     model="BAAI/bge-small-en-v1.5",
@@ -112,7 +112,7 @@ EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 Run the example script:
 
 ```bash
-cd faciliter-lib
+cd core-lib
 uv run examples/example_infinity_embeddings.py
 ```
 

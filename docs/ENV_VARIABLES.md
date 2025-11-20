@@ -143,7 +143,7 @@ export OTLP_LOG_LEVEL=INFO                                  # Independent OTLP l
 export OTLP_HEADERS='{"Authorization": "Bearer token"}'     # Auth headers (JSON)
 export OTLP_TIMEOUT=10                                      # Request timeout (seconds)
 export OTLP_INSECURE=false                                  # Skip SSL verification
-export OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "faciliter-lib")
+export OTLP_SERVICE_NAME=my-app                             # Service name (default: APP_NAME or "core-lib")
 export OTLP_SERVICE_VERSION=1.0.0                           # Service version (default: from pyproject.toml)
 ```
 
@@ -178,9 +178,9 @@ export OVH_LDP_USE_TLS=true                  # Use TLS encryption
 ## Usage in Code
 
 ```python
-from faciliter_lib import create_client_from_env
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib import create_client_from_env
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # LLM clients use environment variables automatically
 ollama_client = create_client_from_env("ollama")

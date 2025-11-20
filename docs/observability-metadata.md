@@ -285,7 +285,7 @@ View traces with full metadata in your observability platform.
 ## Related Documentation
 
 - **API Models**: See `src/api_utils/models/observability_models.py`
-- **Tracing**: See faciliter-lib tracing documentation
+- **Tracing**: See core-lib tracing documentation
 - **FastAPI Integration**: See `src/fastapi_server.py`
 - **MCP Integration**: See `src/api_utils/mcp_endpoints.py`
 

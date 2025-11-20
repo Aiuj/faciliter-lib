@@ -278,6 +278,80 @@ wheels = [
 ]
 
 [[package]]
+name = "core-lib"
+version = "0.3.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fast-langdetect" },
+    { name = "fastapi" },
+    { name = "fastmcp" },
+    { name = "google-genai" },
+    { name = "langfuse" },
+    { name = "markdown" },
+    { name = "numpy" },
+    { name = "ollama" },
+    { name = "openai" },
+    { name = "openinference-instrumentation-google-genai" },
+    { name = "openpyxl" },
+    { name = "redis" },
+    { name = "tabulate" },
+    { name = "valkey" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "black" },
+    { name = "flake8" },
+    { name = "freezegun" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "build" },
+    { name = "pytest-asyncio" },
+    { name = "setuptools" },
+    { name = "wheel" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "black", marker = "extra == 'dev'", specifier = ">=22.0.0" },
+    { name = "fast-langdetect", specifier = ">=1.0.0" },
+    { name = "fastapi", specifier = ">=0.120.2" },
+    { name = "fastmcp", specifier = ">=2.10.6" },
+    { name = "flake8", marker = "extra == 'dev'", specifier = ">=5.0.0" },
+    { name = "freezegun", marker = "extra == 'dev'", specifier = ">=1.2.0" },
+    { name = "google-genai", specifier = ">=0.6.0" },
+    { name = "langfuse", specifier = ">=3.2.1" },
+    { name = "markdown", specifier = ">=3.8.2" },
+    { name = "numpy", specifier = ">=2.3.3" },
+    { name = "ollama", specifier = ">=0.3.1" },
+    { name = "openai", specifier = ">=1.41.0" },
+    { name = "openinference-instrumentation-google-genai", specifier = ">=0.1.5" },
+    { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.2.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
+    { name = "redis", specifier = ">=6.4.0" },
+    { name = "tabulate", specifier = ">=0.9.0" },
+    { name = "valkey", specifier = ">=6.0.0" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "build", specifier = ">=1.2.2.post1" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
+    { name = "setuptools", specifier = ">=80.9.0" },
+    { name = "wheel", specifier = ">=0.45.1" },
+]
+
+[[package]]
 name = "coverage"
 version = "7.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -499,80 +573,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/36/f4/c6e662dade71f56cd2f3735141b265c3c79293c109549c1e6933b0651ffc/exceptiongroup-1.3.0-py3-none-any.whl", hash = "sha256:4d111e6e0c13d0644cad6ddaa7ed0261a0b36971f6d23e7ec9b4b9097da78a10", size = 16674, upload-time = "2025-05-10T17:42:49.33Z" },
-]
-
-[[package]]
-name = "faciliter-lib"
-version = "0.2.10"
-source = { editable = "." }
-dependencies = [
-    { name = "fast-langdetect" },
-    { name = "fastapi" },
-    { name = "fastmcp" },
-    { name = "google-genai" },
-    { name = "langfuse" },
-    { name = "markdown" },
-    { name = "numpy" },
-    { name = "ollama" },
-    { name = "openai" },
-    { name = "openinference-instrumentation-google-genai" },
-    { name = "openpyxl" },
-    { name = "redis" },
-    { name = "tabulate" },
-    { name = "valkey" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "black" },
-    { name = "flake8" },
-    { name = "freezegun" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "build" },
-    { name = "pytest-asyncio" },
-    { name = "setuptools" },
-    { name = "wheel" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=22.0.0" },
-    { name = "fast-langdetect", specifier = ">=1.0.0" },
-    { name = "fastapi", specifier = ">=0.120.2" },
-    { name = "fastmcp", specifier = ">=2.10.6" },
-    { name = "flake8", marker = "extra == 'dev'", specifier = ">=5.0.0" },
-    { name = "freezegun", marker = "extra == 'dev'", specifier = ">=1.2.0" },
-    { name = "google-genai", specifier = ">=0.6.0" },
-    { name = "langfuse", specifier = ">=3.2.1" },
-    { name = "markdown", specifier = ">=3.8.2" },
-    { name = "numpy", specifier = ">=2.3.3" },
-    { name = "ollama", specifier = ">=0.3.1" },
-    { name = "openai", specifier = ">=1.41.0" },
-    { name = "openinference-instrumentation-google-genai", specifier = ">=0.1.5" },
-    { name = "openpyxl", specifier = ">=3.1.5" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.2.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
-    { name = "redis", specifier = ">=6.4.0" },
-    { name = "tabulate", specifier = ">=0.9.0" },
-    { name = "valkey", specifier = ">=6.0.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "build", specifier = ">=1.2.2.post1" },
-    { name = "pytest-asyncio", specifier = ">=1.2.0" },
-    { name = "setuptools", specifier = ">=80.9.0" },
-    { name = "wheel", specifier = ">=0.45.1" },
 ]
 
 [[package]]

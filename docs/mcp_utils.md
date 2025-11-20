@@ -6,13 +6,13 @@ This module provides helper functions for command-line argument handling in Faci
 Functions:
     get_transport_from_args(): Checks command line args for --transport=... and returns the value if present.
 
-**Note:** The `parse_from()` function has been moved to `faciliter_lib.tracing.logging_context`. Import it from `faciliter_lib.tracing` instead:
+**Note:** The `parse_from()` function has been moved to `core_lib.tracing.logging_context`. Import it from `core_lib.tracing` instead:
 
 ```python
-from faciliter_lib.tracing import parse_from
+from core_lib.tracing import parse_from
 ```
 
 Example usage:
-    from faciliter_lib.mcp_utils import get_transport_from_args
+    from core_lib.mcp_utils import get_transport_from_args
     transport = get_transport_from_args()
 """

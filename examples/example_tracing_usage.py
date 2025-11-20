@@ -1,6 +1,6 @@
 # Example usage of the new TracingManager
 
-from faciliter_lib.tracing import TracingManager, setup_tracing
+from core_lib.tracing import TracingManager, setup_tracing
 
 # Option 1: Using the new TracingManager class
 def example_with_manager():

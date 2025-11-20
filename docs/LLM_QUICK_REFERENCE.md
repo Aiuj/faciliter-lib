@@ -2,7 +2,7 @@
 
 ## Installation
 
-The LLM module is included in `faciliter-lib` and requires Python 3.12+.
+The LLM module is included in `core-lib` and requires Python 3.12+.
 
 Runtime dependencies (installed by the package):
 - `google-genai` (official Google GenAI Python SDK for Gemini)
@@ -14,7 +14,7 @@ No LangChain dependency is required for LLM calls.
 ## Quick Start
 
 ```python
-from faciliter_lib.llm import create_ollama_client, create_gemini_client
+from core_lib.llm import create_ollama_client, create_gemini_client
 
 # Local Ollama (single turn)
 client = create_ollama_client(model="llama3.2", temperature=0.7)
@@ -62,13 +62,13 @@ client = create_ollama_client(model="llama3.2", temperature=0.8)
 
 2) From environment
 ```python
-from faciliter_lib.llm import create_client_from_env
+from core_lib.llm import create_client_from_env
 client = create_client_from_env("ollama")
 ```
 
 3) Using config objects
 ```python
-from faciliter_lib.llm import LLMClient, OllamaConfig
+from core_lib.llm import LLMClient, OllamaConfig
 config = OllamaConfig(model="llama3.2", temperature=0.8)
 client = LLMClient(config)
 ```
@@ -127,7 +127,7 @@ resp = client.chat("What's the weather in Tokyo?", tools=tools)
 
 ### Google Search Grounding (Gemini only)
 ```python
-from faciliter_lib.llm import create_gemini_client
+from core_lib.llm import create_gemini_client
 client = create_gemini_client(api_key="your-key", model="gemini-1.5-flash")
 resp = client.chat("What are the latest Mars mission updates?", use_search_grounding=True)
 print(resp["content"])

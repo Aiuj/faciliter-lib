@@ -1,6 +1,6 @@
-# 🧰 faciliter-lib
+# 🧰 core-lib
 
-`faciliter-lib` is a shared Python library for internal MCP agent tools. It provides reusable utilities, AI model access logic, and base classes used across multiple microservices in the `mcp-tools` ecosystem.
+`core-lib` is a shared Python library for internal MCP agent tools. It provides reusable utilities, AI model access logic, and base classes used across multiple microservices in the `mcp-tools` ecosystem.
 
 ---
 
@@ -28,10 +28,10 @@
 
 ## ⚙️ Settings Management (New!)
 
-`faciliter-lib` now includes a powerful, unified settings management system that handles all your application configuration:
+`core-lib` now includes a powerful, unified settings management system that handles all your application configuration:
 
 ```python
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 
 # Auto-configure from environment variables and .env files
 settings = StandardSettings.from_env()
@@ -63,7 +63,7 @@ See **[Settings Documentation](docs/settings.md)** for complete guide and exampl
 Simple, unified logging system for all your applications with multiple handler support:
 
 ```python
-from faciliter_lib.tracing.logger import setup_logging, get_module_logger
+from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # Setup at application startup
 setup_logging(app_name="my-app", level="INFO")
@@ -91,7 +91,7 @@ logger.debug("Debug information")
 ### Quick Example with OTLP:
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
+from core_lib.config.logger_settings import LoggerSettings
 
 settings = LoggerSettings(
     log_level="DEBUG",           # Console shows DEBUG+
@@ -108,7 +108,7 @@ setup_logging(app_name="my-app", logger_settings=settings)
 Add request-specific metadata (user ID, session ID, company ID) to all logs:
 
 ```python
-from faciliter_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
+from core_lib.tracing import LoggingContext, FROM_FIELD_DESCRIPTION, parse_from
 
 @app.post("/endpoint")
 async def endpoint(from_: Optional[str] = Query(None, alias="from", description=FROM_FIELD_DESCRIPTION)):
@@ -138,9 +138,9 @@ Track AI service usage (LLM, embeddings, OCR) automatically with OpenTelemetry/O
 ### Quick Start:
 
 ```python
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing import setup_logging, LoggingContext
-from faciliter_lib.llm import create_openai_client
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing import setup_logging, LoggingContext
+from core_lib.llm import create_openai_client
 
 # 1. Enable OTLP logging
 settings = LoggerSettings(
@@ -194,21 +194,21 @@ See **[Service Usage Tracking Guide](docs/SERVICE_USAGE_TRACKING.md)** for compl
 ### From GitHub (recommended for external tools)
 
 ```bash
-pip install git+https://github.com/Aiuj/faciliter-lib.git@v0.2.3
+pip install git+https://github.com/Aiuj/core-lib.git@v0.2.3
 ```
 
 ### Using uv
 
 ```bash
-uv add git+https://github.com/Aiuj/faciliter-lib.git@v0.2.3
+uv add git+https://github.com/Aiuj/core-lib.git@v0.2.3
 ```
 
 ### For local development
 
 ```bash
 # Clone the repository
-git clone https://github.com/Aiuj/faciliter-lib.git
-cd faciliter-lib
+git clone https://github.com/Aiuj/core-lib.git
+cd core-lib
 
 # Install in editable mode
 pip install -e .
@@ -224,7 +224,7 @@ And add in the `.vscode/settings.json` the following:
     "python.analysis.includeUserSymbols": true,
     "python.analysis.userFileIndexingLimit": -1,
     "python.analysis.extraPaths": [
-        "../faciliter-lib"
+        "../core-lib"
     ]
 }
 ```
@@ -232,7 +232,7 @@ And add in the `.vscode/settings.json` the following:
 VS Code setup for the best dev experience
 
 - Open both repos in one VS Code workspace (so Copilot and Pylance “see” both):
-  - File → Add Folder to Workspace… (add your main application AND ../faciliter-lib)
+  - File → Add Folder to Workspace… (add your main application AND ../core-lib)
   - Save as a .code-workspace file.
 
 ### In pyproject.toml
@@ -242,18 +242,18 @@ Add the library and a local override source in pyproject.toml
 ```toml
 [project]
 dependencies = [
-  "faciliter-lib @ git+https://github.com/Aiuj/faciliter-lib.git"
+  "core-lib @ git+https://github.com/Aiuj/core-lib.git"
 ]
 
 [tool.uv.sources]
-faciliter-lib = { path = "../faciliter-lib", editable = true }
+core-lib = { path = "../core-lib", editable = true }
 ```
 
 
 ### In requirements.txt
 
 ```txt
-git+https://github.com/Aiuj/faciliter-lib.git@v0.2.3#egg=faciliter-lib
+git+https://github.com/Aiuj/core-lib.git@v0.2.3#egg=core-lib
 ```
 
 ---
@@ -276,7 +276,7 @@ git push origin 0.x.y
 Unified configuration for all services:
 
 ```python
-from faciliter_lib.config import StandardSettings
+from core_lib.config import StandardSettings
 
 # Load all settings from environment
 settings = StandardSettings.from_env()
@@ -297,7 +297,7 @@ print(f"LLM Model: {settings.llm.model if settings.llm else 'Not configured'}")
 Manage a single global Settings instance throughout your application:
 
 ```python
-from faciliter_lib.config import initialize_settings, get_settings
+from core_lib.config import initialize_settings, get_settings
 from dataclasses import dataclass
 
 # Initialize once at application startup
@@ -335,7 +335,7 @@ See **[Settings Singleton Documentation](docs/settings_singleton.md)** for compl
 ### Cache Manager
 
 ```python
-from faciliter_lib import RedisCache, set_cache, cache_get, cache_set
+from core_lib import RedisCache, set_cache, cache_get, cache_set
 
 # Initialize the singleton cache (must be called before cache_get/cache_set)
 set_cache(ttl=3600)  # name and other params are optional
@@ -360,7 +360,7 @@ if cached_result is None:
 Async job processing with Redis-based queue:
 
 ```python
-from faciliter_lib.jobs import submit_job, get_job_status, JobWorker, JobHandler
+from core_lib.jobs import submit_job, get_job_status, JobWorker, JobHandler
 
 # Submit a job
 job_id = submit_job(
@@ -396,8 +396,8 @@ Secure HMAC-based authentication for FastAPI and MCP servers without centralized
 ```python
 # Server setup (FastAPI)
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI()
 settings = AuthSettings.from_env()  # AUTH_ENABLED=true, AUTH_PRIVATE_KEY=...
@@ -405,7 +405,7 @@ settings = AuthSettings.from_env()  # AUTH_ENABLED=true, AUTH_PRIVATE_KEY=...
 app.add_middleware(TimeBasedAuthMiddleware, settings=settings)
 
 # Client setup
-from faciliter_lib.api_utils import generate_time_key
+from core_lib.api_utils import generate_time_key
 
 auth_key = generate_time_key(settings.auth_private_key)
 headers = {settings.auth_key_header_name: auth_key}
@@ -426,9 +426,9 @@ Add API key authentication to Swagger UI with a single function call:
 
 ```python
 from fastapi import FastAPI
-from faciliter_lib.api_utils.fastapi_openapi import configure_api_key_auth
-from faciliter_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
-from faciliter_lib.config import AuthSettings
+from core_lib.api_utils.fastapi_openapi import configure_api_key_auth
+from core_lib.api_utils.fastapi_auth import TimeBasedAuthMiddleware
+from core_lib.config import AuthSettings
 
 app = FastAPI(title="My API", version="1.0.0")
 settings = AuthSettings.from_env()
@@ -477,7 +477,7 @@ See **[FastAPI OpenAPI Documentation](docs/FASTAPI_OPENAPI_QUICK_REFERENCE.md)**
 ### MCP Utils
 
 ```python
-from faciliter_lib import parse_from, get_transport_from_args
+from core_lib import parse_from, get_transport_from_args
 
 # Parse JSON from string or dict
 data = parse_from('{"key": "value"}')  # Returns dict
@@ -499,7 +499,7 @@ transport = get_transport_from_args()  # Returns 'stdio', 'sse', etc.
 Access multiple LLM providers through a unified interface:
 
 ```python
-from faciliter_lib import create_llm_client, LLMClient
+from core_lib import create_llm_client, LLMClient
 
 # Auto-detect from environment
 client = create_llm_client()
@@ -508,7 +508,7 @@ client = create_llm_client()
 client = create_llm_client(provider="openai", model="gpt-4", temperature=0.2)
 
 # Provider-specific creation
-from faciliter_lib import create_gemini_client, create_openai_client
+from core_lib import create_gemini_client, create_openai_client
 gemini_client = create_gemini_client(model="gemini-pro")
 openai_client = create_openai_client(model="gpt-4")
 
@@ -542,7 +542,7 @@ See **[LLM Documentation](docs/llm.md)** for complete guide.
 Process Excel files and convert them to markdown format:
 
 ```python
-from faciliter_lib import ExcelManager
+from core_lib import ExcelManager
 
 # Initialize with Excel file path
 excel_manager = ExcelManager("data.xlsx")
@@ -592,7 +592,7 @@ for sheet_data in content:
 Access predefined document categories for FAQ and content classification:
 
 ```python
-from faciliter_lib.config import DOC_CATEGORIES
+from core_lib.config import DOC_CATEGORIES
 
 # Access all categories
 for category in DOC_CATEGORIES:
@@ -606,7 +606,7 @@ for category in DOC_CATEGORIES:
 ### Language Utilities
 
 ```python
-from faciliter_lib import LanguageUtils
+from core_lib import LanguageUtils
 
 # Detect language of text
 result = LanguageUtils.detect_language("Hello world")
@@ -680,13 +680,13 @@ uv pip install -e ".[dev]"
 pytest
 
 # Run tests with coverage
-pytest --cov=faciliter_lib
+uv run pytest --cov=core_lib
 
 # Format code
-black faciliter_lib tests
+uv run black core_lib tests
 
 # Lint code
-flake8 faciliter_lib tests
+uv run flake8 core_lib tests
 ```
 
 ---

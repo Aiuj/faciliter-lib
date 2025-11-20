@@ -22,14 +22,14 @@ os.environ.update({
     "OPENAI_API_KEY": "your-api-key-here",
 })
 
-from faciliter_lib.config.logger_settings import LoggerSettings
-from faciliter_lib.tracing import (
+from core_lib.config.logger_settings import LoggerSettings
+from core_lib.tracing import (
     setup_logging,
     LoggingContext,
     get_module_logger,
 )
-from faciliter_lib.llm import create_openai_client
-from faciliter_lib.embeddings import create_openai_embedding_client
+from core_lib.llm import create_openai_client
+from core_lib.embeddings import create_openai_embedding_client
 
 
 logger = get_module_logger()
@@ -40,7 +40,7 @@ def setup():
     logger_settings = LoggerSettings(
         otlp_enabled=True,
         otlp_endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4318/v1/logs"),
-        otlp_service_name=os.getenv("OTLP_SERVICE_NAME", "faciliter-lib"),
+        otlp_service_name=os.getenv("OTLP_SERVICE_NAME", "core-lib"),
         otlp_service_version="1.0.0",
         log_level="INFO",
     )

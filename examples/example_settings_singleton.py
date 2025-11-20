@@ -6,7 +6,7 @@ for managing application-wide configuration with custom settings.
 """
 
 from dataclasses import dataclass
-from faciliter_lib.config import (
+from core_lib.config import (
     StandardSettings,
     initialize_settings,
     get_settings,

@@ -2,14 +2,14 @@
 
 ## Overview
 
-faciliter-lib includes native support for sending logs to OpenTelemetry collectors via the OTLP (OpenTelemetry Protocol) over HTTP. This enables integration with observability platforms like OpenSearch, Elasticsearch, Grafana, Datadog, and cloud-native monitoring solutions.
+core-lib includes native support for sending logs to OpenTelemetry collectors via the OTLP (OpenTelemetry Protocol) over HTTP. This enables integration with observability platforms like OpenSearch, Elasticsearch, Grafana, Datadog, and cloud-native monitoring solutions.
 
 ## Architecture
 
 ```
 ┌──────────────────┐     OTLP/HTTP      ┌────────────────────┐
 │  Your Application │ ─────────────────> │ OTLP Collector     │
-│  (faciliter-lib)  │   Port 4318        │ (otel-collector)   │
+│  (core-lib)       │   Port 4318        │ (otel-collector)   │
 └──────────────────┘                     └────────────────────┘
                                                     │
                                                     ├──> OpenSearch
@@ -20,18 +20,18 @@ faciliter-lib includes native support for sending logs to OpenTelemetry collecto
 
 ### Components
 
-1. **OTLPHandler** (`faciliter_lib/tracing/handlers/otlp_handler.py`)
+1. **OTLPHandler** (`core_lib/tracing/handlers/otlp_handler.py`)
    - Converts Python logging records to OTLP format
    - Batches logs for efficient transmission
    - Runs in background thread (non-blocking)
    - Automatic retry and error handling
 
-2. **LoggerSettings** (`faciliter_lib/config/logger_settings.py`)
+2. **LoggerSettings** (`core_lib/config/logger_settings.py`)
    - Configuration for OTLP endpoint, headers, timeouts
    - Environment variable support
    - Integration with StandardSettings
 
-3. **Lazy Loading** (`faciliter_lib/tracing/logger.py`)
+3. **Lazy Loading** (`core_lib/tracing/logger.py`)
    - OTLP handler only imported when enabled
    - Zero overhead when disabled
    - Supports multiple handlers simultaneously (file + OTLP + GELF)
@@ -41,8 +41,8 @@ faciliter-lib includes native support for sending logs to OpenTelemetry collecto
 ### 1. Basic Setup
 
 ```python
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # Configure OTLP logging
 logger_settings = LoggerSettings(
@@ -78,8 +78,8 @@ export OTLP_INSECURE=false  # Skip SSL verification
 ```
 
 ```python
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # Load from environment
 settings = LoggerSettings.from_env()
@@ -91,8 +91,8 @@ logger.info("Configured from environment")
 ### 3. With StandardSettings
 
 ```python
-from faciliter_lib.config import StandardSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import StandardSettings
+from core_lib.tracing.logger import setup_logging
 
 # StandardSettings automatically includes logger config
 settings = StandardSettings.from_env()
@@ -116,7 +116,7 @@ logger.info("Integrated configuration")
 | `otlp_headers` | dict | `{}` | HTTP headers (e.g., authentication) |
 | `otlp_timeout` | int | `10` | Request timeout in seconds |
 | `otlp_insecure` | bool | `False` | Skip SSL certificate verification |
-| `otlp_service_name` | str | `faciliter-lib` | Service name for resource attributes |
+| `otlp_service_name` | str | `core-lib` | Service name for resource attributes |
 | `otlp_service_version` | str | `None` | Optional service version |
 
 ### Environment Variables
@@ -142,7 +142,7 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: 0.0.0.0:4318  # ← faciliter-lib sends logs here
+        endpoint: 0.0.0.0:4318  # ← core-lib sends logs here
 
 exporters:
   opensearch:
@@ -160,7 +160,7 @@ service:
       exporters: [opensearch]  # ← Logs go to OpenSearch
 ```
 
-### Point faciliter-lib to Your Collector
+### Point core-lib to Your Collector
 
 ```python
 # If collector is on localhost
@@ -199,7 +199,7 @@ services:
 
 ## OTLP Log Format
 
-faciliter-lib sends logs in OTLP format:
+core-lib sends logs in OTLP format:
 
 ```json
 {
@@ -213,7 +213,7 @@ faciliter-lib sends logs in OTLP format:
       },
       "scopeLogs": [
         {
-          "scope": {"name": "faciliter-lib-logger"},
+          "scope": {"name": "core-lib-logger"},
           "logRecords": [
             {
               "timeUnixNano": "1698249600000000000",

@@ -77,7 +77,7 @@ python -m pytest tests/test_tracing.py -v
 
 Run with coverage:
 ```bash
-python -m pytest tests/test_tracing.py --cov=faciliter_lib.tracing --cov-report=term-missing
+uv run python -m pytest tests/test_tracing.py --cov=core_lib.tracing --cov-report=term-missing
 ```
 
 ## Missing Coverage

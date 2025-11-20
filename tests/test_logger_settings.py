@@ -4,8 +4,8 @@ import os
 import pytest
 from unittest.mock import MagicMock, patch
 
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.config.base_settings import SettingsError
+from core_lib.config import LoggerSettings
+from core_lib.config.base_settings import SettingsError
 
 
 class TestLoggerSettings:
@@ -134,7 +134,7 @@ class TestLoggerSettings:
         assert settings.otlp_endpoint == "http://localhost:4318/v1/logs"
         assert settings.otlp_timeout == 10
         assert settings.otlp_insecure is False
-        assert settings.otlp_service_name == "faciliter-lib"
+        assert settings.otlp_service_name == "core-lib"
     
     def test_logger_settings_otlp_from_env(self, monkeypatch):
         """Test loading OTLP settings from environment variables."""
@@ -158,10 +158,10 @@ class TestLoggerSettings:
 class TestLoggerIntegration:
     """Tests for logger integration with OVH LDP."""
     
-    @patch('faciliter_lib.tracing.handlers.gelf_handler.GELFTCPHandler')
+    @patch('core_lib.tracing.handlers.gelf_handler.GELFTCPHandler')
     def test_setup_logging_with_ovh_ldp(self, mock_gelf_handler):
         """Test setup_logging with OVH LDP enabled."""
-        from faciliter_lib.tracing.logger import setup_logging
+        from core_lib.tracing.logger import setup_logging
         
         logger_settings = LoggerSettings(
             log_level="INFO",
@@ -197,7 +197,7 @@ class TestLoggerIntegration:
     
     def test_setup_logging_without_ovh_ldp(self):
         """Test setup_logging works without OVH LDP."""
-        from faciliter_lib.tracing.logger import setup_logging
+        from core_lib.tracing.logger import setup_logging
         
         logger_settings = LoggerSettings(
             log_level="INFO",
@@ -214,7 +214,7 @@ class TestLoggerIntegration:
     
     def test_setup_logging_uses_logger_settings_level(self):
         """Test that logger settings level takes precedence."""
-        from faciliter_lib.tracing.logger import setup_logging
+        from core_lib.tracing.logger import setup_logging
         
         logger_settings = LoggerSettings(log_level="DEBUG")
         

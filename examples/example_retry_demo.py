@@ -9,7 +9,7 @@ This example demonstrates:
 """
 
 import time
-from faciliter_lib.llm.retry import RetryConfig, RetryStrategy, retry_handler
+from core_lib.llm.retry import RetryConfig, RetryStrategy, retry_handler
 
 
 class SimulatedAPIError(Exception):

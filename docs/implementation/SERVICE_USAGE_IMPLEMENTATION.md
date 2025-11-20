@@ -124,59 +124,42 @@ Created comprehensive documentation:
 - Error handling tests
 - Metadata attachment tests
 - Tokens per second calculation tests
-- All 12 tests passing ✅
+This implementation adds comprehensive AI service usage tracking to core-lib using OpenTelemetry/OpenSearch, eliminating the need for complex Langfuse span management and context errors.
 
 ## Key Features
 
-### No Span Management Required
+### 1. Core Module: `core_lib/tracing/service_usage.py`
 
 Unlike Langfuse, there are no span contexts to manage:
 
-```python
+### 1a. Pricing Module: `core_lib/tracing/service_pricing.py`
 # ❌ OLD WAY (Langfuse - complex, error-prone)
 with observation(name="llm-call"):  # Context errors!
     response = llm_client.chat(...)
-
+**`core_lib/llm/providers/google_genai_provider.py`**:
 # ✅ NEW WAY (OpenTelemetry - simple)
 response = llm_client.chat(...)  # Automatically tracked!
 ```
-
+**`core_lib/llm/providers/openai_provider.py`**:
 ### Automatic Cost Calculation
 
 Built-in pricing for common models:
-
+**`core_lib/embeddings/openai_provider.py`**:
 ```python
 # Automatically calculates cost based on tokens and model
 log_llm_usage(
-    provider="openai",
+**`core_lib/embeddings/infinity_provider.py`**:
     model="gpt-4",
     input_tokens=100,
     output_tokens=50,
-    # cost_usd is automatically calculated: $0.0045
+Updated `core_lib/tracing/__init__.py`:
 )
-```
+from core_lib.llm import create_openai_client
+from core_lib.embeddings import create_openai_embedding_client
+from core_lib.tracing import LoggingContext
 
-### User Context Integration
-
-Seamlessly integrates with `LoggingContext`:
-
-```python
-with LoggingContext({"user_id": "user-123", "session_id": "sess-456"}):
-    response = llm_client.chat(...)
-    # Logs include user.id, session.id automatically
-```
-
-### OpenTelemetry Semantic Conventions
-
-Uses standard OpenTelemetry attribute names:
-
-- `gen_ai.request.model` - Model name
-- `gen_ai.system` - Provider name
-- `gen_ai.usage.input_tokens` - Input tokens
-- `gen_ai.usage.output_tokens` - Output tokens
-- `session.id` - Session identifier
-- `user.id` - User identifier
-- `organization.id` - Company/organization identifier
+from core_lib.tracing.tracing import add_trace_metadata
+from core_lib.tracing.service_usage import log_llm_usage
 
 ## Usage Patterns
 

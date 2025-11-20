@@ -968,9 +968,9 @@ docker logs otel-collector 2>&1 | grep -i error
 **3. Verify application is sending logs:**
 
 ```python
-# Test your faciliter-lib configuration
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+# Test your core-lib configuration
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 logger_settings = LoggerSettings(
     otlp_enabled=True,
@@ -1202,7 +1202,7 @@ attributes.http.status_code >= 400 AND attributes.http.status_code < 600
 - [Query DSL Reference](https://opensearch.org/docs/latest/query-dsl/)
 - [Alerting Plugin](https://opensearch.org/docs/latest/monitoring-plugins/alerting/)
 
-**faciliter-lib Documentation:**
+**core-lib Documentation:**
 - OTLP Integration: `docs/OTLP_LOGGING_INTEGRATION.md`
 - Quick Reference: `docs/OTLP_QUICK_REFERENCE.md`
 - Examples: `examples/example_otlp_logging.py`

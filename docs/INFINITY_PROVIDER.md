@@ -24,7 +24,7 @@ docker run -p 7997:7997 michaelf34/infinity:latest
 
 ### 2. Client Requirements
 
-The Infinity provider in faciliter-lib only requires `requests`:
+The Infinity provider in core-lib only requires `requests`:
 
 ```bash
 # Install with uv
@@ -79,7 +79,7 @@ Infinity supports any HuggingFace embedding model. Popular choices:
 ### Auto-Detection from Environment
 
 ```python
-from faciliter_lib.embeddings import create_embedding_client
+from core_lib.embeddings import create_embedding_client
 
 # Set EMBEDDING_PROVIDER=infinity in your environment
 client = create_embedding_client()
@@ -89,7 +89,7 @@ embedding = client.generate_embedding("Hello, world!")
 ### Explicit Configuration
 
 ```python
-from faciliter_lib.embeddings import create_infinity_client
+from core_lib.embeddings import create_infinity_client
 
 # Create client with defaults
 client = create_infinity_client()
@@ -116,7 +116,7 @@ print(f"Generated {len(embeddings)} embeddings")
 ### Using Factory
 
 ```python
-from faciliter_lib.embeddings import EmbeddingFactory
+from core_lib.embeddings import EmbeddingFactory
 
 client = EmbeddingFactory.infinity(
     model="sentence-transformers/all-MiniLM-L6-v2",
@@ -223,7 +223,7 @@ print(f"Model info: {info}")
 ## Error Handling
 
 ```python
-from faciliter_lib.embeddings import create_infinity_client, EmbeddingGenerationError
+from core_lib.embeddings import create_infinity_client, EmbeddingGenerationError
 
 client = create_infinity_client()
 
@@ -303,7 +303,7 @@ client = create_infinity_client(timeout=60)
 ### Custom Infinity Configuration
 
 ```python
-from faciliter_lib.embeddings.infinity_provider import InfinityEmbeddingClient
+from core_lib.embeddings.infinity_provider import InfinityEmbeddingClient
 
 client = InfinityEmbeddingClient(
     model="BAAI/bge-large-en-v1.5",
@@ -342,4 +342,4 @@ client_quality = create_infinity_client(
 - [Infinity GitHub](https://github.com/michaelfeil/infinity)
 - [Infinity Documentation](https://github.com/michaelfeil/infinity/blob/main/docs/README.md)
 - [HuggingFace Embedding Models](https://huggingface.co/models?pipeline_tag=sentence-similarity&sort=trending)
-- [faciliter-lib Embeddings Documentation](./EMBEDDINGS_QUICK_REFERENCE.md)
+- [core-lib Embeddings Documentation](./EMBEDDINGS_QUICK_REFERENCE.md)

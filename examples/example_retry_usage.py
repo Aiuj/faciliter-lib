@@ -7,8 +7,8 @@ retries and respects model-specific rate limits.
 import time
 from typing import Dict, Any
 
-from faciliter_lib.llm.retry import RetryConfig, retry_handler, RetryStrategy
-from faciliter_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
+from core_lib.llm.retry import RetryConfig, retry_handler, RetryStrategy
+from core_lib.llm.providers.google_genai_provider import GoogleGenAIProvider, GeminiConfig
 
 
 def example_basic_retry():

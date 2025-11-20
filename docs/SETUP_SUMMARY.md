@@ -1,4 +1,4 @@
-# faciliter-lib Setup and Installation Guide
+# core-lib Setup and Installation Guide
 
 ## 🚀 Installation Methods
 
@@ -6,21 +6,21 @@
 
 ```bash
 # Using pip
-pip install git+https://github.com/Aiuj/faciliter-lib.git@v0.2.0
+pip install git+https://github.com/Aiuj/core-lib.git@v0.3.0
 
 # Using uv  
-uv add git+https://github.com/Aiuj/faciliter-lib.git@v0.2.0
+uv add git+https://github.com/Aiuj/core-lib.git@v0.3.0
 
 # In requirements.txt
-git+https://github.com/Aiuj/faciliter-lib.git@v0.2.0#egg=faciliter-lib
+git+https://github.com/Aiuj/core-lib.git@v0.3.0#egg=core-lib
 ```
 
 ### For Local Development
 
 ```bash
 # Clone and install in editable mode
-git clone https://github.com/Aiuj/faciliter-lib.git
-cd faciliter-lib
+git clone https://github.com/Aiuj/core-lib.git
+cd core-lib
 pip install -e .
 
 # Or with development dependencies
@@ -32,7 +32,7 @@ pip install -e ".[dev]"
 ### Basic Cache Usage
 
 ```python
-from faciliter_lib import cache_get, cache_set
+from core_lib import cache_get, cache_set
 
 # Simple caching
 input_data = {"query": "expensive_computation", "params": [1, 2, 3]}
@@ -49,8 +49,8 @@ print(result)
 ### Advanced Cache Usage
 
 ```python
-from faciliter_lib import RedisCache
-from faciliter_lib.cache import RedisConfig
+from core_lib import RedisCache
+from core_lib.cache import RedisConfig
 
 # Custom configuration
 config = RedisConfig(
@@ -76,8 +76,8 @@ if cache.connected:
 ### MCP Utilities
 
 ```python
-from faciliter_lib import get_transport_from_args
-from faciliter_lib.tracing import parse_from
+from core_lib import get_transport_from_args
+from core_lib.tracing import parse_from
 
 # Parse JSON strings or dicts (now in tracing module)
 data = parse_from('{"key": "value"}')  # Returns dict
@@ -103,35 +103,31 @@ export REDIS_TIMEOUT=4
 ## 🧪 Testing & Development
 
 ```bash
-# Run tests (install pytest first)
-pip install pytest
-pytest
+# Run tests
+uv run pytest
 
 # With coverage
-pip install pytest-cov
-pytest --cov=faciliter_lib
+uv run pytest --cov=core_lib
 
 # Format code
-pip install black
-black faciliter_lib tests
+uv run black core_lib tests
 
 # Lint code  
-pip install flake8
-flake8 faciliter_lib tests
+uv run flake8 core_lib tests
 ```
 
 ## 📋 Build Distribution Packages
 
 ```bash
 # Install build tools
-pip install build
+uv run pip install build
 
 # Build source and wheel distributions
-python -m build
+uv run python -m build
 
 # Files will be created in dist/
-# - faciliter_lib-0.2.0.tar.gz (source)
-# - faciliter_lib-0.2.0-py3-none-any.whl (wheel)
+# - core_lib-0.3.0.tar.gz (source)
+# - core_lib-0.3.0-py3-none-any.whl (wheel)
 ```
 
 ## 🎯 Next Steps for Production
@@ -146,13 +142,13 @@ python -m build
 
 ```bash
 # Test import
-python -c "import faciliter_lib; print(f'v{faciliter_lib.__version__}')"
+uv run python -c "import core_lib; print(f'v{getattr(core_lib, '__version__', 'unknown')}')"
 
 # Test individual imports  
-python -c "from faciliter_lib import RedisCache, cache_get, parse_from; print('OK')"
+uv run python -c "from core_lib import RedisCache, cache_get, parse_from; print('OK')"
 
 # Run example
-python example_usage.py
+uv run python examples/example_usage.py
 ```
 
 The library is now properly configured and ready for distribution! 🎉

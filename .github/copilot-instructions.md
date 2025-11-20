@@ -1,11 +1,11 @@
-# AI coding agents: facilitator-lib quickstart
+# AI coding agents: core-lib quickstart
 
 This doc orients AI agents to be productive in this repo in minutes. Keep responses concise, act directly in code, and run tests after changes.
 
 Always use "uv run" to execute scripts and tests, ensuring the virtual environment and dependencies are correctly applied.
 
 ## Architecture at a glance
-- Library, not an app. Python package `faciliter_lib/` with focused modules:
+- Library, not an app. Python package `core_lib/` with focused modules:
   - `utils/` and `mcp_utils.py`: MCP transport argument parsing.
   - `cache/`: Redis-backed caching via `RedisCache` plus functional facade `set_cache`, `cache_get`, `cache_set`.
   - `llm/`: Provider-agnostic LLM client with native SDK adapters.
@@ -31,8 +31,8 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
   - Create/sync: `uv sync -U --all-extras`
   - Activate (PowerShell): `& .\.venv\Scripts\Activate.ps1`
 - Install editable: `uv pip install -e ".[dev]"` (or `pip install -e .[dev]`)
-- Run tests: `pytest -q` (Task "Run faciliter-lib tests" available in VS Code)
-- Lint/format: `flake8 faciliter_lib tests` and `black faciliter_lib tests`
+- Run tests: `uv run pytest -q` (Task "Run core-lib tests" available in VS Code)
+- Lint/format: `flake8 core_lib tests` and `black core_lib tests`
 
 ## External integrations
 - Redis: via `redis` lib; see env vars in README (REDIS_HOST, PORT, DB, PREFIX, TTL, PASSWORD, TIMEOUT).
@@ -41,7 +41,7 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
   - OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`, optional `OPENAI_BASE_URL`, `OPENAI_ORG`, `OPENAI_PROJECT`.
   - Azure: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_DEPLOYMENT`.
   - Compatible gateways (e.g., Ollama proxy/LiteLLM): set `OPENAI_BASE_URL` and an API key string.
-- Tracing: `faciliter_lib.tracing.tracing` abstracts Langfuse/OpenTelemetry. Use `setup_tracing()` once and `add_trace_metadata()` during calls.
+- Tracing: `core_lib.tracing.tracing` abstracts Langfuse/OpenTelemetry. Use `setup_tracing()` once and `add_trace_metadata()` during calls.
 
 ## How to add a new provider
 1. Create `llm/providers/<name>_provider.py` implementing `BaseProvider.chat()`.
@@ -61,8 +61,8 @@ Always use "uv run" to execute scripts and tests, ensuring the virtual environme
 - Keep networked tests skipped by default; use env keys to run manually.
 
 ## Quick API reference
-- Create from env: `from faciliter_lib.llm import create_client_from_env`
+- Create from env: `from core_lib.llm import create_client_from_env`
 - Explicit providers: `create_gemini_client`, `create_ollama_client`, `create_openai_client`, `create_azure_openai_client`, `create_openai_compatible_client`.
 - Cache: `set_cache`, `cache_get`, `cache_set`; class: `RedisCache`.
-- Tracing/logging: `parse_from` (from `faciliter_lib.tracing`), `LoggingContext`, `setup_logging`, `setup_tracing`.
+- Tracing/logging: `parse_from` (from `core_lib.tracing`), `LoggingContext`, `setup_logging`, `setup_tracing`.
 - MCP utils: `get_transport_from_args`.

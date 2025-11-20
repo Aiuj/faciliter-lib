@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Example usage of faciliter-lib cache functionality.
+Example usage of core-lib cache functionality.
 This script demonstrates how to use the Redis cache.
 """
 
-from faciliter_lib import RedisCache, cache_get, cache_set, set_cache, parse_from
+from core_lib import RedisCache, cache_get, cache_set, set_cache, parse_from
 
 def main():
-    print("🧰 faciliter-lib Cache Example")
+    print("🧰 core-lib Cache Example")
     print("-" * 40)
     
     # Test MCP utils

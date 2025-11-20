@@ -2,11 +2,11 @@
 
 ## ✅ Implementation Complete
 
-Successfully added OpenTelemetry Protocol (OTLP) logging support to faciliter-lib, enabling direct integration with OpenTelemetry collectors.
+Successfully added OpenTelemetry Protocol (OTLP) logging support to core-lib, enabling direct integration with OpenTelemetry collectors.
 
 ## What Was Added
 
-### 1. OTLPHandler (`faciliter_lib/tracing/handlers/otlp_handler.py`)
+### 1. OTLPHandler (`core_lib/tracing/handlers/otlp_handler.py`)
 - **360 lines** of production-ready OTLP handler
 - Converts Python logging to OTLP format (JSON over HTTP)
 - Background worker thread for async, non-blocking operation
@@ -30,7 +30,7 @@ Successfully added OpenTelemetry Protocol (OTLP) logging support to faciliter-li
 - `otlp_headers`: Dict of HTTP headers (for auth, metadata)
 - `otlp_timeout`: Request timeout (default: 10s)
 - `otlp_insecure`: Skip SSL verification (default: False)
-- `otlp_service_name`: Service identifier (default: "faciliter-lib")
+- `otlp_service_name`: Service identifier (default: "core-lib")
 - `otlp_service_version`: Optional version string
 
 **Environment Variables:**
@@ -96,7 +96,7 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: 0.0.0.0:4318  # ← faciliter-lib sends here
+      endpoint: 0.0.0.0:4318  # ← core-lib sends here
 
 service:
   pipelines:
@@ -109,8 +109,8 @@ service:
 ### Usage Example
 
 ```python
-from faciliter_lib.config import LoggerSettings
-from faciliter_lib.tracing.logger import setup_logging
+from core_lib.config import LoggerSettings
+from core_lib.tracing.logger import setup_logging
 
 # Configure OTLP
 logger_settings = LoggerSettings(
@@ -178,16 +178,16 @@ Full suite: 483 passed, 2 skipped in 8.81s
 ## Files Modified/Created
 
 ### Created:
-1. `faciliter_lib/tracing/handlers/otlp_handler.py` (360 lines)
+1. `core_lib/tracing/handlers/otlp_handler.py` (360 lines)
 2. `docs/OTLP_LOGGING_INTEGRATION.md` (500+ lines)
 3. `examples/example_otlp_logging.py` (350+ lines)
 
 ### Modified:
-1. `faciliter_lib/config/logger_settings.py`
+1. `core_lib/config/logger_settings.py`
    - Added 7 OTLP configuration fields
    - Added environment variable parsing for OTLP
    
-2. `faciliter_lib/tracing/logger.py`
+2. `core_lib/tracing/logger.py`
    - Added OTLP config extraction from logger_settings
    - Added lazy OTLP handler import and initialization
    - Updated module docstring

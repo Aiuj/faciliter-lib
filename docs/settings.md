@@ -92,7 +92,7 @@ LANGFUSE_SECRET_KEY=sk_your_secret_key
 LANGFUSE_HOST=https://cloud.langfuse.com
 
 # MCP server configuration
-MCP_SERVER_NAME=my-mcp-server
+MCP_SERVER_NAME=my-app-server
 MCP_SERVER_PORT=8204
 MCP_SERVER_HOST=0.0.0.0
 MCP_TRANSPORT=streamable-http
@@ -235,7 +235,7 @@ from core_lib.config import MCPServerSettings
 
 # Configure MCP (Model Context Protocol) server
 mcp_settings = MCPServerSettings.from_env(
-    server_name="my-mcp-server",
+    server_name="my-app-server",
     version="1.0.0",
     host="0.0.0.0",
     port=8204,
@@ -1178,7 +1178,7 @@ except SettingsError as e:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `APP_NAME` | `"faciliter-app"` | Application name |
+| `APP_NAME` | `"app"` | Application name |
 | `APP_VERSION` | `"0.1.0"` | Application version (fallback if not in pyproject.toml) |
 | `ENVIRONMENT` | `"dev"` | Environment name (dev/prod/staging/etc.) |
 | `LOG_LEVEL` | `"DEBUG"` (dev) / `"INFO"` (prod) | Logging level |
@@ -1278,9 +1278,9 @@ GOOGLE_GENAI_API_KEY=your-key
 |----------|---------|-------------|
 | `POSTGRES_HOST` / `DATABASE_HOST` | `"localhost"` | PostgreSQL server host |
 | `POSTGRES_PORT` / `DATABASE_PORT` | `5432` | PostgreSQL server port |
-| `POSTGRES_DB` / `DATABASE_NAME` | `"faciliter-doc-qa"` | Database name |
-| `POSTGRES_USER` / `DATABASE_USER` | `"rfp_user"` | Database username |
-| `POSTGRES_PASSWORD` / `DATABASE_PASSWORD` | `"rfp_password"` | Database password |
+| `POSTGRES_DB` / `DATABASE_NAME` | `"app"` | Database name |
+| `POSTGRES_USER` / `DATABASE_USER` | `"app_user"` | Database username |
+| `POSTGRES_PASSWORD` / `DATABASE_PASSWORD` | `"app_password"` | Database password |
 | `POSTGRES_SSLMODE` / `DATABASE_SSLMODE` | `"disable"` | SSL mode (disable/allow/prefer/require/verify-ca/verify-full) |
 | `POSTGRES_POOL_SIZE` / `DATABASE_POOL_SIZE` | `10` | Connection pool size |
 | `POSTGRES_MAX_OVERFLOW` / `DATABASE_MAX_OVERFLOW` | `20` | Max pool overflow |
@@ -1299,7 +1299,7 @@ GOOGLE_GENAI_API_KEY=your-key
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_SERVER_NAME` / `APP_NAME` | `"faciliter-mcp-server"` | MCP server name |
+| `MCP_SERVER_NAME` / `APP_NAME` | `"app-server"` | MCP server name |
 | `MCP_SERVER_VERSION` / `APP_VERSION` | `"0.1.0"` | MCP server version |
 | `MCP_SERVER_HOST` | `"0.0.0.0"` | Host address to bind server |
 | `MCP_SERVER_PORT` | `8204` | Port number for server |
@@ -1538,7 +1538,7 @@ LANGFUSE_SECRET_KEY=sk_prod_key
 LANGFUSE_HOST=https://cloud.langfuse.com
 
 # MCP Server
-MCP_SERVER_NAME=prod-mcp-server
+MCP_SERVER_NAME=prod-app-server
 MCP_SERVER_PORT=8204
 MCP_SERVER_HOST=0.0.0.0
 MCP_TRANSPORT=streamable-http

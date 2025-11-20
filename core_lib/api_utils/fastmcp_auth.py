@@ -227,7 +227,7 @@ def get_auth_env_vars(settings: Optional[AuthSettings] = None) -> Dict[str, str]
         env = {**os.environ, **env_vars}
         
         # Start MCP server with authentication
-        subprocess.Popen(["mcp-server"], env=env)
+        subprocess.Popen(["app-server"], env=env)
         ```
     """
     if settings is None:

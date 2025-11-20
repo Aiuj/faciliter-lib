@@ -575,9 +575,9 @@ class TestDatabaseSettings(unittest.TestCase):
         
         self.assertEqual(settings.host, "localhost")
         self.assertEqual(settings.port, 5432)
-        self.assertEqual(settings.database, "faciliter-doc-qa")
-        self.assertEqual(settings.username, "rfp_user")
-        self.assertEqual(settings.password, "rfp_password")
+        self.assertEqual(settings.database, "app-database")
+        self.assertEqual(settings.username, "app_user")
+        self.assertEqual(settings.password, "app_password")
         self.assertEqual(settings.sslmode, "disable")
         self.assertEqual(settings.pool_size, 10)
         self.assertEqual(settings.max_overflow, 20)
@@ -734,7 +734,7 @@ class TestStandardSettings(unittest.TestCase):
         """Test StandardSettings with defaults."""
         settings = StandardSettings.from_env(load_dotenv=False)
         
-        self.assertEqual(settings.app_name, "faciliter-app")
+        self.assertEqual(settings.app_name, "app")
         # Version comes from pyproject.toml in the actual project
         self.assertIsNotNone(settings.version)
         self.assertEqual(settings.environment, "dev")
@@ -1415,7 +1415,7 @@ class TestMCPServerSettings(unittest.TestCase):
         from core_lib.config.mcp_settings import MCPServerSettings
         settings = MCPServerSettings.from_env(load_dotenv=False)
         
-        self.assertEqual(settings.server_name, "faciliter-mcp-server")
+        self.assertEqual(settings.server_name, "app-server")
         self.assertEqual(settings.version, "0.1.0")
         self.assertEqual(settings.host, "0.0.0.0")
         self.assertEqual(settings.port, 8204)

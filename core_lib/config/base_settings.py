@@ -1,7 +1,7 @@
 """
 base_settings.py
 
-Extensible base settings class for Faciliter projects.
+Extensible base settings class for AI projects.
 
 This module provides a flexible foundation for managing application configuration
 with support for environment variables, .env files, type conversion, validation,

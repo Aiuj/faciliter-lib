@@ -6,7 +6,7 @@ with provider-specific configurations for LLM, embeddings, cache, tracing,
 database, and MCP server.
 
 This module provides a unified settings interface that can be easily configured
-for any Faciliter application, with automatic detection and configuration of
+for any application, with automatic detection and configuration of
 the services needed by the application. It also provides an easy extension
 mechanism for adding custom settings.
 
@@ -42,7 +42,7 @@ from .fastapi_settings import FastAPIServerSettings
 class StandardSettings(ApiSettings):
     """Standard settings that combines app settings with optional provider configurations.
     
-    This class provides a unified interface for configuring Faciliter applications
+    This class provides a unified interface for configuring applications
     with support for LLM, embeddings, cache, tracing, database, and MCP server services. 
     Services are automatically configured based on environment variables or can be 
     explicitly enabled/disabled.

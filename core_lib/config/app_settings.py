@@ -22,7 +22,7 @@ class AppSettings(BaseSettings):
     and validation capabilities from BaseSettings.
     """
     
-    app_name: str = "faciliter-app"
+    app_name: str = "app"
     version: str = "0.2.8"
     environment: str = "dev"
     log_level: str = "DEBUG"
@@ -53,7 +53,7 @@ class AppSettings(BaseSettings):
         
         # Use the base AppSettings to get version from pyproject.toml
         base_settings = BaseAppSettings(
-            app_name=EnvParser.get_env("APP_NAME", default="faciliter-app"),
+            app_name=EnvParser.get_env("APP_NAME", default="app"),
             project_root=project_root
         )
         

@@ -21,7 +21,7 @@ The `from_` parameter accepts two formats:
 ```json
 {
     "session_id": "12",
-    "app_name": "Faciliter AI Platform",
+    "app_name": "Saas Admin Platform",
     "app_version": "0.1.0",
     "model_name": "gemini-2.5-flash",
     "user_name": "Sarah Mitchell",
@@ -36,7 +36,7 @@ The `from_` parameter accepts two formats:
 ```python
 {
     "session_id": "12",
-    "app_name": "Faciliter AI Platform",
+    "app_name": "Saas Admin Platform",
     "app_version": "0.1.0",
     "model_name": "gemini-2.5-flash",
     "user_name": "Sarah Mitchell",
@@ -53,7 +53,7 @@ All fields are **optional**, but providing complete information enables better o
 | Field | Type | Description | Example |
 |-------|------|-------------|---------|
 | `session_id` | string | Unique identifier for the current session/conversation | `"12"`, `"session-abc-123"` |
-| `app_name` | string | Name of the calling application | `"Faciliter AI Platform"`, `"MyApp"` |
+| `app_name` | string | Name of the calling application | `"Saas Admin Platform"`, `"MyApp"` |
 | `app_version` | string | Version of the calling application | `"0.1.0"`, `"1.2.3"` |
 | `model_name` | string | AI model being used by the client | `"gemini-2.5-flash"`, `"gpt-4"` |
 | `user_name` | string | Human-readable name of the user | `"Sarah Mitchell"`, `"John Doe"` |
@@ -72,7 +72,7 @@ curl -X POST "https://api.example.com/v1/answer/question" \
   -d '{
     "query": "What are your business hours?",
     "company_id": "10000000-0000-0000-0000-000000000001",
-    "from": "{\"session_id\": \"12\", \"app_name\": \"Faciliter AI Platform\", \"app_version\": \"0.1.0\", \"model_name\": \"gemini-2.5-flash\", \"user_name\": \"Sarah Mitchell\", \"user_id\": \"10000000-0000-0000-0000-000000000101\", \"company_name\": \"TechVision Solutions\", \"company_id\": \"10000000-0000-0000-0000-000000000001\"}"
+    "from": "{\"session_id\": \"12\", \"app_name\": \"Saas Admin Platform\", \"app_version\": \"0.1.0\", \"model_name\": \"gemini-2.5-flash\", \"user_name\": \"Sarah Mitchell\", \"user_id\": \"10000000-0000-0000-0000-000000000101\", \"company_name\": \"TechVision Solutions\", \"company_id\": \"10000000-0000-0000-0000-000000000001\"}"
   }'
 ```
 
@@ -89,7 +89,7 @@ response = requests.post(
         "company_id": "10000000-0000-0000-0000-000000000001",
         "from": {
             "session_id": "12",
-            "app_name": "Faciliter AI Platform",
+            "app_name": "Saas Admin Platform",
             "app_version": "0.1.0",
             "model_name": "gemini-2.5-flash",
             "user_name": "Sarah Mitchell",
@@ -114,7 +114,7 @@ result = await session.call_tool(
         "company_id": "10000000-0000-0000-0000-000000000001",
         "from_": {
             "session_id": "12",
-            "app_name": "Faciliter AI Platform",
+            "app_name": "Saas Admin Platform",
             "app_version": "0.1.0",
             "model_name": "gemini-2.5-flash",
             "user_name": "Sarah Mitchell",
@@ -157,7 +157,7 @@ Always include `app_version` to track behavior across client versions:
 
 ```python
 from_metadata = {
-    "app_name": "Faciliter AI Platform",
+    "app_name": "Saas Admin Platform",
     "app_version": "0.1.0",  # Track version for analytics
     "user_id": user_id
 }

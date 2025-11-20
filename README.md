@@ -7,6 +7,8 @@
 ## 📦 Features
 
 - Reusable utility functions
+- **🆕 Embeddings System** - Multi-provider embeddings with automatic failover (OpenAI, Google GenAI, Infinity, Ollama, Local)
+- **🆕 APIClient Base Class** - Reusable HTTP client with built-in authentication support
 - **🆕 Centralized Logging** - Unified logging with console, file, OTLP, and OVH LDP handlers
 - Redis-based caching system with configurable TTL
 - **🆕 Redis-based job queue system** with background worker support
@@ -23,6 +25,7 @@
 - Type hints support
 - **🆕 Unified Settings Management** - Comprehensive configuration system with .env support
 - **🆕 Settings Singleton Manager** - Thread-safe singleton pattern for application-wide config
+- **🆕 Version Management** - Automatic version from pyproject.toml
 
 ---
 
@@ -194,13 +197,13 @@ See **[Service Usage Tracking Guide](docs/SERVICE_USAGE_TRACKING.md)** for compl
 ### From GitHub (recommended for external tools)
 
 ```bash
-pip install git+https://github.com/Aiuj/core-lib.git@v0.2.3
+pip install git+https://github.com/Aiuj/core-lib.git@v0.3.0
 ```
 
 ### Using uv
 
 ```bash
-uv add git+https://github.com/Aiuj/core-lib.git@v0.2.3
+uv add git+https://github.com/Aiuj/core-lib.git@v0.3.0
 ```
 
 ### For local development
@@ -253,7 +256,7 @@ core-lib = { path = "../core-lib", editable = true }
 ### In requirements.txt
 
 ```txt
-git+https://github.com/Aiuj/core-lib.git@v0.2.3#egg=core-lib
+git+https://github.com/Aiuj/core-lib.git@v0.3.0#egg=core-lib
 ```
 
 ---
@@ -455,9 +458,9 @@ See **[FastAPI OpenAPI Documentation](docs/FASTAPI_OPENAPI_QUICK_REFERENCE.md)**
 
 #### Cache API
 
-- `set_cache(name="faciliter", config=None, ttl=None, time_out=None)`:  
+- `set_cache(name="app", config=None, ttl=None, time_out=None)`:  
   Initializes the global cache singleton. Call this before using `cache_get` or `cache_set`.  
-  - `name`: Cache namespace (default: "faciliter")
+  - `name`: Cache namespace (default: "app")
   - `config`: Optional `RedisConfig` instance
   - `ttl`: Default time-to-live for cache entries (seconds)
   - `time_out`: Redis connection timeout (seconds)
@@ -627,6 +630,105 @@ confidence = result['score']  # 0.168...
 # ```
 ```
 
+### Embeddings
+
+Generate text embeddings using multiple providers with automatic failover:
+
+```python
+from core_lib.embeddings import create_embedding_client
+
+# Auto-detect from environment (single host)
+client = create_embedding_client()
+embedding = client.generate_embedding("Hello, world!")
+
+# High availability setup (automatic failover)
+# Set INFINITY_BASE_URL=http://h1:7997,http://h2:7997,http://h3:7997
+client = create_embedding_client()  # Auto-creates FallbackEmbeddingClient
+embedding = client.generate_embedding("Production text")
+
+# Provider-specific creation
+from core_lib.embeddings import create_infinity_client, create_openai_client
+
+infinity_client = create_infinity_client(
+    model="BAAI/bge-small-en-v1.5",
+    base_url="http://localhost:7997"
+)
+
+openai_client = create_openai_client(
+    model="text-embedding-3-small"
+)
+
+# Batch processing
+embeddings = client.generate_embeddings(["text1", "text2", "text3"])
+```
+
+#### Embeddings API
+
+- `create_embedding_client(provider=None, **kwargs)`:  
+  Create an embedding client. Auto-detects provider and HA setup from environment.
+
+- `create_infinity_client(model, base_url=None, **kwargs)`:  
+  Create Infinity client for local high-throughput embeddings.
+
+- `create_openai_client(model, api_key=None, **kwargs)`:  
+  Create OpenAI embeddings client.
+
+- `create_google_genai_client(model=None, task_type=None, **kwargs)`:  
+  Create Google GenAI embeddings client.
+
+- `create_ollama_client(model, host=None, **kwargs)`:  
+  Create Ollama client for local models.
+
+- `create_local_client(model, **kwargs)`:  
+  Create local HuggingFace embeddings client.
+
+See **[Embeddings Guide](docs/EMBEDDINGS_GUIDE.md)** for complete documentation and **[Embeddings Quick Reference](docs/EMBEDDINGS_QUICK_REFERENCE.md)** for quick start.
+
+### APIClient Base Class
+
+Reusable base class for building HTTP API clients with authentication:
+
+```python
+from core_lib.api_utils import APIClient
+from typing import Dict, Any
+
+class MyAPIClient(APIClient):
+    """Custom API client with automatic authentication."""
+    
+    def get_data(self, item_id: str) -> Dict[str, Any]:
+        """Get data by ID."""
+        headers = self._prepare_headers()
+        
+        with self._create_client() as client:
+            response = client.get(
+                f"{self.base_url}/items/{item_id}",
+                headers=headers
+            )
+            response.raise_for_status()
+            return {"success": True, "data": response.json()}
+
+# Create client with time-based auth
+client = MyAPIClient(
+    base_url="https://api.example.com",
+    auth_enabled=True,
+    auth_private_key="your-secret-key"
+)
+
+result = client.get_data("123")
+```
+
+#### APIClient Features
+
+- **Time-based HMAC authentication** - Secure, time-limited auth
+- **Legacy API key support** - Backward compatibility
+- **No auth mode** - For public APIs
+- **Automatic header generation** - Auth headers added automatically
+- **Standardized error handling** - Consistent error responses
+- **SSL verification control** - Disable for self-signed certificates
+- **Configurable timeouts** - Per-client or per-request
+
+See **[APIClient Documentation](docs/API_CLIENT_BASE_CLASS.md)** for complete guide.
+
 ---
 
 ## 📚 Documentation
@@ -636,6 +738,10 @@ Detailed documentation is available in the `docs/` directory:
 - **[Version Management](docs/VERSION_MANAGEMENT.md)** - 🆕 Automatic version from pyproject.toml
 - **[Settings Management](docs/settings.md)** - 🆕 Unified configuration system guide
 - **[Settings Singleton](docs/SETTINGS_SINGLETON_QUICK_REF.md)** - Global settings management
+- **[Embeddings Guide](docs/EMBEDDINGS_GUIDE.md)** - 🆕 Complete embeddings documentation with HA setup
+- **[Embeddings Quick Reference](docs/EMBEDDINGS_QUICK_REFERENCE.md)** - 🆕 Quick start for embeddings
+- **[Infinity Provider](docs/INFINITY_PROVIDER.md)** - 🆕 Local high-throughput embeddings
+- **[APIClient Base Class](docs/API_CLIENT_BASE_CLASS.md)** - 🆕 Reusable HTTP client with auth
 - **[API Authentication](docs/API_AUTH_QUICK_REFERENCE.md)** - 🆕 Time-based HMAC authentication for FastAPI/MCP
 - **[Service Usage Tracking](docs/SERVICE_USAGE_TRACKING.md)** - 🆕 AI service cost and usage tracking
 - **[Job Queue System](docs/JOB_QUEUE_QUICK_REFERENCE.md)** - 🆕 Async job processing with Redis

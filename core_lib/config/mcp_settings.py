@@ -17,7 +17,7 @@ class MCPServerSettings(BaseSettings):
 
     def __init__(
         self,
-        server_name: str = "faciliter-mcp-server",
+        server_name: str = "app-server",
         version: str = "0.1.0", 
         host: str = "0.0.0.0",
         port: int = 8204,
@@ -53,7 +53,7 @@ class MCPServerSettings(BaseSettings):
         return {
             "server_name": {
                 "env_vars": ["MCP_SERVER_NAME", "APP_NAME"],
-                "default": "faciliter-mcp-server",
+                "default": "app-server",
                 "env_type": str,
                 "description": "Name of the MCP server"
             },

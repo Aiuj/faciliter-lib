@@ -56,7 +56,7 @@ The `from` parameter can be either:
 ```json
 {
     "session_id": "12",
-    "app_name": "Faciliter AI Platform",
+    "app_name": "AI Platform",
     "app_version": "0.1.0",
     "model_name": "gemini-2.5-flash",
     "user_name": "Sarah Mitchell",

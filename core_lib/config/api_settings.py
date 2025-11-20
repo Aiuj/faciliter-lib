@@ -82,7 +82,7 @@ class ApiSettings(BaseSettings):
             # If overrides provided, construct AppSettings manually
             from ..utils.app_settings import AppSettings as BaseAppSettings
             base_app = BaseAppSettings(
-                app_name=app_overrides.get("app_name", "faciliter-app"),
+                app_name=app_overrides.get("app_name", "app"),
                 project_root=app_overrides.get("project_root")
             )
             app_settings = AppSettings(

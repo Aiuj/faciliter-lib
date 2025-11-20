@@ -1,7 +1,7 @@
 """  
-mcp_utils.py - Utility functions for Faciliter stack
+mcp_utils.py - Utility functions for server stack
 
-This module provides helper functions for command-line argument handling in Faciliter stack applications.
+This module provides helper functions for command-line argument handling in server stack applications.
 
 Functions:
     get_transport_from_args(): Checks command line args for --transport=... and returns the value if present.

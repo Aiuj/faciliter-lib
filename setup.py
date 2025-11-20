@@ -5,7 +5,7 @@ setup(
     version='0.3.0',
     description='Shared library for MCP agent tools (internal use only)',
     author='Julien Nadaud',
-    author_email='jnadaud@faciliter.ai',
+    author_email='nad.julien@gmail.com',
     url='https://github.com/Aiuj/core-lib',
     packages=find_packages(),
     install_requires=[

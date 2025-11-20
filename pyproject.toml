@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "core-lib"
 version = "0.3.0"
-description = "Shared library for MCP agent tools (internal use only)"
-authors = [{ name = "Julien Nadaud", email = "jnadaud@faciliter.ai" }]
+description = "Comprehensive Python library providing LLM clients, embeddings, caching, job queues, API utilities, centralized logging with OTLP support, and unified settings management for AI-powered applications"
+authors = [{ name = "Julien Nadaud", email = "nad.julien@gmail.com" }]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
-keywords = ["cache", "redis", "valkey", "mcp", "utilities"]
+keywords = ["llm", "ai", "openai", "gemini", "ollama", "embeddings", "cache", "redis", "valkey", "mcp", "logging", "otlp", "observability", "fastapi", "job-queue", "settings", "utilities"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers", 

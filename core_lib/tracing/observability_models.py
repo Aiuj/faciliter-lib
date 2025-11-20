@@ -17,7 +17,7 @@ FROM_FIELD_DESCRIPTION = """Source information for observability and tracing (di
 
 Accepts either a JSON string or a dictionary with the following structure:
 - session_id: Session identifier
-- app_name: Application name (e.g., "Faciliter AI Platform")
+- app_name: Application name (e.g., "Saas Admin Platform")
 - app_version: Application version (e.g., "0.1.0")
 - model_name: AI model name (e.g., "gemini-2.5-flash")
 - user_name: User's display name
@@ -29,7 +29,7 @@ Example:
 ```json
 {
     "session_id": "12",
-    "app_name": "Faciliter AI Platform",
+    "app_name": "Saas Admin Platform",
     "app_version": "0.1.0",
     "model_name": "gemini-2.5-flash",
     "user_name": "Sarah Mitchell",
@@ -80,7 +80,7 @@ class FromMetadataSchema(BaseModel):
     ```json
     {
         "session_id": "12",
-        "app_name": "Faciliter AI Platform",
+        "app_name": "Saas Admin Platform",
         "app_version": "0.1.0",
         "model_name": "gemini-2.5-flash",
         "user_name": "Sarah Mitchell",
@@ -94,7 +94,7 @@ class FromMetadataSchema(BaseModel):
     ```python
     {
         "session_id": "12",
-        "app_name": "Faciliter AI Platform",
+        "app_name": "Saas Admin Platform",
         "app_version": "0.1.0",
         "model_name": "gemini-2.5-flash",
         "user_name": "Sarah Mitchell",

@@ -1,7 +1,7 @@
 """Confidentiality level constants and utilities for access control.
 
 This module defines a 5-tier confidentiality level system used across all
-faciliter applications for data access control. Higher numeric values indicate
+applications for data access control. Higher numeric values indicate
 higher confidentiality requirements.
 
 Confidentiality Levels:

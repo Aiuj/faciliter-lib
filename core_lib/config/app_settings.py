@@ -6,12 +6,17 @@ the base AppSettings with BaseSettings compatibility.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
-from .base_settings import BaseSettings, EnvParser
-from ..utils.app_settings import AppSettings as BaseAppSettings
+try:  # Python 3.11+
+    import tomllib  # type: ignore[attr-defined]
+except ImportError:
+    tomllib = None  # type: ignore[assignment]
+
+from .base_settings import BaseSettings
 
 
 @dataclass(frozen=True)
@@ -38,35 +43,93 @@ class AppSettings(BaseSettings):
         """Create app settings from environment variables."""
         cls._load_dotenv_if_requested(load_dotenv, dotenv_paths)
         
-        # Try to auto-detect project root if not provided
+        # Resolve project root
         project_root = overrides.get("project_root")
-        if project_root is None:
-            try:
-                # Try to find project root by looking for pyproject.toml
-                current = Path.cwd()
-                for parent in [current] + list(current.parents):
-                    if (parent / "pyproject.toml").exists():
-                        project_root = parent
-                        break
-            except Exception:
-                project_root = None
+        resolved_root = cls._resolve_project_root(project_root)
         
-        # Use the base AppSettings to get version from pyproject.toml
-        base_settings = BaseAppSettings(
-            app_name=EnvParser.get_env("APP_NAME", default="app"),
-            project_root=project_root
+        # Resolve app name
+        app_name = overrides.get("app_name")
+        if app_name is None:
+            # Try pyproject.toml
+            if resolved_root:
+                pyproject = resolved_root / "pyproject.toml"
+                if pyproject.exists():
+                    data = cls._read_pyproject_data(pyproject)
+                    if data and data.get("name"):
+                        app_name = data["name"]
+            
+            # Fallback to env var or default
+            if app_name is None:
+                app_name = os.getenv("APP_NAME", "app")
+        
+        # Resolve version
+        version = overrides.get("version")
+        if version is None:
+            version = cls._resolve_version(resolved_root)
+            
+        # Resolve environment
+        environment = overrides.get("environment")
+        if environment is None:
+            environment = os.getenv("ENVIRONMENT", "dev").lower()
+            
+        # Resolve log level
+        log_level = overrides.get("log_level")
+        if log_level is None:
+            default_level = "DEBUG" if environment == "dev" else "INFO"
+            log_level = os.getenv("LOG_LEVEL", default_level).upper()
+            
+        return cls(
+            app_name=app_name,
+            version=version,
+            environment=environment,
+            log_level=log_level,
+            project_root=resolved_root
         )
-        
-        settings_dict = {
-            "app_name": base_settings.app_name,
-            "version": base_settings.version,
-            "environment": base_settings.environment,
-            "log_level": base_settings.log_level,
-            "project_root": base_settings.project_root,
-        }
-        
-        settings_dict.update(overrides)
-        return cls(**settings_dict)
+
+    @staticmethod
+    def _resolve_project_root(project_root: Union[str, Path, None]) -> Optional[Path]:
+        """Resolve the project root path."""
+        if project_root is not None:
+            root = Path(project_root).resolve()
+            return root if root.exists() else None
+
+        # Walk upwards from CWD looking for pyproject.toml
+        try:
+            cwd = Path(os.getcwd()).resolve()
+            for parent in [cwd, *cwd.parents]:
+                if (parent / "pyproject.toml").exists():
+                    return parent
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _read_pyproject_data(pyproject_path: Path) -> Optional[dict]:
+        """Read project metadata from a pyproject.toml file."""
+        if tomllib is None:
+            return None
+        try:
+            with pyproject_path.open("rb") as f:
+                data = tomllib.load(f)
+            project = data.get("project") or {}
+            return {
+                "name": project.get("name", "").strip() if isinstance(project.get("name"), str) else "",
+                "version": project.get("version", "").strip() if isinstance(project.get("version"), str) else "",
+            }
+        except Exception:
+            return None
+
+    @classmethod
+    def _resolve_version(cls, project_root: Optional[Path]) -> str:
+        """Resolve application version."""
+        if project_root is not None:
+            pyproject = project_root / "pyproject.toml"
+            if pyproject.exists():
+                data = cls._read_pyproject_data(pyproject)
+                if data and data.get("version"):
+                    return data["version"]
+
+        return os.getenv("APP_VERSION", "0.1.0")
     
     def validate(self) -> None:
         """Validate app settings."""

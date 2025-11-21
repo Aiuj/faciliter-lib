@@ -48,15 +48,15 @@ environment = settings.app.environment  # "dev" or "production"
 Or use `AppSettings` directly:
 
 ```python
-from core_lib.utils.app_settings import AppSettings
+from core_lib.config.app_settings import AppSettings
 from pathlib import Path
 
 # Auto-detect project root
-app_settings = AppSettings(app_name="my-app")
+app_settings = AppSettings.from_env(app_name="my-app")
 
 # Or specify project root explicitly
 project_root = Path(__file__).resolve().parents[1]
-app_settings = AppSettings(app_name="my-app", project_root=project_root)
+app_settings = AppSettings.from_env(app_name="my-app", project_root=project_root)
 
 print(f"Version: {app_settings.version}")  # Read from pyproject.toml
 ```
@@ -266,13 +266,13 @@ In tests, the version is automatically detected from `pyproject.toml`:
 
 ```python
 import pytest
-from core_lib.utils.app_settings import AppSettings
+from core_lib.config.app_settings import AppSettings
 from pathlib import Path
 
 def test_app_version():
     """Test that version is correctly read from pyproject.toml."""
     project_root = Path(__file__).resolve().parents[1]
-    settings = AppSettings(app_name="my-app", project_root=project_root)
+    settings = AppSettings.from_env(app_name="my-app", project_root=project_root)
     
     # Version is automatically read from pyproject.toml
     assert settings.version  # Not empty
@@ -427,13 +427,13 @@ COPY pyproject.toml /app/
 
 ```python
 from pathlib import Path
-from core_lib.utils.app_settings import AppSettings
+from core_lib.config.app_settings import AppSettings
 
 project_root = Path(__file__).resolve().parents[1]
 print(f"Project root: {project_root}")
 print(f"pyproject.toml exists: {(project_root / 'pyproject.toml').exists()}")
 
-settings = AppSettings(app_name="my-app", project_root=project_root)
+settings = AppSettings.from_env(app_name="my-app", project_root=project_root)
 print(f"Version: {settings.version}")
 ```
 

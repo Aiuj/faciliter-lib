@@ -22,12 +22,12 @@ from .llm import (
     create_llm_client, create_gemini_client, create_ollama_client, 
     create_openai_client, create_client_from_env, clean_and_parse_json_response
 )
-from .utils import LanguageUtils, AppSettings
+from .utils import LanguageUtils
 from .tools import ExcelManager
 
 # New settings management system
 from .config import (
-    StandardSettings, BaseSettings, LLMSettings, EmbeddingsSettings,
+    StandardSettings, BaseSettings, LLMSettings, EmbeddingsSettings, AppSettings,
     CacheSettings, TracingSettings, DatabaseSettings, SettingsManager, settings_manager,
     SettingsError, EnvironmentVariableError, AuthSettings,
     DOC_CATEGORIES, DOC_CATEGORIES_BY_KEY, DOC_CATEGORY_CHOICES,

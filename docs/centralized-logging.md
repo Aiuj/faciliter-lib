@@ -89,10 +89,10 @@ from mcp.server import Server
 from core_lib.tracing.logger import setup_logging, get_module_logger
 
 # Setup logging
-setup_logging(app_name="mcp-server", level="INFO")
+setup_logging(app_name="app-server", level="INFO")
 logger = get_module_logger()
 
-server = Server("my-mcp-server")
+server = Server("my-app-server")
 
 @server.list_tools()
 async def list_tools():
@@ -428,7 +428,7 @@ MCP servers can use context for request tracking:
 from mcp.server import Server
 from core_lib.tracing import LoggingContext, parse_from
 
-server = Server("my-mcp-server")
+server = Server("my-app-server")
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict, from_: str | None = None):

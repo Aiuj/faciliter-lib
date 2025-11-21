@@ -78,22 +78,11 @@ class ApiSettings(BaseSettings):
                 app_overrides[key] = overrides.pop(key)
         
         # Parse core app settings using AppSettings with overrides
-        if app_overrides:
-            # If overrides provided, construct AppSettings manually
-            from ..utils.app_settings import AppSettings as BaseAppSettings
-            base_app = BaseAppSettings(
-                app_name=app_overrides.get("app_name", "app"),
-                project_root=app_overrides.get("project_root")
-            )
-            app_settings = AppSettings(
-                app_name=app_overrides.get("app_name", base_app.app_name),
-                version=app_overrides.get("version", base_app.version),
-                environment=app_overrides.get("environment", base_app.environment),
-                log_level=app_overrides.get("log_level", base_app.log_level),
-                project_root=app_overrides.get("project_root", base_app.project_root)
-            )
-        else:
-            app_settings = AppSettings.from_env(load_dotenv=False, dotenv_paths=dotenv_paths)
+        app_settings = AppSettings.from_env(
+            load_dotenv=False, 
+            dotenv_paths=dotenv_paths, 
+            **app_overrides
+        )
         
         # Auto-detect services from environment
         enable_cache = cls._should_enable_cache(overrides)
